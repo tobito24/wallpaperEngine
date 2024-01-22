@@ -126,10 +126,25 @@ class WorldPiece {
     }
 
     chooseTile() {
-        let rng = Math.floor(Math.random() * this.possiblePieces.length);
-        this.tile = this.possiblePieces[rng];
-        this.possiblePieces = [];
-        this.possiblePieces.push(this.tile);
+
+        let totalWeight = 0;
+        for (let i = 0; i < this.possiblePieces.length; i++) {
+            totalWeight += this.possiblePieces[i].weight;
+        }
+
+        const rngWeight = Math.floor(Math.random() * totalWeight);
+
+        let tmpWeight = 0;
+
+        for (let i = 0; i < this.possiblePieces.length; i++) {
+            tmpWeight += this.possiblePieces[i].weight;
+
+            if(tmpWeight >= rngWeight){
+                this.tile = this.possiblePieces[i];
+                this.possiblePieces = [this.tile];
+                break;
+            }
+        }
 
         this.callNeighbors();
     }
