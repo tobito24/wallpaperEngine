@@ -16,6 +16,7 @@ class WorldPiece {
         this.eastPiece = null;
         this.southPiece = null;
         this.westPiece = null;
+        this.isErrorState = false;
     }
 
     setNeighborhoodRelationship(northPiece, eastPiece, southPiece, westPiece) {
@@ -42,7 +43,7 @@ class WorldPiece {
 
             let green = Math.round(255 * (1 - percentageEntropy));
             green = green.toString(16).padStart(2, "0");
-            
+
             //entropy text
             context.fillStyle = "#" + green + "FF" + green;
             context.font = fontSize + "px Arial";
@@ -53,6 +54,14 @@ class WorldPiece {
         } else {
             //Tile
             this.tile.draw(context, dx, dy, squareSize);
+        }
+
+        if (this.isErrorState) {
+
+            //Error
+            context.strokeStyle = "#ff4457";
+            context.lineWidth = 2;
+            context.strokeRect(dx, dy, squareSize, squareSize);
         }
     }
 
@@ -100,7 +109,12 @@ class WorldPiece {
             newPossiblePieces.push(this.possiblePieces[i]);
         }
 
-        this.possiblePieces = newPossiblePieces;
+        if (newPossiblePieces.length != 0) {
+            this.possiblePieces = newPossiblePieces;
+        } else {
+            this.isErrorState = true;
+        }
+
 
         //entropy has changed -> call neighbors
         if (oldEntropy != this.getEntropy()) {
@@ -139,7 +153,7 @@ class WorldPiece {
         for (let i = 0; i < this.possiblePieces.length; i++) {
             tmpWeight += this.possiblePieces[i].weight;
 
-            if(tmpWeight >= rngWeight){
+            if (tmpWeight >= rngWeight) {
                 this.tile = this.possiblePieces[i];
                 this.possiblePieces = [this.tile];
                 break;

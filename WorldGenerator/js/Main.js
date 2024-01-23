@@ -12,7 +12,7 @@ canvas.width = window_width;
 canvas.height = window_height;
 
 //chess board
-const TICK_RATE = 10;
+const TICK_RATE = 5;
 const SQUARE_SIZE = 32;
 
 let square_width = Math.floor(window_width / SQUARE_SIZE);

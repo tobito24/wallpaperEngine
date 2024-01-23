@@ -1,0 +1,25 @@
+
+TODO:
+    Stein deko
+    Wald
+    Transition
+    Balancing
+
+Ideen:
+
+    maybe gras begebar/nicht begebar diferenzieren
+        z.b. gegen klippen über klippen o. nicht begebare wege
+
+    verschiedene Ebenen für png und überlappungen
+
+    deko als png speichern
+        Hintergrund und vordergrund trennen
+        kein dopplung in tileset.jpg
+
+    Regeln und Tile in zwei aufteilen
+
+    verschiedene Tilesets
+
+    Transitiion zwischen unterschiedlichen Gebieten
+
+
