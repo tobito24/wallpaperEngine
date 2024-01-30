@@ -14,6 +14,7 @@ canvas.height = window_height;
 //chess board
 const TICK_RATE = 5;
 const SQUARE_SIZE = 32;
+let running = true;
 
 let square_width = Math.floor(window_width / SQUARE_SIZE);
 let square_height = Math.floor(window_height / SQUARE_SIZE);
@@ -21,7 +22,7 @@ let square_height = Math.floor(window_height / SQUARE_SIZE);
 let border_width = window_width % SQUARE_SIZE;
 let border_height = window_height % SQUARE_SIZE;
 
-const OFFSET_X = border_width/2;
+const OFFSET_X = border_width / 2;
 const OFFSET_Y = 0;
 
 //world building (init or resize)
@@ -52,9 +53,18 @@ function createWorld() {
             world[x][y].setNeighborhoodRelationship(northPiece, eastPiece, southPiece, westPiece);
         }
     }
+
+    randomFirstTick();
 }
 
 createWorld();
+
+function randomFirstTick() {
+    const rngX = Math.floor(Math.random() * world.length);
+    const rngY = Math.floor(Math.random() * world[0].length);
+    world[rngX][rngY].chooseTile();
+}
+
 
 //trigger function -> selects the next tile
 function nextWorldPiece() {
@@ -64,7 +74,6 @@ function nextWorldPiece() {
 
     for (let x = 0; x < world.length; x++) {
         for (let y = 0; y < world[x].length; y++) {
-
             //WorldPiece already has tile
             if (world[x][y].tile != null) {
                 continue;
@@ -80,7 +89,7 @@ function nextWorldPiece() {
         }
     }
 
-    if(nextWorldPiece.length > 0){
+    if (nextWorldPiece.length > 0) {
         let rng = Math.floor(Math.random() * nextWorldPiece.length);
         nextWorldPiece[rng].chooseTile();
     } else {
@@ -90,7 +99,6 @@ function nextWorldPiece() {
 
 //draw function
 function drawWorld() {
-
     for (let x = 0; x < world.length; x++) {
         for (let y = 0; y < world[x].length; y++) {
             world[x][y].draw(context, SQUARE_SIZE, OFFSET_X, OFFSET_Y);
@@ -112,6 +120,7 @@ function tickerInc() {
 //resize function
 function windowResize() {
 
+    console.log('Fenstergröße geändert!');
     window_width = window.innerWidth;
     window_height = window.innerHeight;
     canvas.width = window_width;
@@ -124,19 +133,39 @@ function windowResize() {
     createWorld();
 }
 
-//resize listener
-window.addEventListener('resize', function () {
-    windowResize();
-    console.log('Fenstergröße geändert!');
-});
+//keyHandler function
+function keyHandler(event) {
+    if (event.key === "Enter") {
+        console.log("Enter!");
+        running = !running;
+    }
+}
+
+//mouse Handler
+function mouseClickHandler(event) {
+    // Koordinaten des Mausklicks
+    const x = Math.floor((event.clientX - OFFSET_X) / SQUARE_SIZE);
+    const y = Math.floor((event.clientY - OFFSET_Y) / SQUARE_SIZE);
+
+    if (world[x][y] === undefined) return;
+
+    world[x][y].isHighlight = !world[x][y].isHighlight;
+    console.log(world[x][y]);
+}
+
+//add listener functions
+window.addEventListener('resize', windowResize);
+document.addEventListener("keydown", keyHandler);
+document.addEventListener("click", mouseClickHandler);
 
 //animation
 function animate() {
+
+    if (running) tickerInc();
+
     context.clearRect(0, 0, window_width, window_height);
-    tickerInc();
     drawWorld();
     requestAnimationFrame(animate);
 }
 
 animate();
-

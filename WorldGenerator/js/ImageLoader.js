@@ -1,6 +1,6 @@
 //TileSet Image, in it are all tiles
 const tilesetImage = new Image();
-tilesetImage.src = "img/tileset.jpg";
+tilesetImage.src = "img/tileset.png";
 
 //tilesize in px
 const tilesize = 32;
@@ -11,27 +11,62 @@ const SOUTH = 2;
 const WEST = 3;
 
 /*
-   Class for a single tile
-   Parameter
-       name: name
-       xPos, yPos: Coordinates in Image
-       north, east, south, west: edge rules
-       weight: (1 - 100) Weighted probability
+    Class for a single tile
+    attribute
+        name: name
+        xPos, yPos: Coordinates in Image
+        weight: Weighted probability
+        possibleBases: array with possible bases for transparent tiles
+        rules: rule set for edges
 */
 class Tile {
     static numberOfTileSets = 0;
 
-    constructor(name, xPos, yPos, north, east, south, west, weight = 100) {
+    constructor(name, xPos, yPos, weight = 0) {
         this.id = Tile.numberOfTileSets;
         Tile.numberOfTileSets++;
         this.name = name;
         this.xPos = xPos;
         this.yPos = yPos;
-        this.north = north;
-        this.east = east;
-        this.south = south;
-        this.west = west;
+        this.rules = [];
         this.weight = weight;
+        this.possibleBases = [];
+    }
+
+    addRule(rule, bases = this.possibleBases) {
+        if (!(rule instanceof Rule)) return;
+
+        if (bases.length === 0) this.rules.push(rule);
+
+        for (let i = 0; i < bases.length; i++) {
+            const tmpBaseRules = bases[i].rules;
+
+            for (let j = 0; j < tmpBaseRules.length; j++) {
+                const tmpBaseRule = tmpBaseRules[j];
+
+                const north = rule.north.replace(NOTHING, tmpBaseRule.north);
+                const east = rule.east.replace(NOTHING, tmpBaseRule.east);
+                const south = rule.south.replace(NOTHING, tmpBaseRule.south);
+                const west = rule.west.replace(NOTHING, tmpBaseRule.west);
+
+                const newRule = new Rule(north, east, south, west, bases[i]);
+
+                if(tmpBaseRule.hasBaseStack()){
+                    newRule.addStack(tmpBaseRule.baseStack);
+                }
+
+                this.rules.push(newRule);
+                
+            }
+        }
+    }
+
+    setPossibleBases(baseGroup) {
+        this.possibleBases = baseGroup;
+    }
+
+    needBase() {
+        return this.possibleBases.length != 0;
     }
 
     draw(context, dx, dy, size) {
@@ -41,6 +76,33 @@ class Tile {
         let sh = tilesize;
 
         context.drawImage(tilesetImage, sx, sy, sw, sh, dx, dy, size, size);
+    }
+}
+
+//class Rule: integer for each direction
+class Rule {
+
+    constructor(north, east, south, west, base = null) {
+        this.north = north;
+        this.east = east;
+        this.south = south;
+        this.west = west;
+        this.baseStack = [];
+        if (base != null) this.baseStack.push(base);
+    }
+
+    getBaseStack() {
+        return this.baseStack;
+    }
+
+    hasBaseStack() {
+        return this.baseStack.length != 0;
+    }
+
+    addStack(otherBaseStack){
+        for (let i = 0; i < otherBaseStack.length; i++) {
+            this.baseStack.push(otherBaseStack[i]);
+        }
     }
 
     getEdge(direction) {
@@ -60,303 +122,529 @@ class Tile {
 }
 
 //Frequencies
-const VERY_OFTEN = 11;
-const OFTEN_2 = 10;
-const OFTEN_1 = 9;
-const OFTEN_0 = 7;
-const SOME_2 = 6;
-const SOME_1 = 5;
-const SOME_0 = 4;
-const RARE_2 = 3;
+const VERY_OFTEN_2 = 2048;
+const VERY_OFTEN_1 = 1024;
+const VERY_OFTEN_0 = 512;
+const OFTEN_2 = 256;
+const OFTEN_1 = 128;
+const OFTEN_0 = 64;
+const SOME_2 = 32;
+const SOME_1 = 16;
+const SOME_0 = 8;
+const RARE_2 = 4;
 const RARE_1 = 2;
 const RARE_0 = 1;
 const NEVER = 0;
 
-//Tile Edges (for rules)
-const GRASS = 0;
-const ROAD = 1;
-const ROAD_N = 2;
-const ROAD_E = 3;
-const ROAD_S = 4;
-const ROAD_W = 5;
-const WATER = 6;
-const WATER_N = 7;
-const WATER_E = 8;
-const WATER_S = 9;
-const WATER_W = 10;
-const ROCK0 = 11;
-const ROCK0_N = 12;
-const ROCK0_E = 13;
-const ROCK0_S = 14;
-const ROCK0_W = 15;
-const ROCK1 = 16;
-const ROCK1_N = 17;
-const ROCK1_E = 18;
-const ROCK1_S = 19;
-const ROCK1_W = 20;
-const ROCK2 = 21;
-const ROCK2_N = 22;
-const ROCK2_E = 23;
-const ROCK2_S = 24;
-const ROCK2_W = 25;
+//Frequencies multiplier
+const DECO_FREQ_MULTI = 1;
 
-const SET_GRASS_WOOD = 26;
-const SET_GRASS_CLIFF = 27;
-const SET_GRASS_DEKO_5 = 28;
-const SET_GRASS_DEKO_6 = 29;
-const SET_GRASS_DEKO_7 = 30;
-const SET_ROAD_WOOD = 31;
-const SET_ROAD_CLIFF = 32;
-const SET_ROAD_DEKO_5 = 33;
-const SET_ROAD_DEKO_6 = 34;
-const SET_ROAD_DEKO_7 = 35;
-const SET_WATER_DEKO_9_0 = 36;
-const SET_WATER_DEKO_9_1 = 37;
-const SET_WATER_DEKO_9_2 = 38;
-const SET_WATER_DEKO_9_3 = 39;
+//function to apply a rule to several tiles
+function addRuleToAll(rule, tiles) {
+    for (let i = 0; i < tiles.length; i++) {
+        tiles[i].addRule(rule);
+    }
+}
 
-const BRIDGE_SHORE_W = 40;
-const BRIDGE_SHORE_E = 41;
-const BRIDGE_EDGE_N = 42;
-const BRIDGE_EDGE_SIDE = 43;
-const BRIDGE_HOR_TOP_CONNECTOR = 44;
-const BRIDGE_HOR_BOT_CONNECTOR = 45;
-const BRIDGE_HOR_MID = 46;
-const BRIDGE_HOR_START_W = 47;
-const BRIDGE_HOR_START_E = 48;
-const BRIDGE_HOR_END_W = 49;
-const BRIDGE_HOR_END_E = 50;
-const BRIDGE_VER_L_CONNECTOR = 51;
-const BRIDGE_VER_R_CONNECTOR = 52;
-const BRIDGE_VER_MID = 53;
-const BRIDGE_VER_START_N = 54;
-const BRIDGE_VER_START_S = 55;
-const BRIDGE_VER_END_S = 56;
-const BRIDGE_VER_TO_HOR = 57;
+function setBasesToAll(baseGroup, tiles) {
+    for (let i = 0; i < tiles.length; i++) {
+        tiles[i].setPossibleBases(baseGroup);
+    }
+}
 
-const BIG_TREE_H00 = 58;
-const BIG_TREE_H01 = 59;
-const BIG_TREE_H02 = 60;
-const BIG_TREE_H03 = 61;
-const BIG_TREE_H10 = 62;
-const BIG_TREE_H11 = 63;
-const BIG_TREE_H12 = 64;
-const BIG_TREE_H13 = 65;
-const BIG_TREE_V00 = 66;
-const BIG_TREE_V01 = 67;
-const BIG_TREE_V02 = 68;
-const BIG_TREE_V10 = 69;
-const BIG_TREE_V11 = 70;
-const BIG_TREE_V12 = 71;
-const BIG_TREE_V20 = 72;
-const BIG_TREE_V21 = 73;
-const BIG_TREE_V22 = 74;
+//function to apply self rule and push
+function addSelfRule(tile, pushDestination, isTransparent = false) {
+    if (isTransparent)
+        tile.addRule(new Rule(tile.name + NOTHING, tile.name + NOTHING, tile.name + NOTHING, tile.name + NOTHING));
+    else
+        tile.addRule(new Rule(tile.name, tile.name, tile.name, tile.name));
 
-const GRASS_WALKABLE = 75;
+    pushDestination.push(tile);
+}
 
-//All tile types
-export let tileTypes = [];
+//function to push a group to a other group
+function groupPush(group, pushDestination) {
+    for (let i = 0; i < group.length; i++) {
+        pushDestination.push(group[i])
+    }
+}
 
-//position in tilesetImage and rules for edges
-//tileTypes.push(new Tile("name", X, Y, NORTH, EAST, SOUTH, WEST, RARE));
+//function to apply rules for classic X-X tiles
+//tileArray is order sensitive [n, e, s, w, nw, ne, se, sw, c_nw, c_ne, c_se, c_sw, d0, d1]
+function addTransitionRules(scourceName, destinationName, tileArray, pushDestination) {
+    const trans0 = scourceName;
+    const trans1 = destinationName;
+    const north = trans0 != NOTHING ? tileArray[0].name : tileArray[0].name + NOTHING;
+    const east = trans0 != NOTHING ? tileArray[1].name : tileArray[1].name + NOTHING;
+    const south = trans0 != NOTHING ? tileArray[2].name : tileArray[2].name + NOTHING;
+    const west = trans0 != NOTHING ? tileArray[3].name : tileArray[3].name + NOTHING;
+
+    tileArray[0].addRule(new Rule(trans0, north, trans1, north));//n
+    tileArray[1].addRule(new Rule(east, trans0, east, trans1));//e
+    tileArray[2].addRule(new Rule(trans1, south, trans0, south));//s
+    tileArray[3].addRule(new Rule(west, trans1, west, trans0));//w
+
+    tileArray[4].addRule(new Rule(trans0, north, west, trans0));//nw
+    tileArray[5].addRule(new Rule(trans0, trans0, east, north));//ne
+    tileArray[6].addRule(new Rule(east, trans0, trans0, south));//se
+    tileArray[7].addRule(new Rule(west, south, trans0, trans0));//sw
+
+    if (tileArray[8] != undefined) {
+        tileArray[8].addRule(new Rule(west, trans1, trans1, north));//c_nw
+        tileArray[9].addRule(new Rule(east, north, trans1, trans1));//c_ne
+        tileArray[10].addRule(new Rule(trans1, south, east, trans1));//c_se
+        tileArray[11].addRule(new Rule(trans1, trans1, west, south));//c_sw
+    }
+
+    if (tileArray[12] != undefined) {
+        tileArray[12].addRule(new Rule(east, north, west, south));//d0
+        tileArray[13].addRule(new Rule(west, south, east, north));//d1
+    }
+
+    for (let i = 0; i < tileArray.length; i++)
+        pushDestination.push(tileArray[i]);
+
+}
+
+//position in tilesetImage and rules
+//nothing Tile 
+const nothing = new Tile("NOTHING", 1, 0, NEVER)
+const NOTHING = nothing.name;
+const nothing_rule = new Rule(NOTHING, NOTHING, NOTHING, NOTHING);
+
+//baseGroup
+const baseGroup = [];
 
 //grass
-tileTypes.push(new Tile("Grass_0", 0, 0, GRASS, GRASS, GRASS, GRASS, VERY_OFTEN));
+const grass = new Tile("grass", 0, 5, VERY_OFTEN_0);
+addSelfRule(grass, baseGroup);
 
-//grass - deko
-tileTypes.push(new Tile("Grass_Deko_0", 3, 2, GRASS, GRASS, GRASS, GRASS, VERY_OFTEN));
-tileTypes.push(new Tile("Grass_Deko_1", 4, 2, GRASS, GRASS, GRASS, GRASS, OFTEN_0));
-tileTypes.push(new Tile("Grass_Deko_2", 5, 2, GRASS, GRASS, GRASS, GRASS, SOME_1));
-tileTypes.push(new Tile("Grass_Deko_4", 6, 2, GRASS, GRASS, GRASS, GRASS, SOME_1));
+//dirth
+const dirt = new Tile("dirt", 1, 7, VERY_OFTEN_0);
+addSelfRule(dirt, baseGroup);
 
-//grass - deko sets
-tileTypes.push(new Tile("Grass_Wood_0", 5, 1, GRASS, SET_GRASS_WOOD, GRASS, GRASS, RARE_1));
-tileTypes.push(new Tile("Grass_Wood_1", 6, 1, GRASS, GRASS, GRASS, SET_GRASS_WOOD, RARE_1));
+//grassLight
+const grassLight = new Tile("grassLight", 0, 11, VERY_OFTEN_0);
+addSelfRule(grassLight, baseGroup);
 
-tileTypes.push(new Tile("Grass_Cliff_Left", 5, 0, GRASS, SET_GRASS_CLIFF, GRASS, GRASS, SOME_1));
-tileTypes.push(new Tile("Grass_Cliff_Mid", 6, 0, GRASS, SET_GRASS_CLIFF, GRASS, SET_GRASS_CLIFF, OFTEN_0));
-tileTypes.push(new Tile("Grass_Cliff_Right", 7, 0, GRASS, GRASS, GRASS, SET_GRASS_CLIFF, SOME_1));
+//grassDry
+const grassDry = new Tile("grassDry", 1, 13, VERY_OFTEN_0);
+addSelfRule(grassDry, baseGroup);
 
-tileTypes.push(new Tile("Grass_Deko_5_0", 3, 0, GRASS, GRASS, SET_GRASS_DEKO_5, GRASS, RARE_1));
-tileTypes.push(new Tile("Grass_Deko_5_0", 3, 1, SET_GRASS_DEKO_5, GRASS, GRASS, GRASS, RARE_1));
-tileTypes.push(new Tile("Grass_Deko_6_0", 4, 0, GRASS, GRASS, SET_GRASS_DEKO_6, GRASS, RARE_1));
-tileTypes.push(new Tile("Grass_Deko_6_1", 4, 1, SET_GRASS_DEKO_6, GRASS, GRASS, GRASS, RARE_1));
-tileTypes.push(new Tile("Grass_Deko_7_0", 7, 1, GRASS, GRASS, SET_GRASS_DEKO_7, GRASS, RARE_1));
-tileTypes.push(new Tile("Grass_Deko_7_1", 7, 2, SET_GRASS_DEKO_7, GRASS, GRASS, GRASS, RARE_1));
+//grassDark
+const grassDark = new Tile("grassDark", 2, 17, VERY_OFTEN_0);
+addSelfRule(grassDark, baseGroup);
 
-//road                              
-tileTypes.push(new Tile("Road_corner_NW", 0, 1, GRASS, ROAD_N, ROAD_W, GRASS, OFTEN_0));
-tileTypes.push(new Tile("Road_edge_N", 1, 1, GRASS, ROAD_N, ROAD, ROAD_N, OFTEN_0));
-tileTypes.push(new Tile("Road_corner_NE", 2, 1, GRASS, GRASS, ROAD_E, ROAD_N, OFTEN_0));
+//mud
+const mud = new Tile("mud", 1, 19, VERY_OFTEN_0);
+addSelfRule(mud, baseGroup);
 
-tileTypes.push(new Tile("Road_edge_W", 0, 2, ROAD_W, ROAD, ROAD_W, GRASS, VERY_OFTEN));
-tileTypes.push(new Tile("Road", 1, 2, ROAD, ROAD, ROAD, ROAD, VERY_OFTEN));
-tileTypes.push(new Tile("Road_edge_E", 2, 2, ROAD_E, GRASS, ROAD_E, ROAD, VERY_OFTEN));
+//TransitionGroup
+const baseTransitionGroup = [];
 
-tileTypes.push(new Tile("Road_Corner_SW", 0, 3, ROAD_W, ROAD_S, GRASS, GRASS, OFTEN_0));
-tileTypes.push(new Tile("Road_edge_S", 1, 3, ROAD, ROAD_S, GRASS, ROAD_S, VERY_OFTEN));
-tileTypes.push(new Tile("Road_Corner_SE", 2, 3, ROAD_E, GRASS, GRASS, ROAD_S, OFTEN_0));
+//grass to dirth
+const dirtN = new Tile("dirtN", 1, 6, OFTEN_2);
+const dirtE = new Tile("dirtE", 2, 7, OFTEN_2);
+const dirtS = new Tile("dirtS", 1, 8, OFTEN_2);
+const dirtW = new Tile("dirtW", 0, 7, OFTEN_2);
+const dirtNW = new Tile("dirtNW", 0, 6, SOME_0);
+const dirtNE = new Tile("dirtNE", 2, 6, SOME_0);
+const dirtSE = new Tile("dirtSE", 2, 8, SOME_0);
+const dirtSW = new Tile("dirtSW", 0, 8, SOME_0);
+const dirtCurveNW = new Tile("dirtCurveNW", 0, 9, RARE_1);
+const dirtCurveNE = new Tile("dirtCurveNE", 1, 9, RARE_1);
+const dirtCurveSE = new Tile("dirtCurveSE", 1, 10, RARE_1);
+const dirtCurveSW = new Tile("dirtCurveSW", 0, 10, RARE_1);
+const dirtCurveD0 = new Tile("dirtCurveD0", 2, 9, RARE_0);
+const dirtCurveD1 = new Tile("dirtCurveD1", 2, 10, RARE_0);
 
-tileTypes.push(new Tile("Road_Curve_NW", 0, 4, ROAD_W, ROAD, ROAD, ROAD_N, RARE_1));
-tileTypes.push(new Tile("Road_Curve_NE", 1, 4, ROAD_E, ROAD_N, ROAD, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Diagonal_0", 2, 4, ROAD_E, ROAD_N, ROAD_W, ROAD_S, RARE_0));
-tileTypes.push(new Tile("Road_Curve_SW", 0, 5, ROAD, ROAD, ROAD_W, ROAD_S, RARE_1));
-tileTypes.push(new Tile("Road_Curve_SE", 1, 5, ROAD, ROAD_S, ROAD_E, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Diagonal_1", 2, 5, ROAD_W, ROAD_S, ROAD_E, ROAD_N, RARE_0));
+const grassDirtTrans = [dirtN, dirtE, dirtS, dirtW, dirtNW, dirtNE, dirtSE, dirtSW, dirtCurveNW, dirtCurveNE, dirtCurveSE, dirtCurveSW, dirtCurveD0, dirtCurveD1];
+addTransitionRules(grass.name, dirt.name, grassDirtTrans, baseTransitionGroup);
 
-//road - deko
-tileTypes.push(new Tile("Road_Deko_0", 3, 5, ROAD, ROAD, ROAD, ROAD, VERY_OFTEN));
-tileTypes.push(new Tile("Road_Deko_1", 4, 5, ROAD, ROAD, ROAD, ROAD, OFTEN_0));
-tileTypes.push(new Tile("Road_Deko_2", 5, 5, ROAD, ROAD, ROAD, ROAD, SOME_1));
-tileTypes.push(new Tile("Road_Deko_4", 6, 5, ROAD, ROAD, ROAD, ROAD, SOME_1));
+//grassLight to grassDry
+const grassDN = new Tile("grassDN", 1, 12, OFTEN_0);
+const grassDE = new Tile("grassDE", 2, 13, OFTEN_0);
+const grassDS = new Tile("grassDS", 1, 14, OFTEN_0);
+const grassDW = new Tile("grassDW", 0, 13, OFTEN_0);
+const grassDNW = new Tile("grassDNW", 0, 12, SOME_2);
+const grassDNE = new Tile("grassDNE", 2, 12, SOME_2);
+const grassDSE = new Tile("grassDSE", 2, 14, SOME_2);
+const grassDSW = new Tile("grassDSW", 0, 14, SOME_2);
+const grassDCurveNW = new Tile("grassDCurveNW", 0, 15, RARE_0);
+const grassDCurveNE = new Tile("grassDCurveNE", 1, 15, RARE_2);
+const grassDCurveSE = new Tile("grassDCurveSE", 1, 16, RARE_2);
+const grassDCurveSW = new Tile("grassDCurveSW", 0, 16, RARE_2);
+const grassDCurveD0 = new Tile("grassDCurveD0", 2, 15, RARE_0);
+const grassDCurveD1 = new Tile("grassDCurveD1", 2, 16, RARE_0);
 
-tileTypes.push(new Tile("Road_Wood_0", 5, 4, ROAD, SET_ROAD_WOOD, ROAD, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Wood_1", 6, 4, ROAD, ROAD, ROAD, SET_ROAD_WOOD, RARE_1));
+const grassLgrassDryTrans = [grassDN, grassDE, grassDS, grassDW, grassDNW, grassDNE, grassDSE, grassDSW, grassDCurveNW, grassDCurveNE, grassDCurveSE, grassDCurveSW, grassDCurveD0, grassDCurveD1];
+addTransitionRules(grassLight.name, grassDry.name, grassLgrassDryTrans, baseTransitionGroup);
 
-//road - deko sets
-tileTypes.push(new Tile("Road_Cliff_Left", 5, 3, ROAD, SET_ROAD_CLIFF, ROAD, ROAD, SOME_1));
-tileTypes.push(new Tile("Road_Cliff_Mid", 6, 3, ROAD, SET_ROAD_CLIFF, ROAD, SET_ROAD_CLIFF, OFTEN_0));
-tileTypes.push(new Tile("Road_Cliff_Right", 7, 3, ROAD, ROAD, ROAD, SET_ROAD_CLIFF, SOME_1));
+//grassDark to mud
+const mudN = new Tile("mudN", 1, 18, OFTEN_0);
+const mudE = new Tile("mudE", 2, 19, OFTEN_0);
+const mudS = new Tile("mudS", 1, 20, OFTEN_0);
+const mudW = new Tile("mudW", 0, 19, OFTEN_0);
+const mudNW = new Tile("mudNW", 0, 18, SOME_0);
+const mudNE = new Tile("mudNE", 2, 18, SOME_0);
+const mudSE = new Tile("mudSE", 2, 20, SOME_0);
+const mudSW = new Tile("mudSW", 0, 20, SOME_0);
+const mudCurveNW = new Tile("mudCurveNW", 0, 21, RARE_2);
+const mudCurveNE = new Tile("mudCurveNE", 1, 21, RARE_2);
+const mudCurveSE = new Tile("mudCurveSE", 1, 22, RARE_2);
+const mudCurveSW = new Tile("mudCurveSW", 0, 22, RARE_2);
+const mudCurveD0 = new Tile("mudCurveD0", 2, 21, SOME_0);
+const mudCurveD1 = new Tile("mudCurveD1", 2, 22, SOME_0);
 
-tileTypes.push(new Tile("Road_Deko_5_0", 3, 3, ROAD, ROAD, SET_ROAD_DEKO_5, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Deko_5_0", 3, 4, SET_ROAD_DEKO_5, ROAD, ROAD, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Deko_6_0", 4, 3, ROAD, ROAD, SET_ROAD_DEKO_6, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Deko_6_1", 4, 4, SET_ROAD_DEKO_6, ROAD, ROAD, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Deko_7_0", 7, 4, ROAD, ROAD, SET_ROAD_DEKO_7, ROAD, RARE_1));
-tileTypes.push(new Tile("Road_Deko_7_1", 7, 5, SET_ROAD_DEKO_7, ROAD, ROAD, ROAD, RARE_1));
+const grassDaMudTrans = [mudN, mudE, mudS, mudW, mudNW, mudNE, mudSE, mudSW, mudCurveNW, mudCurveNE, mudCurveSE, mudCurveSW, mudCurveD0, mudCurveD1];
+addTransitionRules(grassDark.name, mud.name, grassDaMudTrans, baseTransitionGroup);
 
-//water
-tileTypes.push(new Tile("Water_corner_NW", 0, 9, GRASS, WATER_N, WATER_W, GRASS, OFTEN_0));
-tileTypes.push(new Tile("Water_edge_N", 1, 9, GRASS, WATER_N, WATER, WATER_N, VERY_OFTEN));
-tileTypes.push(new Tile("Road_corner_NE", 2, 9, GRASS, GRASS, WATER_E, WATER_N, OFTEN_0));
+//decoGroup
+const decoGroup = [];
+const overlapTiles = []; //special and work in progress
 
-tileTypes.push(new Tile("Water_edge_W", 0, 10, WATER_W, WATER, WATER_W, GRASS, VERY_OFTEN));
-tileTypes.push(new Tile("Water", 1, 10, WATER, WATER, WATER, WATER, VERY_OFTEN));
-tileTypes.push(new Tile("Water_edge_E", 2, 10, WATER_E, GRASS, WATER_E, WATER, VERY_OFTEN));
+//base alternatives
+const grassLight_alter = new Tile("grassL_alter", 1, 11, OFTEN_1);
+grassLight_alter.addRule(new Rule(grassLight.name, grassLight.name, grassLight.name, grassLight.name));
+decoGroup.push(grassLight_alter);
 
-tileTypes.push(new Tile("Water_Corner_SW", 0, 11, WATER_W, WATER_S, GRASS, GRASS, OFTEN_0));
-tileTypes.push(new Tile("Water_edge_S", 1, 11, WATER, WATER_S, GRASS, WATER_S, VERY_OFTEN));
-tileTypes.push(new Tile("Water_Corner_SE", 2, 11, WATER_E, GRASS, GRASS, WATER_S, OFTEN_0));
+const grassDark_alter = new Tile("grassDa_alter", 0, 17, OFTEN_1);
+grassDark_alter.addRule(new Rule(grassDark.name, grassDark.name, grassDark.name, grassDark.name));
+decoGroup.push(grassDark_alter);
 
-tileTypes.push(new Tile("Water_Curve_NW", 0, 12, WATER_W, WATER, WATER, WATER_N, RARE_1));
-tileTypes.push(new Tile("Water_Curve_NE", 1, 12, WATER_E, WATER_N, WATER, WATER, RARE_1));
-tileTypes.push(new Tile("Water_Diagonal_0", 2, 12, WATER_E, WATER_N, WATER_W, WATER_S, RARE_0));
-tileTypes.push(new Tile("Water_Curve_SW", 0, 13, WATER, WATER, WATER_W, WATER_S, RARE_1));
-tileTypes.push(new Tile("Water_Curve_SE", 1, 13, WATER, WATER_S, WATER_E, WATER, RARE_1));
-tileTypes.push(new Tile("Water_Diagonal_1", 2, 13, WATER_W, WATER_S, WATER_E, WATER_N, RARE_0));
+const mud_alter = new Tile("mud_alternative", 1, 17, OFTEN_1);
+mud_alter.addRule(new Rule(mud.name, mud.name, mud.name, mud.name));
+decoGroup.push(mud_alter);
 
-//water - deko
-tileTypes.push(new Tile("Water_Deko_0", 3, 9, WATER, WATER, WATER, WATER, SOME_1));
-tileTypes.push(new Tile("Water_Deko_1", 4, 9, WATER, WATER, WATER, WATER, SOME_1));
-tileTypes.push(new Tile("Water_Deko_2", 5, 9, WATER, WATER, WATER, WATER, SOME_1));
-tileTypes.push(new Tile("Water_Deko_3", 3, 10, WATER, WATER, WATER, WATER, SOME_1));
-tileTypes.push(new Tile("Water_Deko_4", 4, 10, WATER, WATER, WATER, WATER, RARE_1));
-tileTypes.push(new Tile("Water_Deko_5", 5, 10, WATER, WATER, WATER, WATER, RARE_0));
-tileTypes.push(new Tile("Water_Deko_6", 7, 10, WATER, WATER, WATER, WATER, NEVER));
-tileTypes.push(new Tile("Water_Deko_7", 3, 11, WATER, WATER, WATER, WATER, RARE_1));
-tileTypes.push(new Tile("Water_Deko_8", 3, 12, WATER, WATER, WATER, WATER, RARE_0));
+//deco 1-1
+const flower0 = new Tile("flower0", 0, 2, OFTEN_1 * DECO_FREQ_MULTI);
+const flower1 = new Tile("flower1", 1, 2, OFTEN_1 * DECO_FREQ_MULTI);
+const flower2 = new Tile("flower2", 2, 2, OFTEN_1 * DECO_FREQ_MULTI);
+const grassTuft0 = new Tile("grassTuft0", 3, 2, OFTEN_2 * DECO_FREQ_MULTI);
+const grassTuft1 = new Tile("grassTuft1", 4, 2, OFTEN_2 * DECO_FREQ_MULTI);
+const flower3 = new Tile("flower3", 5, 2, OFTEN_1 * DECO_FREQ_MULTI);
+const treeStump = new Tile("treeStump", 6, 2, RARE_2 * DECO_FREQ_MULTI);
+const rock0 = new Tile("rock0", 5, 3, SOME_0 * DECO_FREQ_MULTI);
+const rock1 = new Tile("rock0", 5, 4, SOME_0 * DECO_FREQ_MULTI);
+const rock2 = new Tile("rock0", 0, 3, SOME_0 * DECO_FREQ_MULTI);
+const mush = new Tile("mush", 2, 4, RARE_2 * DECO_FREQ_MULTI);
+const moss = new Tile("moss", 1, 4, RARE_2 * DECO_FREQ_MULTI);
 
-//water - deko sets
-tileTypes.push(new Tile("Water_Deko_9_0", 4, 11, WATER, SET_WATER_DEKO_9_0, SET_WATER_DEKO_9_3, WATER, RARE_1));
-tileTypes.push(new Tile("Water_Deko_9_1", 5, 11, WATER, WATER, SET_WATER_DEKO_9_1, SET_WATER_DEKO_9_0, RARE_1));
-tileTypes.push(new Tile("Water_Deko_9_2", 5, 12, SET_WATER_DEKO_9_1, WATER, WATER, SET_WATER_DEKO_9_2, RARE_1));
-tileTypes.push(new Tile("Water_Deko_9_3", 4, 12, SET_WATER_DEKO_9_3, SET_WATER_DEKO_9_2, WATER, WATER, RARE_1));
+setBasesToAll(baseGroup, [nothing, flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush, moss]);
+addRuleToAll(nothing_rule, [nothing, flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush, moss]);
+decoGroup.push(flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush, moss);
+
+//deco 1-2
+const treeTrunk_0 = new Tile("treeTrunk_0", 5, 1, SOME_0 * DECO_FREQ_MULTI);
+const treeTrunk_1 = new Tile("treeTrunk_1", 6, 1, SOME_0 * DECO_FREQ_MULTI);
+const treeTrunkMossy_0 = new Tile("treeTrunkMossy_0", 1, 1, SOME_0 * DECO_FREQ_MULTI);
+const treeTrunkMossy_1 = new Tile("treeTrunkMossy_1", 2, 1, SOME_0 * DECO_FREQ_MULTI);
+const rock4_0 = new Tile("rock4_0", 1, 3, RARE_2 * DECO_FREQ_MULTI);
+const rock4_1 = new Tile("rock4_1", 2, 3, RARE_2 * DECO_FREQ_MULTI);
+
+setBasesToAll(baseGroup, [treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1])
+treeTrunk_0.addRule(new Rule(NOTHING, treeTrunk_0.name + NOTHING, NOTHING, NOTHING));
+treeTrunk_1.addRule(new Rule(NOTHING, NOTHING, NOTHING, treeTrunk_0.name + NOTHING));
+treeTrunkMossy_0.addRule(new Rule(NOTHING, treeTrunkMossy_0.name + NOTHING, NOTHING, NOTHING));
+treeTrunkMossy_1.addRule(new Rule(NOTHING, NOTHING, NOTHING, treeTrunkMossy_0.name + NOTHING));
+rock4_0.addRule(new Rule(NOTHING, rock4_0.name + NOTHING, NOTHING, NOTHING));
+rock4_1.addRule(new Rule(NOTHING, NOTHING, NOTHING, rock4_0.name + NOTHING));
+decoGroup.push(treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1);
+
+//deco 2-1
+const grassTuft2_0 = new Tile("grassTuft2_0", 3, 0, SOME_1 * DECO_FREQ_MULTI);
+const grassTuft2_1 = new Tile("grassTuft2_1", 3, 1, SOME_1 * DECO_FREQ_MULTI);
+const grassTuft3_0 = new Tile("grassTuft3_0", 4, 0, SOME_1 * DECO_FREQ_MULTI);
+const grassTuft3_1 = new Tile("grassTuft3_1", 4, 1, SOME_1 * DECO_FREQ_MULTI);
+const fern_0 = new Tile("fern_0", 7, 1, SOME_1 * DECO_FREQ_MULTI);
+const fern_1 = new Tile("fern_1", 7, 2, SOME_1 * DECO_FREQ_MULTI);
+
+setBasesToAll(baseGroup, [grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1])
+grassTuft2_0.addRule(new Rule(NOTHING, NOTHING, grassTuft2_0.name + NOTHING, NOTHING));
+grassTuft2_1.addRule(new Rule(grassTuft2_0.name + NOTHING, NOTHING, NOTHING, NOTHING));
+grassTuft3_0.addRule(new Rule(NOTHING, NOTHING, grassTuft3_0.name + NOTHING, NOTHING));
+grassTuft3_1.addRule(new Rule(grassTuft3_0.name + NOTHING, NOTHING, NOTHING, NOTHING));
+fern_0.addRule(new Rule(NOTHING, NOTHING, fern_0.name + NOTHING, NOTHING));
+fern_1.addRule(new Rule(fern_0.name + NOTHING, NOTHING, NOTHING, NOTHING));
+decoGroup.push(grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1);
+//overlapTiles.push(grassTuft2_0, grassTuft3_0, fern_0);
+
+//deco 2-2
+const bigStone0_0 = new Tile("bigStone0_0", 3, 3, RARE_1 * DECO_FREQ_MULTI);
+const bigStone0_1 = new Tile("bigStone0_1", 4, 3, RARE_1 * DECO_FREQ_MULTI);
+const bigStone0_2 = new Tile("bigStone0_2", 3, 4, RARE_1 * DECO_FREQ_MULTI);
+const bigStone0_3 = new Tile("bigStone0_3", 4, 4, RARE_1 * DECO_FREQ_MULTI);
+
+setBasesToAll(baseGroup, [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3])
+bigStone0_0.addRule(new Rule(NOTHING, bigStone0_0.name + NOTHING, bigStone0_2.name + NOTHING, NOTHING));
+bigStone0_1.addRule(new Rule(NOTHING, NOTHING, bigStone0_1.name + NOTHING, bigStone0_0.name + NOTHING));
+bigStone0_2.addRule(new Rule(bigStone0_2.name + NOTHING, bigStone0_3.name + NOTHING, NOTHING, NOTHING));
+bigStone0_3.addRule(new Rule(bigStone0_1.name + NOTHING, NOTHING, NOTHING, bigStone0_3.name + NOTHING));
+
+decoGroup.push(bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3);
+
+//deco X-1 (cliff)
+const cliff_0 = new Tile("cliff_0", 5, 0, SOME_1 * DECO_FREQ_MULTI);
+const cliff_1 = new Tile("cliff_1", 6, 0, SOME_2 * DECO_FREQ_MULTI);
+const cliff_2 = new Tile("cliff_2", 7, 0, SOME_1 * DECO_FREQ_MULTI);
+
+setBasesToAll(baseGroup, [cliff_0, cliff_1, cliff_2])
+cliff_0.addRule(new Rule(NOTHING, cliff_1.name + NOTHING, NOTHING, NOTHING));
+cliff_1.addRule(new Rule(NOTHING, cliff_1.name + NOTHING, NOTHING, cliff_1.name + NOTHING));
+cliff_2.addRule(new Rule(NOTHING, NOTHING, NOTHING, cliff_1.name + NOTHING));
+
+decoGroup.push(cliff_0, cliff_1, cliff_2);
+
+//deco X-X (tall grasses)
+const tallGrass0 = new Tile("tallGrass0", 4, 6, OFTEN_0 * DECO_FREQ_MULTI);
+const tallGrass0N = new Tile("tallGrass0N", 4, 5, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass0E = new Tile("tallGrass0E", 5, 6, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass0S = new Tile("tallGrass0S", 4, 7, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass0W = new Tile("tallGrass0W", 3, 6, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass0NW = new Tile("tallGrass0NW", 3, 5, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass0NE = new Tile("tallGrass0NE", 5, 5, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass0SE = new Tile("tallGrass0SE", 5, 7, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass0SW = new Tile("tallGrass0SW", 3, 7, SOME_0 * DECO_FREQ_MULTI);
+
+const tallGrass1 = new Tile("tallGrass1", 4, 12, OFTEN_0 * DECO_FREQ_MULTI);
+const tallGrass1N = new Tile("tallGrass1N", 4, 11, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass1E = new Tile("tallGrass1E", 5, 12, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass1S = new Tile("tallGrass1S", 4, 13, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass1W = new Tile("tallGrass1W", 3, 12, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass1NW = new Tile("tallGrass1NW", 3, 11, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass1NE = new Tile("tallGrass1NE", 5, 11, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass1SE = new Tile("tallGrass1SE", 5, 13, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass1SW = new Tile("tallGrass1SW", 3, 13, SOME_0 * DECO_FREQ_MULTI);
+
+const tallGrass2 = new Tile("tallGrass2", 4, 18, OFTEN_0 * DECO_FREQ_MULTI);
+const tallGrass2N = new Tile("tallGrass2N", 4, 17, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass2E = new Tile("tallGrass2E", 5, 18, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass2S = new Tile("tallGrass2S", 4, 19, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass2W = new Tile("tallGrass2W", 3, 18, SOME_2 * DECO_FREQ_MULTI);
+const tallGrass2NW = new Tile("tallGrass2NW", 3, 17, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass2NE = new Tile("tallGrass2NE", 5, 17, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass2SE = new Tile("tallGrass2SE", 5, 19, SOME_0 * DECO_FREQ_MULTI);
+const tallGrass2SW = new Tile("tallGrass2SW", 3, 19, SOME_0 * DECO_FREQ_MULTI);
+
+addSelfRule(tallGrass0, decoGroup);
+addSelfRule(tallGrass1, decoGroup);
+addSelfRule(tallGrass2, decoGroup);
+
+setBasesToAll(baseGroup, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW]);
+setBasesToAll(baseGroup, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW]);
+setBasesToAll(baseGroup, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW]);
+addTransitionRules(NOTHING, tallGrass0.name, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW], decoGroup);
+addTransitionRules(NOTHING, tallGrass1.name, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW], decoGroup);
+addTransitionRules(NOTHING, tallGrass2.name, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW], decoGroup);
+
+//waterGroup
+const waterGroup = [];
+
+//water0
+const water0 = new Tile("water0", 4, 27, VERY_OFTEN_2);
+water0.setPossibleBases(baseGroup);
+addSelfRule(water0, waterGroup, true);
+
+const water0N = new Tile("water0N", 4, 26, OFTEN_0);
+const water0E = new Tile("water0E", 5, 27, OFTEN_0);
+const water0S = new Tile("water0S", 4, 28, OFTEN_0);
+const water0W = new Tile("water0W", 3, 27, OFTEN_0);
+const water0NW = new Tile("water0NW", 3, 26, SOME_1);
+const water0NE = new Tile("water0NE", 5, 26, SOME_1);
+const water0SE = new Tile("water0SE", 5, 28, SOME_1);
+const water0SW = new Tile("water0SW", 3, 28, SOME_1);
+const water0CurveNW = new Tile("water0CurveNW", 6, 28, SOME_0);
+const water0CurveNE = new Tile("water0CurveNE", 7, 28, SOME_0);
+const water0CurveSE = new Tile("water0CurveSE", 7, 29, SOME_0);
+const water0CurveSW = new Tile("water0CurveSW", 6, 29, SOME_0);
+const water0CurveD0 = new Tile("water0CurveD0", 6, 24, RARE_0);
+const water0CurveD1 = new Tile("water0CurveD1", 6, 25, RARE_0);
+
+const water0_all = [water0N, water0E, water0S, water0W, water0NW, water0NE, water0SE, water0SW, water0CurveNW, water0CurveNE, water0CurveSE, water0CurveSW, water0CurveD0, water0CurveD1];
+setBasesToAll(baseGroup, water0_all);
+addTransitionRules(NOTHING, water0.name + NOTHING, water0_all, waterGroup);
+
+//water1
+const water1 = new Tile("water1", 1, 27, VERY_OFTEN_1);
+water1.setPossibleBases(baseGroup);
+addSelfRule(water1, waterGroup, true);
+
+const water1N = new Tile("water1N", 1, 26, OFTEN_0);
+const water1E = new Tile("water1E", 2, 27, OFTEN_0);
+const water1S = new Tile("water1S", 1, 28, OFTEN_0);
+const water1W = new Tile("water1W", 0, 27, OFTEN_0);
+const water1NW = new Tile("water1NW", 0, 26, SOME_1);
+const water1NE = new Tile("water1NE", 2, 26, SOME_1);
+const water1SE = new Tile("water1SE", 2, 28, SOME_1);
+const water1SW = new Tile("water1SW", 0, 28, SOME_1);
+const water1CurveNW = new Tile("water1CurveNW", 6, 26, SOME_1);
+const water1CurveNE = new Tile("water1CurveNE", 7, 26, SOME_1);
+const water1CurveSE = new Tile("water1CurveSE", 7, 27, SOME_1);
+const water1CurveSW = new Tile("water1CurveSW", 6, 27, SOME_1);
+const water1CurveD0 = new Tile("water1CurveD0", 7, 24, RARE_1);
+const water1CurveD1 = new Tile("water1CurveD1", 7, 25, RARE_1);
+
+const water1_all = [water1N, water1E, water1S, water1W, water1NW, water1NE, water1SE, water1SW, water1CurveNW, water1CurveNE, water1CurveSE, water1CurveSW, water1CurveD0, water1CurveD1];
+setBasesToAll(baseGroup, water1_all);
+addTransitionRules(NOTHING, water1.name + NOTHING, water1_all, waterGroup);
+
+//waterDecoGroup
+const waterDecoGroup = [];
+const waterBase = [water0, water1];
+
+//deco 1-1
+const waterLily0 = new Tile("waterLily0", 7, 5, OFTEN_1 * DECO_FREQ_MULTI);
+const waterLily1 = new Tile("waterLily1", 6, 5, OFTEN_1 * DECO_FREQ_MULTI);
+const waterLily2 = new Tile("waterLily2", 6, 6, OFTEN_1 * DECO_FREQ_MULTI);
+const waterLily3 = new Tile("waterLily3", 6, 7, OFTEN_1 * DECO_FREQ_MULTI);
+
+setBasesToAll(waterBase, [waterLily0, waterLily1, waterLily2, waterLily3])
+addRuleToAll(nothing_rule, [waterLily0, waterLily1, waterLily2, waterLily3]);
+waterDecoGroup.push(waterLily0, waterLily1, waterLily2, waterLily3);
+
+//deco 2-2
+const bigStone1_0 = new Tile("bigStone1_0", 6, 3, RARE_2 * DECO_FREQ_MULTI);
+const bigStone1_1 = new Tile("bigStone1_1", 7, 3, RARE_2 * DECO_FREQ_MULTI);
+const bigStone1_2 = new Tile("bigStone1_2", 6, 4, RARE_2 * DECO_FREQ_MULTI);
+const bigStone1_3 = new Tile("bigStone1_3", 7, 4, RARE_2 * DECO_FREQ_MULTI);
+
+setBasesToAll(waterBase, [bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3])
+bigStone1_0.addRule(new Rule(NOTHING, bigStone1_0.name + NOTHING, bigStone1_2.name + NOTHING, NOTHING));
+bigStone1_1.addRule(new Rule(NOTHING, NOTHING, bigStone1_1.name + NOTHING, bigStone1_0.name + NOTHING));
+bigStone1_2.addRule(new Rule(bigStone1_2.name + NOTHING, bigStone1_3.name + NOTHING, NOTHING, NOTHING));
+bigStone1_3.addRule(new Rule(bigStone1_1.name + NOTHING, NOTHING, NOTHING, bigStone1_3.name + NOTHING));
+waterDecoGroup.push(bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3);
+
+//stoneGroup
+const stoneGroup = [];
+
+//stone0
+const stone0 = new Tile("stone0", 4, 9, VERY_OFTEN_0);
+addSelfRule(stone0, stoneGroup);
+
+const stone0N = new Tile("stone0N", 4, 8, OFTEN_0);
+const stone0E = new Tile("stone0E", 5, 9, OFTEN_0);
+const stone0S = new Tile("stone0S", 4, 10, OFTEN_0);
+const stone0W = new Tile("stone0W", 3, 9, OFTEN_0);
+const stone0NW = new Tile("stone0NW", 3, 8, OFTEN_0);
+const stone0NE = new Tile("stone0NE", 5, 8, OFTEN_0);
+const stone0SE = new Tile("stone0SE", 5, 10, OFTEN_0);
+const stone0SW = new Tile("stone0SW", 3, 10, OFTEN_0);
+const stone0CurveNW = new Tile("stone0CurveNW", 7, 9, RARE_2);
+const stone0CurveNE = new Tile("stone0CurveNE", 6, 9, RARE_2);
+const stone0CurveSE = new Tile("stone0CurveSE", 6, 8, RARE_2);
+const stone0CurveSW = new Tile("stone0CurveSW", 7, 8, RARE_2);
+
+const stone0_all = [stone0N, stone0E, stone0S, stone0W, stone0NW, stone0NE, stone0SE, stone0SW, stone0CurveNW, stone0CurveNE, stone0CurveSE, stone0CurveSW];
+setBasesToAll(baseGroup, stone0_all);
+addTransitionRules(NOTHING, stone0.name, stone0_all, stoneGroup);
+
+//stone1
+const stone1 = new Tile("stone1", 4, 15, VERY_OFTEN_0);
+addSelfRule(stone1, stoneGroup);
+
+const stone1N = new Tile("stone1N", 4, 14, OFTEN_0);
+const stone1E = new Tile("stone1E", 5, 15, OFTEN_0);
+const stone1S = new Tile("stone1S", 4, 16, OFTEN_0);
+const stone1W = new Tile("stone1W", 3, 15, OFTEN_0);
+const stone1NW = new Tile("stone1NW", 3, 14, OFTEN_0);
+const stone1NE = new Tile("stone1NE", 5, 14, OFTEN_0);
+const stone1SE = new Tile("stone1SE", 5, 16, OFTEN_0);
+const stone1SW = new Tile("stone1SW", 3, 16, OFTEN_0);
+const stone1CurveNW = new Tile("stone1CurveNW", 6, 14, RARE_2);
+const stone1CurveNE = new Tile("stone1CurveNE", 7, 14, RARE_2);
+const stone1CurveSE = new Tile("stone1CurveSE", 7, 15, RARE_2);
+const stone1CurveSW = new Tile("stone1CurveSW", 6, 15, RARE_2);
+
+const stone1_all = [stone1N, stone1E, stone1S, stone1W, stone1NW, stone1NE, stone1SE, stone1SW, stone1CurveNW, stone1CurveNE, stone1CurveSE, stone1CurveSW];
+setBasesToAll(baseGroup, stone1_all);
+addTransitionRules(NOTHING, stone1.name, stone1_all, stoneGroup);
+
+//stone2
+const stone2 = new Tile("stone2", 4, 21, VERY_OFTEN_0);
+addSelfRule(stone2, stoneGroup);
+
+const stone2N = new Tile("stone2N", 4, 20, OFTEN_0);
+const stone2E = new Tile("stone2E", 5, 21, OFTEN_0);
+const stone2S = new Tile("stone2S", 4, 22, OFTEN_0);
+const stone2W = new Tile("stone2W", 3, 21, OFTEN_0);
+const stone2NW = new Tile("stone2NW", 3, 20, OFTEN_0);
+const stone2NE = new Tile("stone2NE", 5, 20, OFTEN_0);
+const stone2SE = new Tile("stone2SE", 5, 22, OFTEN_0);
+const stone2SW = new Tile("stone2SW", 3, 22, OFTEN_0);
+const stone2CurveNW = new Tile("stone2CurveNW", 7, 21, RARE_2);
+const stone2CurveNE = new Tile("stone2CurveNE", 6, 21, RARE_2);
+const stone2CurveSE = new Tile("stone2CurveSE", 6, 20, RARE_2);
+const stone2CurveSW = new Tile("stone2CurveSW", 7, 20, RARE_2);
+
+const stone2_all = [stone2N, stone2E, stone2S, stone2W, stone2NW, stone2NE, stone2SE, stone2SW, stone2CurveNW, stone2CurveNE, stone2CurveSE, stone2CurveSW];
+setBasesToAll(baseGroup, stone2_all);
+addTransitionRules(NOTHING, stone2.name, stone2_all, stoneGroup);
+
+//bridgeGroup
+const bridgeGroup = [];
 
 //bridge
-tileTypes.push(new Tile("Bridge_shore_0", 0, 8, BRIDGE_SHORE_W, BRIDGE_EDGE_SIDE, WATER_W, GRASS, RARE_1));
-tileTypes.push(new Tile("Bridge_shore_1", 5, 8, BRIDGE_SHORE_E, GRASS, WATER_E, BRIDGE_EDGE_SIDE, RARE_1));
-tileTypes.push(new Tile("Bridge_edge_0", 2, 8, BRIDGE_EDGE_N, BRIDGE_EDGE_SIDE, WATER, BRIDGE_EDGE_SIDE, SOME_1));
-tileTypes.push(new Tile("Bridge_edge_1", 1, 8, BRIDGE_EDGE_N, BRIDGE_EDGE_SIDE, WATER, BRIDGE_EDGE_SIDE, RARE_1));
-tileTypes.push(new Tile("Bridge_edge_2", 3, 8, BRIDGE_EDGE_N, BRIDGE_EDGE_SIDE, WATER, BRIDGE_EDGE_SIDE, RARE_1));
-tileTypes.push(new Tile("Bridge_edge_1", 1, 8, BRIDGE_EDGE_N, BRIDGE_EDGE_SIDE, WATER, WATER, RARE_1));
-tileTypes.push(new Tile("Bridge_edge_2", 3, 8, BRIDGE_EDGE_N, WATER, WATER, BRIDGE_EDGE_SIDE, RARE_1));
+//add + NOTHING
+const bridgeSurHor0N = new Tile("bridgeSurHor0N", 1, 23, RARE_2);
+const bridgeSurHor1N = new Tile("bridgeSurHor1N", 2, 23, RARE_2);
+const bridgeSurHor2N = new Tile("bridgeSurHor2N", 3, 23, RARE_2);
+const bridgeSurHor0S = new Tile("bridgeSurHor0S", 1, 24, RARE_2);
+const bridgeSurHor1S = new Tile("bridgeSurHor1S", 2, 24, RARE_2);
+const bridgeSurHor2S = new Tile("bridgeSurHor2S", 3, 24, RARE_2);
+const bridgeSurVerW = new Tile("bridgeSurVerW", 6, 23, RARE_0);
+const bridgeSurVerE = new Tile("bridgeSurVerE", 7, 23, RARE_0);
+const bridgeEdge0 = new Tile("bridgeEdge0", 1, 25, RARE_2);
+const bridgeEdge1 = new Tile("bridgeEdge1", 2, 25, RARE_1);
+const bridgeEdge2 = new Tile("bridgeEdge2", 3, 25, RARE_2);
+const bridgeCoastW = new Tile("bridgeCoastW", 0, 25, RARE_0);
+const bridgeCoastE = new Tile("bridgeCoastE", 5, 25, RARE_0);
 
-tileTypes.push(new Tile("Bridge_hor_top_mid", 0, 6, WATER, BRIDGE_HOR_TOP_CONNECTOR, BRIDGE_HOR_MID, BRIDGE_HOR_TOP_CONNECTOR, SOME_0));
-tileTypes.push(new Tile("Bridge_hor_top_start_W", 0, 6, WATER_W, BRIDGE_HOR_TOP_CONNECTOR, BRIDGE_HOR_START_W, GRASS, RARE_1));
-tileTypes.push(new Tile("Bridge_hor_top_start_E", 0, 6, WATER_E, GRASS, BRIDGE_HOR_START_E, BRIDGE_HOR_TOP_CONNECTOR, RARE_1));
-tileTypes.push(new Tile("Bridge_hor_top_end_W", 1, 6, WATER, BRIDGE_HOR_TOP_CONNECTOR, BRIDGE_HOR_END_W, WATER, RARE_1));
-tileTypes.push(new Tile("Bridge_hor_top_end_E", 3, 6, WATER, WATER, BRIDGE_HOR_END_E, BRIDGE_HOR_TOP_CONNECTOR, RARE_1));
+const bridge_all = [bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE];
+setBasesToAll(baseGroup, bridge_all)
 
-tileTypes.push(new Tile("Bridge_hor_bot_mid", 0, 7, BRIDGE_HOR_MID, BRIDGE_HOR_BOT_CONNECTOR, BRIDGE_EDGE_N, BRIDGE_HOR_BOT_CONNECTOR, SOME_0));
-tileTypes.push(new Tile("Bridge_hor_bot_start_W", 0, 7, BRIDGE_HOR_START_W, BRIDGE_HOR_BOT_CONNECTOR, BRIDGE_SHORE_W, GRASS, RARE_1));
-tileTypes.push(new Tile("Bridge_hor_bot_start_E", 0, 7, BRIDGE_HOR_START_E, GRASS, BRIDGE_SHORE_E, BRIDGE_HOR_BOT_CONNECTOR, RARE_1));
-tileTypes.push(new Tile("Bridge_hor_bot_end_W", 1, 7, BRIDGE_HOR_END_W, BRIDGE_HOR_BOT_CONNECTOR, BRIDGE_EDGE_N, WATER, RARE_1));
-tileTypes.push(new Tile("Bridge_hor_bot_end_E", 3, 7, BRIDGE_HOR_END_E, WATER, BRIDGE_EDGE_N, BRIDGE_HOR_BOT_CONNECTOR, RARE_1));
+bridgeSurHor1N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor1S.name, bridgeSurHor1N.name));
+bridgeSurHor1N.addRule(new Rule(water0E.name, NOTHING, bridgeSurHor1S.name, bridgeSurHor1N.name));
+bridgeSurHor1N.addRule(new Rule(water0W.name, bridgeSurHor1N.name, bridgeSurHor1S.name, NOTHING));
+bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeEdge1.name, bridgeSurHor0S.name));
+bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, NOTHING, bridgeCoastE.name, bridgeSurHor0S.name));
+bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeCoastW.name, NOTHING));
+bridgeSurHor0N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor0N.name, water0.name));
+bridgeSurHor0S.addRule(new Rule(bridgeSurHor0N.name, bridgeSurHor0S.name, bridgeEdge0.name, water0.name));
+bridgeSurHor2N.addRule(new Rule(water0.name, water0.name, bridgeSurHor2N.name, bridgeSurHor1N.name));
+bridgeSurHor2S.addRule(new Rule(bridgeSurHor2N.name, water0.name, bridgeEdge2.name, bridgeSurHor0S.name));
+bridgeEdge0.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+bridgeEdge0.addRule(new Rule(bridgeEdge0.name, bridgeEdge1.name, water0.name, water0.name));
+bridgeEdge1.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+bridgeEdge2.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+bridgeEdge2.addRule(new Rule(bridgeEdge2.name, water0.name, water0.name, bridgeEdge1.name));
+bridgeCoastW.addRule(new Rule(bridgeCoastW.name, bridgeEdge1.name, water0W.name, NOTHING));
+bridgeCoastE.addRule(new Rule(bridgeCoastE.name, NOTHING, water0E.name, bridgeEdge1.name));
 
-tileTypes.push(new Tile("Bridge_ver_l_mid", 6, 6, BRIDGE_VER_L_CONNECTOR, BRIDGE_VER_MID, BRIDGE_VER_L_CONNECTOR, WATER, SOME_0));
-tileTypes.push(new Tile("Bridge_ver_l_start_N", 6, 6, GRASS, BRIDGE_VER_START_N, BRIDGE_VER_L_CONNECTOR, WATER_N, RARE_1));
-tileTypes.push(new Tile("Bridge_ver_l_start_S", 6, 6, BRIDGE_VER_L_CONNECTOR, BRIDGE_VER_START_S, GRASS, WATER_S, RARE_1));
-tileTypes.push(new Tile("Bridge_ver_l_end_S", 6, 6, BRIDGE_VER_L_CONNECTOR, BRIDGE_VER_END_S, BRIDGE_EDGE_N, WATER, RARE_1));
-tileTypes.push(new Tile("Bridge_ver_l_to_hor", 6, 6, BRIDGE_EDGE_N, BRIDGE_VER_TO_HOR, BRIDGE_VER_L_CONNECTOR, BRIDGE_EDGE_SIDE, RARE_1));
+bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeSurVerW.name, water0.name));
+bridgeSurVerW.addRule(new Rule(NOTHING, bridgeSurVerW.name, bridgeSurVerW.name, water0N.name));
+bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, NOTHING, water0S.name));
+bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge0.name, water0.name));
+bridgeSurVerW.addRule(new Rule(bridgeEdge1.name, bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge1.name));
 
+bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeSurVerE.name, bridgeSurVerW.name));
+bridgeSurVerE.addRule(new Rule(NOTHING, water0N.name, bridgeSurVerE.name, bridgeSurVerW.name));
+bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0S.name, NOTHING, bridgeSurVerW.name));
+bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeEdge2.name, bridgeSurVerW.name));
+bridgeSurVerE.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, bridgeSurVerE.name, bridgeSurVerW.name));
 
-tileTypes.push(new Tile("Bridge_ver_r_mid", 7, 6, BRIDGE_VER_R_CONNECTOR, WATER, BRIDGE_VER_R_CONNECTOR, BRIDGE_VER_MID, SOME_0));
-tileTypes.push(new Tile("Bridge_ver_r_start_N", 7, 6, GRASS, WATER_N, BRIDGE_VER_R_CONNECTOR, BRIDGE_VER_START_N, RARE_1));
-tileTypes.push(new Tile("Bridge_ver_r_start_S", 7, 6, BRIDGE_VER_R_CONNECTOR, WATER_S, GRASS, BRIDGE_VER_START_S, RARE_1));
-tileTypes.push(new Tile("Bridge_ver_r_end_S", 7, 6, BRIDGE_VER_R_CONNECTOR, WATER, BRIDGE_EDGE_N, BRIDGE_VER_END_S, RARE_1));
-tileTypes.push(new Tile("Bridge_ver_r_to_hor", 7, 6, BRIDGE_EDGE_N, BRIDGE_EDGE_SIDE, BRIDGE_VER_R_CONNECTOR, BRIDGE_VER_TO_HOR, RARE_1));
+bridgeGroup.push(bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE);
 
-//rock - 0
-tileTypes.push(new Tile("Rock0_corner_NW", 3, 14, GRASS, ROCK0_N, ROCK0_W, GRASS, OFTEN_0));
-tileTypes.push(new Tile("Rock0_edge_N", 4, 14, GRASS, ROCK0_N, ROCK0, ROCK0_N, VERY_OFTEN));
-tileTypes.push(new Tile("Rock0_corner_NE", 5, 14, GRASS, GRASS, ROCK0_E, ROCK0_N, OFTEN_0));
-tileTypes.push(new Tile("Rock0_edge_W", 3, 15, ROCK0_W, ROCK0, ROCK0_W, GRASS, VERY_OFTEN));
-tileTypes.push(new Tile("Rock0", 4, 15, ROCK0, ROCK0, ROCK0, ROCK0, VERY_OFTEN));
-tileTypes.push(new Tile("Rock0_edge_E", 5, 15, ROCK0_E, GRASS, ROCK0_E, ROCK0, VERY_OFTEN));
-tileTypes.push(new Tile("Rock0_Corner_SW", 3, 16, ROCK0_W, ROCK0_S, GRASS, GRASS, OFTEN_0));
-tileTypes.push(new Tile("Rock1_edge_S", 4, 16, ROCK0, ROCK0_S, GRASS, ROCK0_S, VERY_OFTEN));
-tileTypes.push(new Tile("Rock1_Corner_SE", 5, 16, ROCK0_E, GRASS, GRASS, ROCK0_S, OFTEN_0));
+//add all to tileTypes
+export let tileTypes = [];
 
-tileTypes.push(new Tile("Rock0_Curve_NW", 6, 14, ROCK0, ROCK0_S, ROCK0_E, ROCK0, RARE_1));
-tileTypes.push(new Tile("Rock0_Curve_NE", 7, 14, ROCK0, ROCK0, ROCK0_W, ROCK0_S, RARE_1));
-tileTypes.push(new Tile("Rock0_Curve_SW", 6, 15, ROCK0_E, ROCK0_N, ROCK0, ROCK0, RARE_1));
-tileTypes.push(new Tile("Rock0_Curve_SE", 7, 15, ROCK0_W, ROCK0, ROCK0, ROCK0_N, RARE_1));
+groupPush(baseGroup, tileTypes);
+groupPush(baseTransitionGroup, tileTypes);
+groupPush(decoGroup, tileTypes);
+groupPush(waterGroup, tileTypes);
+groupPush(waterDecoGroup, tileTypes);
+groupPush(stoneGroup, tileTypes);
+groupPush(bridgeGroup, tileTypes);
 
-//rock - 1
-tileTypes.push(new Tile("Rock1_corner_NW", 0, 14, ROCK0, ROCK1_N, ROCK1_W, ROCK0, OFTEN_0));
-tileTypes.push(new Tile("Rock1_edge_N", 1, 14, ROCK0, ROCK1_N, ROCK1, ROCK1_N, VERY_OFTEN));
-tileTypes.push(new Tile("Rock1_corner_NE", 2, 14, ROCK0, ROCK0, ROCK1_E, ROCK1_N, OFTEN_0));
-tileTypes.push(new Tile("Rock1_edge_W", 0, 15, ROCK0_W, ROCK1, ROCK1_W, ROCK0, VERY_OFTEN));
-tileTypes.push(new Tile("Rock1", 1, 15, ROCK1, ROCK1, ROCK1, ROCK1, VERY_OFTEN));
-tileTypes.push(new Tile("Rock1_edge_E", 2, 15, ROCK1_E, ROCK0, ROCK1_E, ROCK1, VERY_OFTEN));
-tileTypes.push(new Tile("Rock1_Corner_SW", 0, 16, ROCK1_W, ROCK1_S, ROCK0, ROCK0, OFTEN_0));
-tileTypes.push(new Tile("Rock1_edge_S", 1, 16, ROCK0, ROCK1_S, ROCK0, ROCK1_S, VERY_OFTEN));
-tileTypes.push(new Tile("Rock1_Corner_SE", 2, 16, ROCK1_E, ROCK0, ROCK0, ROCK1_S, OFTEN_0));
-
-tileTypes.push(new Tile("Rock1_Curve_NW", 6, 16, ROCK1, ROCK1_S, ROCK1_E, ROCK1, RARE_1));
-tileTypes.push(new Tile("Rock1_Curve_NE", 7, 16, ROCK1, ROCK1, ROCK1_W, ROCK1_S, RARE_1));
-tileTypes.push(new Tile("Rock1_Curve_SW", 6, 17, ROCK1_E, ROCK1_N, ROCK1, ROCK1, RARE_1));
-tileTypes.push(new Tile("Rock1_Curve_SE", 7, 17, ROCK1_W, ROCK1, ROCK1, ROCK1_N, RARE_1));
-
-//rock - 2
-tileTypes.push(new Tile("Rock2_corner_NW", 0, 17, ROCK1, ROCK2_N, ROCK2_W, ROCK1, OFTEN_0));
-tileTypes.push(new Tile("Rock2_edge_N", 1, 17, ROCK1, ROCK2_N, ROCK2, ROCK2_N, VERY_OFTEN));
-tileTypes.push(new Tile("Rock2_corner_NE", 2, 17, ROCK1, ROCK1, ROCK2_E, ROCK2_N, OFTEN_0));
-tileTypes.push(new Tile("Rock2_edge_W", 0, 18, ROCK2_W, ROCK2, ROCK2_W, ROCK1, VERY_OFTEN));
-tileTypes.push(new Tile("Rock2", 1, 18, ROCK2, ROCK2, ROCK2, ROCK2, VERY_OFTEN));
-tileTypes.push(new Tile("Rock2_edge_E", 2, 18, ROCK2_E, ROCK1, ROCK2_E, ROCK2, VERY_OFTEN));
-tileTypes.push(new Tile("Rock2_Corner_SW", 0, 19, ROCK2_W, ROCK2_S, ROCK1, ROCK1, OFTEN_0));
-tileTypes.push(new Tile("Rock2_edge_S", 1, 19, ROCK2, ROCK2_S, ROCK1, ROCK2_S, VERY_OFTEN));
-tileTypes.push(new Tile("Rock2_Corner_SE", 2, 19, ROCK2_E, ROCK1, ROCK1, ROCK2_S, OFTEN_0));
-
-tileTypes.push(new Tile("Rock2_Curve_NW", 6, 18, ROCK2_W, ROCK2, ROCK2, ROCK2_N, RARE_1));
-tileTypes.push(new Tile("Rock2_Curve_NE", 7, 18, ROCK2_E, ROCK2_N, ROCK2, ROCK2, RARE_1));
-tileTypes.push(new Tile("Rock2_Curve_SW", 6, 19, ROCK2, ROCK2, ROCK2_W, ROCK2_S, RARE_1));
-tileTypes.push(new Tile("Rock2_Curve_SE", 7, 19, ROCK2, ROCK2_S, ROCK2_E, ROCK2, RARE_1));
-
-//tree
-tileTypes.push(new Tile("BIG_TREE_00", 0, 20, GRASS, BIG_TREE_H00, BIG_TREE_V00, GRASS, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_01", 1, 20, GRASS, BIG_TREE_H10, BIG_TREE_V01, BIG_TREE_H00, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_02", 2, 20, GRASS, GRASS, BIG_TREE_V02, BIG_TREE_H10, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_10", 0, 21, BIG_TREE_V00, BIG_TREE_H01, BIG_TREE_V10, GRASS, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_11", 1, 21, BIG_TREE_V01, BIG_TREE_H11, BIG_TREE_V11, BIG_TREE_H01, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_12", 2, 21, BIG_TREE_V02, GRASS, BIG_TREE_V12, BIG_TREE_H11, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_20", 0, 22, BIG_TREE_V10, BIG_TREE_H02, BIG_TREE_V20, GRASS, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_21", 1, 22, BIG_TREE_V11, BIG_TREE_H12, BIG_TREE_V21, BIG_TREE_H02, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_22", 2, 22, BIG_TREE_V12, GRASS, BIG_TREE_V22, BIG_TREE_H12, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_30", 0, 23, BIG_TREE_V20, BIG_TREE_H03, GRASS, GRASS, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_31", 1, 23, BIG_TREE_V21, BIG_TREE_H13, GRASS, BIG_TREE_H03, RARE_0));
-tileTypes.push(new Tile("BIG_TREE_32", 2, 23, BIG_TREE_V22, GRASS, GRASS, BIG_TREE_H13, RARE_0));
-
-
-export default Tile;
+console.log("Tile counter: " + tileTypes.length);
+console.log(tileTypes);
