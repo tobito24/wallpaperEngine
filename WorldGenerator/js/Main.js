@@ -12,7 +12,7 @@ canvas.width = window_width;
 canvas.height = window_height;
 
 //chess board
-const TICK_RATE = 5;
+const TICK_RATE = 0;
 const SQUARE_SIZE = 32;
 let running = true;
 
@@ -27,18 +27,27 @@ const OFFSET_Y = 0;
 
 //world building (init or resize)
 let world;
+let previousWorldPiece;
 
-function createWorld() {
+function createWorld(withClear = true) {
 
-    world = new Array(square_width);
+    const highlights = [];
 
-    for (let x = 0; x < square_width; x++) {
-        world[x] = new Array(square_height);
-
-        for (let y = 0; y < square_height; y++) {
-
-            world[x][y] = new WorldPiece(x, y);
+    if (withClear) {
+        world = new Array(square_width);
+        for (let x = 0; x < square_width; x++) {
+            world[x] = new Array(square_height);
+            for (let y = 0; y < square_height; y++) {
+                world[x][y] = new WorldPiece(x, y);
+            }
         }
+    } else {
+        for (let x = 0; x < square_width; x++)
+            for (let y = 0; y < square_height; y++)
+                if (!world[x][y].isHighlight)
+                    world[x][y] = new WorldPiece(x, y);
+                else
+                    highlights.push(world[x][y]);
     }
 
     //Neighborhood relationship
@@ -54,7 +63,9 @@ function createWorld() {
         }
     }
 
-    randomFirstTick();
+    for (let i = 0; i < highlights.length; i++) highlights[i].callNeighbors(highlights[i])
+
+    if (withClear) randomFirstTick();
 }
 
 createWorld();
@@ -63,6 +74,7 @@ function randomFirstTick() {
     const rngX = Math.floor(Math.random() * world.length);
     const rngY = Math.floor(Math.random() * world[0].length);
     world[rngX][rngY].chooseTile();
+    previousWorldPiece = world[rngX][rngY];
 }
 
 
@@ -91,9 +103,10 @@ function nextWorldPiece() {
 
     if (nextWorldPiece.length > 0) {
         let rng = Math.floor(Math.random() * nextWorldPiece.length);
-        nextWorldPiece[rng].chooseTile();
+        nextWorldPiece[rng].chooseTile(previousWorldPiece);
+        previousWorldPiece = nextWorldPiece[rng];
     } else {
-        createWorld();
+        createWorld(false);
     }
 }
 
@@ -120,7 +133,7 @@ function tickerInc() {
 //resize function
 function windowResize() {
 
-    console.log('Fenstergröße geändert!');
+    console.log('Changed window size!');
     window_width = window.innerWidth;
     window_height = window.innerHeight;
     canvas.width = window_width;
@@ -133,6 +146,8 @@ function windowResize() {
     createWorld();
 }
 
+window.addEventListener('resize', windowResize);
+
 //keyHandler function
 function keyHandler(event) {
     if (event.key === "Enter") {
@@ -141,22 +156,65 @@ function keyHandler(event) {
     }
 }
 
-//mouse Handler
-function mouseClickHandler(event) {
-    // Koordinaten des Mausklicks
-    const x = Math.floor((event.clientX - OFFSET_X) / SQUARE_SIZE);
-    const y = Math.floor((event.clientY - OFFSET_Y) / SQUARE_SIZE);
+document.addEventListener("keydown", keyHandler);
 
-    if (world[x][y] === undefined) return;
+//Highlight with the mous
+let xStart = 0, yStart = 0;
+function startHighlight(event) {
+    if (event.type === "mousedown") {
+        xStart = Math.floor((event.clientX - OFFSET_X) / SQUARE_SIZE);
+        yStart = Math.floor((event.clientY - OFFSET_Y) / SQUARE_SIZE);
+    } else if (event.type === "touchstart") {
+        xStart = Math.floor((event.touches[0].clientX - OFFSET_X) / SQUARE_SIZE);
+        yStart = Math.floor((event.touches[0].clientY - OFFSET_Y) / SQUARE_SIZE);
+    }
 
-    world[x][y].isHighlight = !world[x][y].isHighlight;
-    console.log(world[x][y]);
+    xStart = xStart < 0 ? 0 : xStart;
+    xStart = xStart >= world.length ? world.length - 1 : xStart;
+    yStart = yStart < 0 ? 0 : yStart;
+    yStart = yStart >= world[0].length ? world[0].length - 1 : yStart;
 }
 
-//add listener functions
-window.addEventListener('resize', windowResize);
-document.addEventListener("keydown", keyHandler);
-document.addEventListener("click", mouseClickHandler);
+function endHighlight(event) {
+    let xEnd = 0, yEnd = 0;
+    if (event.type === "mouseup") {
+        xEnd = Math.floor((event.clientX - OFFSET_X) / SQUARE_SIZE);
+        yEnd = Math.floor((event.clientY - OFFSET_Y) / SQUARE_SIZE);
+    } else if (event.type === "touchend") {
+        xEnd = Math.floor((event.changedTouches[0].clientX - OFFSET_X) / SQUARE_SIZE);
+        yEnd = Math.floor((event.changedTouches[0].clientY - OFFSET_Y) / SQUARE_SIZE);
+    }
+
+    xEnd = xEnd < 0 ? 0 : xEnd;
+    xEnd = xEnd >= world.length ? world.length - 1 : xEnd;
+    yEnd = yEnd < 0 ? 0 : yEnd;
+    yEnd = yEnd >= world[0].length ? world[0].length - 1 : yEnd;
+
+    let help;
+    if (xEnd < xStart) {
+        help = xEnd;
+        xEnd = xStart;
+        xStart = help;
+    }
+
+    if (yEnd < yStart) {
+        help = yEnd;
+        yEnd = yStart;
+        yStart = help;
+    }
+
+    for (let x = xStart; x <= xEnd; x++) {
+        for (let y = yStart; y <= yEnd; y++) {
+            world[x][y].isHighlight = !world[x][y].isHighlight;
+        }
+    }
+}
+
+document.addEventListener('mousedown', startHighlight);
+document.addEventListener('mouseup', endHighlight);
+document.addEventListener('touchstart', startHighlight);
+document.addEventListener('touchend', endHighlight);
+
 
 //animation
 function animate() {

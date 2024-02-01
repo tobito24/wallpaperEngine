@@ -1,4 +1,4 @@
-import { tileTypes } from "./ImageLoader.js";
+import { tileTypes } from "./Tiles.js";
 
 const NORTH = 0;
 const EAST = 1;
@@ -13,7 +13,7 @@ class WorldPiece {
         this.possibleTiles = Array.from(tileTypes);
         this.tile = null; //main tile
         this.rule = null; //selected rule
-        this.baseTiles = null; //tile for transparent tiles
+        this.baseTiles = null; //tiles for transparent tiles
 
         //neighborhoodRelationship
         this.northPiece = null;
@@ -43,22 +43,30 @@ class WorldPiece {
             context.fillRect(dx, dy, squareSize, squareSize);
 
             //text change depending on the entropy
-            const percentageEntropy = 1 - this.getEntropy() / tileTypes.length;
+            const percentageEntropy = this.getEntropy() / tileTypes.length;
 
-            const fontSize = squareSize * percentageEntropy;
+            const fontSize = Math.max(squareSize * (1 - percentageEntropy) * 0.95, squareSize * 0.30);
 
-            let green = Math.round(255 * (1 - percentageEntropy));
+            let green = percentageEntropy < 0.6 ? Math.round(255 * (1 - percentageEntropy)) : Math.round(255 * percentageEntropy);
+            let red = percentageEntropy < 0.4 ? Math.round(255 * percentageEntropy) : Math.round(255 * (1 - percentageEntropy));
+            let blue = percentageEntropy < 0.2 ? Math.round(255 * percentageEntropy) : Math.round(255 * (1 - percentageEntropy));
+
+            if (percentageEntropy > 0.8)
+                green = red = blue = 255;
+
+            red = red.toString(16).padStart(2, "0");
             green = green.toString(16).padStart(2, "0");
+            blue = blue.toString(16).padStart(2, "0");
 
             //entropy text
-            context.fillStyle = "#" + green + "FF" + green;
+            context.fillStyle = "#" + red + green + blue;
             context.font = fontSize + "px Arial";
             context.textAlign = "center";
             context.textBaseline = "middle";
             context.fillText(this.getEntropy(), dx + squareSize / 2, dy + squareSize / 2);
 
         } else {
-            if (this.baseTiles != null){
+            if (this.baseTiles != null) {
                 for (let i = this.baseTiles.length - 1; i >= 0; i--) {
                     this.baseTiles[i].draw(context, dx, dy, squareSize);
                 }
@@ -70,13 +78,26 @@ class WorldPiece {
         if (this.isErrorState) {
             context.strokeStyle = "#ff0000";
             context.lineWidth = 2;
-            context.strokeRect(dx, dy, squareSize, squareSize);
+            context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
         }
 
-        if(this.isHighlight){
+        if (this.isHighlight) {
+
             context.strokeStyle = "#00ffff";
             context.lineWidth = 2;
-            context.strokeRect(dx, dy, squareSize, squareSize);
+
+            if (this.northPiece != null && !this.northPiece.isHighlight)
+                context.strokeRect(dx + 1, dy + 1, squareSize - 2, 0);
+
+            if (this.eastPiece != null && !this.eastPiece.isHighlight)
+                context.strokeRect(dx + squareSize - 1, dy + 1, 0, squareSize - 2);
+
+            if (this.southPiece != null && !this.southPiece.isHighlight)
+                context.strokeRect(dx + 1, dy + squareSize - 1, squareSize - 2, 0);
+
+            if (this.westPiece != null && !this.westPiece.isHighlight)
+                context.strokeRect(dx + 1, dy + 1, 0, squareSize - 2);
+
         }
     }
 
@@ -84,7 +105,7 @@ class WorldPiece {
         return this.possibleTiles.length;
     }
 
-    chooseTile() {
+    chooseTile(previousPiece = null) {
 
         //random choose with weights
         let totalWeight = 0;
@@ -110,16 +131,33 @@ class WorldPiece {
         const possibleRules = this.getPossibleRules();
 
         if (possibleRules.length === 0) {
+            //error
             this.isErrorState = true;
             console.log("ERROR001: WordPiece.chooseTile() - cant fixed to one rule");
             this.rule = this.tile.rules[0];
-        } else {
 
-            const rng = Math.floor(Math.random() * possibleRules.length);
+        } else if (possibleRules.length === 1) {
+            //sure
+            this.rule = possibleRules[0];
 
-            this.rule = possibleRules[rng];
-            this.baseTiles = this.rule.getBaseStack();
+        } else if (previousPiece !== null) {
+            //unsure, orientation on the last tile (Solution for the "fixed structures BUG")
+            for (let i = 0; i < possibleRules.length; i++) {
+                const tmpBaseTiles = possibleRules[i].getBaseStack();
+                if (haveSameContent(previousPiece.baseTiles, tmpBaseTiles)) {
+                    this.rule = possibleRules[i];
+                    break;
+                }
+            }
         }
+
+        if (this.rule === null) {
+            //TODO: weighted decision
+            const rng = Math.floor(Math.random() * possibleRules.length);
+            this.rule = possibleRules[rng];
+        }
+
+        this.baseTiles = this.rule.getBaseStack();
 
         //update Neighbors
         this.callNeighbors(this);
@@ -210,7 +248,7 @@ class WorldPiece {
                 southValid = this.isCompatible(tmpRule.getEdge(SOUTH), this.southPiece, NORTH);
                 westValid = this.isCompatible(tmpRule.getEdge(WEST), this.westPiece, EAST);
 
-                if (northValid && easthValid && southValid && westValid){
+                if (northValid && easthValid && southValid && westValid) {
                     newPossibleTiles.push(tmpTile);
                     break;
                 }
@@ -228,6 +266,16 @@ class WorldPiece {
             this.callNeighbors(scourcePiece);
         }
     }
+}
+
+//help function
+function haveSameContent(array0, array1) {
+    if (array0.length !== array1.length)
+        return false;
+    for (let i = 0; i < array0.length; i++)
+        if (array0[i] !== array1[i])
+            return false;
+    return true;
 }
 
 export default WorldPiece;

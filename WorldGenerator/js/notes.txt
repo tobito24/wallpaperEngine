@@ -1,15 +1,9 @@
 
 TODO :
 
-    Wald
-    Transition
     Balancing
+    Treppe
 
-    overlap
-
-    performance -> tile zahl erniedrigen
-
-    entropy zahlen ändern
 
 ideen komplexer:
 
@@ -19,4 +13,11 @@ ideen komplexer:
     kleine Strukturen als ein Tile
         damit man keine unnötigen regeln schreiben muss
 
+    schriftzüge/Uhrzeit als Startsetzen
 
+    Buttons: Start/Stop, Settings, Neustart/createWorld(), ClearHighlights
+
+BUG:
+
+    - Bäume verschiedene Hintergründe
+    - Neue Transitions haben keine curven
