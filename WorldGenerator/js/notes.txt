@@ -2,22 +2,43 @@
 TODO :
 
     Balancing
-    Treppe
+
+    Buttons: Start/Stop, Neustart/createWorld(), ClearHighlights, Settings
+
+    Highlight Modi:
+        Freeze (Highlights werden mit in die nächste Welt genommen)
+        Write (in Highlights ein feste BaseTile)
+
+        Clock (Uhrzeit anzeigen)
+
+    Settings:
+
+        Toggel für Auto Start
+
+        const TICK_RATE = 0;
+        const SQUARE_SIZE = 32;
+
+        const DECO_FREQ_MULTI = 1;
+        const BRIDGE_FREQ_MULTI = 1;
+        const STONE_FREQ_MULTI = 1;
+        const TREE_FREQ_MULTI = 1;
+        const WATER_FREQ_MULTI = 1;
+        const BASE_FREQ_MULTI = 1;
+        const BASE_T_FREQ_MULTI = 1;
 
 
-ideen komplexer:
+
+ideen:
 
     maybe gras begebar/nicht begebar differenzieren
         z.b. gegen klippen über klippen o. nicht begebare wege
 
-    kleine Strukturen als ein Tile
-        damit man keine unnötigen regeln schreiben muss
-
-    schriftzüge/Uhrzeit als Startsetzen
-
-    Buttons: Start/Stop, Settings, Neustart/createWorld(), ClearHighlights
 
 BUG:
 
     - Bäume verschiedene Hintergründe
     - Neue Transitions haben keine curven
+
+Neue Tiles:
+
+    - Treppe

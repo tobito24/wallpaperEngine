@@ -32,7 +32,7 @@ class WorldPiece {
         this.westPiece = westPiece;
     }
 
-    draw(context, squareSize, offsetX, offsetY) {
+    draw(context, squareSize, offsetX, offsetY, highlightColor = "#00ffff") {
 
         let dx = this.xPos * squareSize + offsetX;
         let dy = this.yPos * squareSize + offsetY;
@@ -83,7 +83,7 @@ class WorldPiece {
 
         if (this.isHighlight) {
 
-            context.strokeStyle = "#00ffff";
+            context.strokeStyle = highlightColor;
             context.lineWidth = 2;
 
             if (this.northPiece != null && !this.northPiece.isHighlight)

@@ -11,14 +11,48 @@
             margin: 0;
             overflow: hidden;
         }
+
+        canvas {
+            position: absolute;
+            background-color: #0f1923;
+            z-index: 1;
+        }
+
+        button {
+            position: absolute;
+            z-index: 2;
+            background: transparent;
+            border: none;
+        }
+
+        img {
+            position: absolute;
+            z-index: 2;
+        }
+
+        button img {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
     </style>
 </head>
 
 <body>
     <canvas id="canvas0"></canvas>
-    <script type="module" src="js/Tiles.js.js"></script>
+
+    <script type="module" src="js/Tiles.js"></script>
     <script type="module" src="js/WorldPiece.js"></script>
+    <script type="module" src="js/World.js"></script>
     <script type="module" src="js/Main.js"></script>
+
+    <img id="iconFrame" src="img/gui/iconFrame.png" alt="Frame for Buttons">
+
+    <button id="buttonSettings"><img src="/img/gui/buttonSettings.png" alt="Button Settings"></button>
+    <button id="buttonStartStop"><img src="/img/gui/buttonStop.png" alt="Button StartStop"></button>
+    <button id="buttonReload"><img src="/img/gui/buttonReload.png" alt="Button Reload"></button>
+    <button id="buttonClear"><img src="/img/gui/buttonClear.png" alt="Button Clear"></button>
+    <button id="buttonMove"><img id="buttonMove" src="/img/gui/moveableIcon.png" alt="Button Move"></button>
 </body>
 
 </html>
