@@ -6,14 +6,20 @@ const SOUTH = 2;
 const WEST = 3;
 
 class WorldPiece {
-    constructor(xPos, yPos) {
+    constructor(xPos, yPos, tile = null) {
         this.xPos = xPos;
         this.yPos = yPos;
+        this.tile = tile; //main tile
 
-        this.possibleTiles = Array.from(tileTypes);
-        this.tile = null; //main tile
-        this.rule = null; //selected rule
-        this.baseTiles = null; //tiles for transparent tiles
+        if(tile != null){
+            this.possibleTiles = [tile];
+            this.rule = tile.rules[0];
+            this.baseTiles = this.rule.getBaseStack();
+        } else {
+            this.possibleTiles = Array.from(tileTypes);
+            this.rule = null;
+            this.baseTiles = null;
+        }
 
         //neighborhoodRelationship
         this.northPiece = null;
@@ -21,6 +27,7 @@ class WorldPiece {
         this.southPiece = null;
         this.westPiece = null;
 
+        //marks
         this.isErrorState = false;
         this.isHighlight = false;
     }

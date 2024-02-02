@@ -3,30 +3,22 @@ TODO :
 
     Balancing
 
-    Buttons: Start/Stop, Neustart/createWorld(), ClearHighlights, Settings
-
     Highlight Modi:
-        Freeze (Highlights werden mit in die nächste Welt genommen)
-        Write (in Highlights ein feste BaseTile)
-
-        Clock (Uhrzeit anzeigen)
+        Write (in Highlights ein festes BaseTile) -> Bessere Umrandung nötig
+        Clock (Uhrzeit anzeigen) -> Bessere Umrandung nötig
 
     Settings:
+        DECO_FREQ_MULTI
+        BRIDGE_FREQ_MULTI
+        STONE_FREQ_MULTI
+        TREE_FREQ_MULTI
+        WATER_FREQ_MULTI
+        BASE_FREQ_MULTI
+        BASE_T_FREQ_MULTI
+            -100 to +100          - Slider
 
-        Toggel für Auto Start
-
-        const TICK_RATE = 0;
-        const SQUARE_SIZE = 32;
-
-        const DECO_FREQ_MULTI = 1;
-        const BRIDGE_FREQ_MULTI = 1;
-        const STONE_FREQ_MULTI = 1;
-        const TREE_FREQ_MULTI = 1;
-        const WATER_FREQ_MULTI = 1;
-        const BASE_FREQ_MULTI = 1;
-        const BASE_T_FREQ_MULTI = 1;
-
-
+    
+    Wenn man auf ein Button drückt soll nicht makiert werden
 
 ideen:
 

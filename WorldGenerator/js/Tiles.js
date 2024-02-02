@@ -787,7 +787,7 @@ tree0_top_right_repeat_1.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_REPEAT",
 treeGroup.push(tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1);
 
 //add all to tileTypes
-export let tileTypes = [];
+export const tileTypes = [];
 
 groupPush(baseGroup, tileTypes);
 groupPush(baseTransitionGroup, tileTypes);
@@ -800,3 +800,11 @@ groupPush(treeGroup, tileTypes);
 
 console.log("Tile counter: " + tileTypes.length);
 console.log(tileTypes);
+
+//special for WriteMode
+export const writeModeGroup = [];
+groupPush(baseGroup, writeModeGroup);
+groupPush(waterBase, writeModeGroup);
+groupPush(stoneBaseGroup, writeModeGroup);
+writeModeGroup.push(tallGrass0, tallGrass1, tallGrass2);
+writeModeGroup.push(flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush);

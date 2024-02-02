@@ -1,23 +1,27 @@
 import WorldPiece from "./WorldPiece.js";
+import { writeModeGroup } from "./Tiles.js";
+
+const FREEZE_MODE = "FREEZE_MODE";
+const WRITE_MODE = "WRITE_MODE";
 
 class World {
 
     constructor(width, height) {
 
-        this.width = width;
-        this.height = height;
+        this.width = width === 0 ? 1 : width;
+        this.height = height === 0 ? 1 : height;
         this.world;
         this.previousWorldPiece;
 
-        this.highlightMode = "freeze";
-        this.autoStart = true;
+        this.highlightMode = FREEZE_MODE;
+        this.autoStart = false;
 
         this.createWorld(true);
     }
 
     setSize(width, height) {
-        this.width = width;
-        this.height = height;
+        this.width = width === 0 ? 1 : width;
+        this.height = height === 0 ? 1 : height;
         this.createWorld(true);
     }
 
@@ -26,6 +30,7 @@ class World {
         const highlights = [];
 
         if (withClear) {
+
             this.world = new Array(this.width);
             for (let x = 0; x < this.width; x++) {
                 this.world[x] = new Array(this.height);
@@ -33,13 +38,29 @@ class World {
                     this.world[x][y] = new WorldPiece(x, y);
                 }
             }
-        } else {
+
+        } else if (this.highlightMode === FREEZE_MODE) {
+
             for (let x = 0; x < this.width; x++)
                 for (let y = 0; y < this.height; y++)
                     if (!this.world[x][y].isHighlight)
                         this.world[x][y] = new WorldPiece(x, y);
                     else
                         highlights.push(this.world[x][y]);
+
+        } else if (this.highlightMode === WRITE_MODE) {
+
+            const rng = Math.floor(Math.random() * writeModeGroup.length);
+
+            for (let x = 0; x < this.width; x++)
+                for (let y = 0; y < this.height; y++)
+                    if (!this.world[x][y].isHighlight) {
+                        this.world[x][y] = new WorldPiece(x, y);
+                    } else {
+                        this.world[x][y] = new WorldPiece(x, y, writeModeGroup[rng]);
+                        this.world[x][y].isHighlight = true;
+                        highlights.push(this.world[x][y]);
+                    }
         }
 
         //Neighborhood relationship
@@ -93,15 +114,22 @@ class World {
             const rng = Math.floor(Math.random() * nextWorldPiece.length);
             nextWorldPiece[rng].chooseTile(this.previousWorldPiece);
             this.previousWorldPiece = nextWorldPiece[rng];
-        } else {
+
+        } else if (this.autoStart) {
             this.createWorld(false);
+        } else {
+            return false;
         }
+        return true;
     }
 
     drawWorld(context, squareSize, offsetX, offsetY) {
+
+        const color = this.highlightMode === WRITE_MODE ? "#ffff00" : "#00ffff";
+
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
-                this.world[x][y].draw(context, squareSize, offsetX, offsetY);
+                this.world[x][y].draw(context, squareSize, offsetX, offsetY, color);
             }
         }
     }

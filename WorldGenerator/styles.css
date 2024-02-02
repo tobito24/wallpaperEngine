@@ -1,0 +1,50 @@
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+canvas {
+    position: absolute;
+    background-color: #0f1923;
+    z-index: 1;
+}
+
+button {
+    position: absolute;
+    z-index: 2;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+img {
+    position: absolute;
+    z-index: 2;
+}
+
+button img {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+input[type="range"] {
+    position: absolute;
+    z-index: 2;
+    visibility: hidden;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    position: absolute;
+    z-index: 2;
+    visibility: hidden;
+    cursor: pointer;
+}
+
+input[type="radio"] {
+    position: absolute;
+    z-index: 2;
+    visibility: hidden;
+    cursor: pointer;
+}
