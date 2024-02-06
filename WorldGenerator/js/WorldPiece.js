@@ -1,22 +1,24 @@
-import { tileTypes } from "./Tiles.js";
-
 const NORTH = 0;
 const EAST = 1;
 const SOUTH = 2;
 const WEST = 3;
 
 class WorldPiece {
-    constructor(xPos, yPos, tile = null) {
+
+    static accuracy = 2;
+
+    constructor(xPos, yPos, possibleTiles) {
         this.xPos = xPos;
         this.yPos = yPos;
-        this.tile = tile; //main tile
+        this.possibleTiles = Array.from(possibleTiles);
+        this.startEntropy = possibleTiles.length;
 
-        if(tile != null){
-            this.possibleTiles = [tile];
-            this.rule = tile.rules[0];
+        if (possibleTiles.length === 1) {
+            this.tile = possibleTiles[0];
+            this.rule = this.tile.rules[0];
             this.baseTiles = this.rule.getBaseStack();
         } else {
-            this.possibleTiles = Array.from(tileTypes);
+            this.tile = null;
             this.rule = null;
             this.baseTiles = null;
         }
@@ -30,6 +32,7 @@ class WorldPiece {
         //marks
         this.isErrorState = false;
         this.isHighlight = false;
+        this.isUntouched = true;
     }
 
     setNeighborhoodRelationship(northPiece, eastPiece, southPiece, westPiece) {
@@ -45,12 +48,8 @@ class WorldPiece {
         let dy = this.yPos * squareSize + offsetY;
 
         if (this.tile === null) {
-            //black box
-            context.fillStyle = "#0f1923";
-            context.fillRect(dx, dy, squareSize, squareSize);
-
             //text change depending on the entropy
-            const percentageEntropy = this.getEntropy() / tileTypes.length;
+            const percentageEntropy = this.getEntropy() / this.startEntropy;
 
             const fontSize = Math.max(squareSize * (1 - percentageEntropy) * 0.95, squareSize * 0.30);
 
@@ -82,6 +81,8 @@ class WorldPiece {
             this.tile.draw(context, dx, dy, squareSize);
         }
 
+        if (highlightColor == null) return; //option: hide highlight
+
         if (this.isErrorState) {
             context.strokeStyle = "#ff0000";
             context.lineWidth = 2;
@@ -93,18 +94,25 @@ class WorldPiece {
             context.strokeStyle = highlightColor;
             context.lineWidth = 2;
 
-            if (this.northPiece != null && !this.northPiece.isHighlight)
-                context.strokeRect(dx + 1, dy + 1, squareSize - 2, 0);
+            if (this.northPiece === null)
+                context.strokeRect(dx, dy, squareSize, 0);
+            else if (!this.northPiece.isHighlight)
+                context.strokeRect(dx, dy, squareSize, 0);
 
-            if (this.eastPiece != null && !this.eastPiece.isHighlight)
-                context.strokeRect(dx + squareSize - 1, dy + 1, 0, squareSize - 2);
+            if (this.eastPiece === null)
+                context.strokeRect(dx + squareSize, dy, 0, squareSize);
+            else if (!this.eastPiece.isHighlight)
+                context.strokeRect(dx + squareSize, dy, 0, squareSize);
 
-            if (this.southPiece != null && !this.southPiece.isHighlight)
-                context.strokeRect(dx + 1, dy + squareSize - 1, squareSize - 2, 0);
+            if (this.southPiece === null)
+                context.strokeRect(dx, dy + squareSize, squareSize, 0);
+            else if (!this.southPiece.isHighlight)
+                context.strokeRect(dx, dy + squareSize, squareSize, 0);
 
-            if (this.westPiece != null && !this.westPiece.isHighlight)
-                context.strokeRect(dx + 1, dy + 1, 0, squareSize - 2);
-
+            if (this.westPiece === null)
+                context.strokeRect(dx, dy, 0, squareSize);
+            else if (!this.westPiece.isHighlight)
+                context.strokeRect(dx, dy, 0, squareSize);
         }
     }
 
@@ -113,6 +121,8 @@ class WorldPiece {
     }
 
     chooseTile(previousPiece = null) {
+
+        if (this.tile != null) return;
 
         //random choose with weights
         let totalWeight = 0;
@@ -165,9 +175,10 @@ class WorldPiece {
         }
 
         this.baseTiles = this.rule.getBaseStack();
+        this.isUntouched = false;
 
         //update Neighbors
-        this.callNeighbors(this);
+        this.callNeighbors(this, this.xPos, this.yPos);
     }
 
     getPossibleRules() {
@@ -217,23 +228,26 @@ class WorldPiece {
         return isValid;
     }
 
-    callNeighbors(sourcePiece) {
+    callNeighbors(previousPiece, origenX, origenY) {
 
-        if (this.northPiece != null && this.northPiece != sourcePiece) {
-            this.northPiece.updateEntropy(this);
+        if (Math.abs(origenX - this.xPos) > WorldPiece.accuracy) return;
+        if (Math.abs(origenY - this.yPos) > WorldPiece.accuracy) return;
+
+        if (this.northPiece != null && this.northPiece != previousPiece) {
+            this.northPiece.updateEntropy(this, origenX, origenY);
         }
-        if (this.eastPiece != null && this.eastPiece != sourcePiece) {
-            this.eastPiece.updateEntropy(this);
+        if (this.eastPiece != null && this.eastPiece != previousPiece) {
+            this.eastPiece.updateEntropy(this, origenX, origenY);
         }
-        if (this.southPiece != null && this.southPiece != sourcePiece) {
-            this.southPiece.updateEntropy(this);
+        if (this.southPiece != null && this.southPiece != previousPiece) {
+            this.southPiece.updateEntropy(this, origenX, origenY);
         }
-        if (this.westPiece != null && this.westPiece != sourcePiece) {
-            this.westPiece.updateEntropy(this);
+        if (this.westPiece != null && this.westPiece != previousPiece) {
+            this.westPiece.updateEntropy(this, origenX, origenY);
         }
     }
 
-    updateEntropy(scourcePiece) {
+    updateEntropy(previousPiece, origenX, origenY) {
 
         if (this.tile != null) return;
 
@@ -264,14 +278,24 @@ class WorldPiece {
 
         if (newPossibleTiles.length != 0) {
             this.possibleTiles = newPossibleTiles;
+            this.isUntouched = false;
         } else {
             this.isErrorState = true;
         }
 
         //entropy has changed -> call neighbors
         if (oldEntropy != this.getEntropy()) {
-            this.callNeighbors(scourcePiece);
+            this.callNeighbors(previousPiece, origenX, origenY);
         }
+    }
+
+    isNeighborHighlight() {
+
+        if (this.northPiece != null && this.northPiece.isHighlight) return true;
+        if (this.eastPiece != null && this.eastPiece.isHighlight) return true;
+        if (this.southPiece != null && this.southPiece.isHighlight) return true;
+        if (this.westPiece != null && this.westPiece.isHighlight) return true;
+        return false;
     }
 }
 

@@ -1,0 +1,250 @@
+{
+	"file" : "worldGenerator.html",
+	"general" : 
+	{
+		"properties" : 
+		{
+			"changeweights" : 
+			{
+				"condition" : "",
+				"index" : 10,
+				"order" : 110,
+				"text" : "Change weights?",
+				"type" : "bool",
+				"value" : false
+			},
+			"checkbox_autostart" : 
+			{
+				"index" : 1,
+				"order" : 101,
+				"text" : "Autostart",
+				"type" : "bool",
+				"value" : false
+			},
+			"checkbox_hidegui" : 
+			{
+				"index" : 0,
+				"order" : 100,
+				"text" : "Hide GUI",
+				"type" : "bool",
+				"value" : false
+			},
+			"checkbox_hidehighlight" : 
+			{
+				"index" : 2,
+				"order" : 102,
+				"text" : "Hide highlight",
+				"type" : "bool",
+				"value" : false
+			},
+			"combo_highlightmode" : 
+			{
+				"index" : 3,
+				"options" : 
+				[
+					{
+						"label" : "FREEZE_MODE",
+						"value" : "FREEZE_MODE"
+					},
+					{
+						"label" : "WRITE_MODE",
+						"value" : "WRITE_MODE"
+					}
+				],
+				"order" : 103,
+				"text" : "Highlight Mode",
+				"type" : "combo",
+				"value" : "FREEZE_MODE"
+			},
+			"combo_offset_x" : 
+			{
+				"index" : 8,
+				"options" : 
+				[
+					{
+						"label" : "LEFT",
+						"value" : "LEFT"
+					},
+					{
+						"label" : "CENTER",
+						"value" : "CENTER"
+					},
+					{
+						"label" : "RIGHT",
+						"value" : "RIGHT"
+					}
+				],
+				"order" : 108,
+				"text" : "Offset X",
+				"type" : "combo",
+				"value" : "CENTER"
+			},
+			"combo_offset_y" : 
+			{
+				"index" : 9,
+				"options" : 
+				[
+					{
+						"label" : "TOP",
+						"value" : "TOP"
+					},
+					{
+						"label" : "CENTER",
+						"value" : "CENTER"
+					},
+					{
+						"label" : "BOT",
+						"value" : "BOT"
+					}
+				],
+				"order" : 109,
+				"text" : "Offset Y",
+				"type" : "combo",
+				"value" : "CENTER"
+			},
+			"schemecolor" : 
+			{
+				"order" : 0,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0 0 0"
+			},
+			"slider_accuracy" : 
+			{
+				"fraction" : false,
+				"index" : 5,
+				"max" : 10,
+				"min" : 0,
+				"order" : 105,
+				"text" : "Accuracy",
+				"type" : "slider",
+				"value" : 2
+			},
+			"slider_changeweightsbase" : 
+			{
+				"condition" : "changeweights.value == true",
+				"fraction" : false,
+				"index" : 11,
+				"max" : 1000,
+				"min" : -1000,
+				"order" : 111,
+				"text" : "Basic parts",
+				"type" : "slider",
+				"value" : 0
+			},
+			"slider_changeweightsbaset" : 
+			{
+				"condition" : "changeweights.value == true",
+				"fraction" : false,
+				"index" : 17,
+				"max" : 1000,
+				"min" : -1000,
+				"order" : 117,
+				"text" : "Transitions",
+				"type" : "slider",
+				"value" : 0
+			},
+			"slider_changeweightsbridge" : 
+			{
+				"condition" : "changeweights.value == true",
+				"fraction" : false,
+				"index" : 15,
+				"max" : 1000,
+				"min" : -1000,
+				"order" : 115,
+				"text" : "Bridges",
+				"type" : "slider",
+				"value" : 0
+			},
+			"slider_changeweightsdeco" : 
+			{
+				"condition" : "changeweights.value == true",
+				"fraction" : false,
+				"index" : 12,
+				"max" : 1000,
+				"min" : -1000,
+				"order" : 112,
+				"text" : "Decoration",
+				"type" : "slider",
+				"value" : 0
+			},
+			"slider_changeweightsstone" : 
+			{
+				"condition" : "changeweights.value == true",
+				"fraction" : false,
+				"index" : 14,
+				"max" : 1000,
+				"min" : -1000,
+				"order" : 114,
+				"text" : "Mountains",
+				"type" : "slider",
+				"value" : 0
+			},
+			"slider_changeweightstree" : 
+			{
+				"condition" : "changeweights.value == true",
+				"fraction" : false,
+				"index" : 16,
+				"max" : 1000,
+				"min" : -1000,
+				"order" : 116,
+				"text" : "Trees",
+				"type" : "slider",
+				"value" : 0
+			},
+			"slider_changeweightswater" : 
+			{
+				"condition" : "changeweights.value == true",
+				"fraction" : false,
+				"index" : 13,
+				"max" : 1000,
+				"min" : -1000,
+				"order" : 113,
+				"text" : "Waters",
+				"type" : "slider",
+				"value" : 0
+			},
+			"slider_guisize" : 
+			{
+				"fraction" : true,
+				"index" : 7,
+				"max" : 1,
+				"min" : 0.1,
+				"order" : 107,
+				"precision" : 2,
+				"step" : 0.1,
+				"text" : "GUI size",
+				"type" : "slider",
+				"value" : 0.5
+			},
+			"slider_squaresize" : 
+			{
+				"fraction" : false,
+				"index" : 6,
+				"max" : 512,
+				"min" : 8,
+				"order" : 106,
+				"text" : "Square size",
+				"type" : "slider",
+				"value" : 64
+			},
+			"slider_tickrate" : 
+			{
+				"fraction" : false,
+				"index" : 4,
+				"max" : 1000,
+				"min" : 0,
+				"order" : 104,
+				"text" : "Tickrate",
+				"type" : "slider",
+				"value" : 0
+			}
+		}
+	},
+	"preview" : "preview.jpg",
+	"snapshotformat" : -1,
+	"snapshotoverlay" : "",
+	"title" : "WorldGenerator",
+	"type" : "web",
+	"version" : 0
+}

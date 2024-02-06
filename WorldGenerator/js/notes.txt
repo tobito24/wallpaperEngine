@@ -3,34 +3,10 @@ TODO :
 
     Balancing
 
-    Highlight Modi:
-        Write (in Highlights ein festes BaseTile) -> Bessere Umrandung nötig
-        Clock (Uhrzeit anzeigen) -> Bessere Umrandung nötig
-
-    Settings:
-        DECO_FREQ_MULTI
-        BRIDGE_FREQ_MULTI
-        STONE_FREQ_MULTI
-        TREE_FREQ_MULTI
-        WATER_FREQ_MULTI
-        BASE_FREQ_MULTI
-        BASE_T_FREQ_MULTI
-            -100 to +100          - Slider
-
-    
-    Wenn man auf ein Button drückt soll nicht makiert werden
-
-ideen:
-
-    maybe gras begebar/nicht begebar differenzieren
-        z.b. gegen klippen über klippen o. nicht begebare wege
-
-
-BUG:
-
-    - Bäume verschiedene Hintergründe
-    - Neue Transitions haben keine curven
+    Clock Mode (Uhrzeit anzeigen)
 
 Neue Tiles:
 
     - Treppe
+
+

@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
-    <title>WorldGenerator V0.4</title>
+    <title>WorldGenerator V1.0</title>
 </head>
 
 <body>
@@ -30,7 +30,8 @@
     <input type="radio" name="HIGHLIGHT_MODE" value="FREEZE_MODE" id="radioHighlightMode0">
     <input type="radio" name="HIGHLIGHT_MODE" value="WRITE_MODE" id="radioHighlightMode1">
     <input type="range" id="sliderTickRate" min="0" max="1000" value="0">
-    <input type="range" id="sliderSquareSize" min="8" max="512" step="8" value="32">
+    <input type="range" id="sliderAccuracy" min="0" max="10" value="2">
+    <input type="range" id="sliderSquareSize" min="8" max="512" value="64">
     <input type="range" id="sliderGuiSize" min="0.1" max="1.0" step="0.01" value="0.5">
     <input type="radio" name="OFFSET_X" value="LEFT" id="radioOffsetX0">
     <input type="radio" name="OFFSET_X" value="CENTER" id="radioOffsetX1">
@@ -38,6 +39,13 @@
     <input type="radio" name="OFFSET_Y" value="TOP" id="radioOffsetY0">
     <input type="radio" name="OFFSET_Y" value="CENTER" id="radioOffsetY1">
     <input type="radio" name="OFFSET_Y" value="BOT" id="radioOffsetY2">
+    <input type="range" id="sliderChangeWeightsBase" min="-1000" max="1000" value="0">
+    <input type="range" id="sliderChangeWeightsDeco" min="-1000" max="1000" value="0">
+    <input type="range" id="sliderChangeWeightsWater" min="-1000" max="1000" value="0">
+    <input type="range" id="sliderChangeWeightsStone" min="-1000" max="1000" value="0">
+    <input type="range" id="sliderChangeWeightsBridge" min="-1000" max="1000" value="0">
+    <input type="range" id="sliderChangeWeightsTree" min="-1000" max="1000" value="0">
+    <input type="range" id="sliderChangeWeightsBaseT" min="-1000" max="1000" value="0">
 </body>
 
 </html>

@@ -1,27 +1,22 @@
 import WorldPiece from "./WorldPiece.js";
 import { writeModeGroup } from "./Tiles.js";
+import { tileTypes } from "./Tiles.js";
 
 const FREEZE_MODE = "FREEZE_MODE";
 const WRITE_MODE = "WRITE_MODE";
 
 class World {
 
+    static autoStart = false;
+    static highlightMode = FREEZE_MODE;
+
     constructor(width, height) {
 
-        this.width = width === 0 ? 1 : width;
-        this.height = height === 0 ? 1 : height;
+        this.width = width <= 0 ? 1 : width;
+        this.height = height <= 0 ? 1 : height;
         this.world;
         this.previousWorldPiece;
 
-        this.highlightMode = FREEZE_MODE;
-        this.autoStart = false;
-
-        this.createWorld(true);
-    }
-
-    setSize(width, height) {
-        this.width = width === 0 ? 1 : width;
-        this.height = height === 0 ? 1 : height;
         this.createWorld(true);
     }
 
@@ -35,31 +30,37 @@ class World {
             for (let x = 0; x < this.width; x++) {
                 this.world[x] = new Array(this.height);
                 for (let y = 0; y < this.height; y++) {
-                    this.world[x][y] = new WorldPiece(x, y);
+                    this.world[x][y] = new WorldPiece(x, y, tileTypes);
                 }
             }
 
-        } else if (this.highlightMode === FREEZE_MODE) {
+        } else if (World.highlightMode === FREEZE_MODE) {
 
             for (let x = 0; x < this.width; x++)
                 for (let y = 0; y < this.height; y++)
                     if (!this.world[x][y].isHighlight)
-                        this.world[x][y] = new WorldPiece(x, y);
+                        this.world[x][y] = new WorldPiece(x, y, tileTypes);
                     else
                         highlights.push(this.world[x][y]);
 
-        } else if (this.highlightMode === WRITE_MODE) {
+        } else if (World.highlightMode === WRITE_MODE) {
 
             const rng = Math.floor(Math.random() * writeModeGroup.length);
+            const tile = writeModeGroup[rng];
+            const filteredTileTypes = tileTypes.filter(tileType => tileType.id !== tile.id);
 
             for (let x = 0; x < this.width; x++)
                 for (let y = 0; y < this.height; y++)
-                    if (!this.world[x][y].isHighlight) {
-                        this.world[x][y] = new WorldPiece(x, y);
-                    } else {
-                        this.world[x][y] = new WorldPiece(x, y, writeModeGroup[rng]);
+                    if (this.world[x][y].isHighlight) {
+                        this.world[x][y] = new WorldPiece(x, y, [tile]);
                         this.world[x][y].isHighlight = true;
                         highlights.push(this.world[x][y]);
+
+                    } else if (this.world[x][y].isNeighborHighlight()) {
+                        this.world[x][y] = new WorldPiece(x, y, filteredTileTypes);
+
+                    } else {
+                        this.world[x][y] = new WorldPiece(x, y, tileTypes);
                     }
         }
 
@@ -76,9 +77,11 @@ class World {
             }
         }
 
-        for (let i = 0; i < highlights.length; i++) highlights[i].callNeighbors(highlights[i])
+        for (let i = 0; i < highlights.length; i++)
+            highlights[i].callNeighbors(highlights[i], highlights[i].xPos, highlights[i].yPos)
 
-        if (withClear) this.randomFirstTick();
+        if (highlights.length === 0)
+            this.randomFirstTick();
     }
 
     randomFirstTick() {
@@ -90,13 +93,14 @@ class World {
 
     nextWorldPiece() {
 
+
         let nextWorldPiece = [];
         let lowestEntropy = Number.MAX_SAFE_INTEGER;
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
                 //WorldPiece already has tile
-                if (this.world[x][y].tile != null) {
+                if (this.world[x][y].isUntouched || this.world[x][y].tile != null) {
                     continue;
                 }
                 else if (this.world[x][y].getEntropy() < lowestEntropy) {
@@ -115,17 +119,21 @@ class World {
             nextWorldPiece[rng].chooseTile(this.previousWorldPiece);
             this.previousWorldPiece = nextWorldPiece[rng];
 
-        } else if (this.autoStart) {
+        } else if (World.autoStart) {
             this.createWorld(false);
         } else {
             return false;
         }
+
         return true;
     }
 
-    drawWorld(context, squareSize, offsetX, offsetY) {
-
-        const color = this.highlightMode === WRITE_MODE ? "#ffff00" : "#00ffff";
+    drawWorld(context, squareSize, offsetX, offsetY, isSuppressHighlight) {
+        let color;
+        if (isSuppressHighlight)
+            color = null;
+        else
+            color = World.highlightMode === WRITE_MODE ? "#ffff00" : "#00ffff";
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -171,6 +179,10 @@ class World {
                 this.world[x][y].isHighlight = false;
             }
         }
+    }
+
+    setAccuracy(accuracy) {
+        WorldPiece.accuracy = accuracy;
     }
 }
 
