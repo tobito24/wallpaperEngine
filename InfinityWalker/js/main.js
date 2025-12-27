@@ -27,12 +27,12 @@ function resize() {
 }
 
 function update(dt) {
-  world.update(dt);
+  world.update(player.x, player.y);
   player.update(world, dt);
 }
 
 function drawBackground() {
-  ctx.fillStyle = '#0f1b14';
+  ctx.fillStyle = '#444';
   ctx.fillRect(0, 0, view.width, view.height);
 }
 

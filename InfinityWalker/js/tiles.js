@@ -311,18 +311,15 @@ const nothing = new Tile("NOTHING", 1, 0, NEVER)
 const NOTHING = nothing.name;
 const nothing_rule = new Rule(NOTHING, NOTHING, NOTHING, NOTHING);
 
-//add all to tileTypes
-export let tileTypes = [];
-
-//special for WriteMode
-export let writeModeGroup = [];
+export let allTileTypes = [];
+export let walkableTiles = [];
 
 makeAllTiles();
 
 function makeAllTiles() {
 
-    tileTypes = [];
-    writeModeGroup = [];
+    allTileTypes = [];
+    walkableTiles = [];
 
     //baseGroup
     const baseGroup = [];
@@ -931,28 +928,22 @@ function makeAllTiles() {
     setWalkable(baseTransitionGroup, true);
     setWalkable(beachGroup, true);
 
-    groupPush(baseGroup, tileTypes);
-    groupPush(baseTransitionGroup, tileTypes);
-    groupPush(decoGroup, tileTypes);
-    groupPush(waterGroup, tileTypes);
-    groupPush(waterDecoGroup, tileTypes);
-    groupPush(stoneGroup, tileTypes);
-    groupPush(bridgeGroup, tileTypes);
-    groupPush(treeGroup, tileTypes);
-    groupPush(beachGroup, tileTypes);
+    groupPush(baseGroup, allTileTypes);
+    groupPush(baseTransitionGroup, allTileTypes);
+    groupPush(decoGroup, allTileTypes);
+    groupPush(waterGroup, allTileTypes);
+    groupPush(waterDecoGroup, allTileTypes);
+    groupPush(stoneGroup, allTileTypes);
+    groupPush(bridgeGroup, allTileTypes);
+    groupPush(treeGroup, allTileTypes);
+    groupPush(beachGroup, allTileTypes);
 
-    //special for WriteMode
-    groupPush(baseGroup, writeModeGroup);
-    groupPush(waterBase, writeModeGroup);
-    groupPush(stoneBaseGroup, writeModeGroup);
-    writeModeGroup.push(flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush);
-}
-
-export function getTileByName(name) {
-    for (let i = 0; i < tileTypes.length; i++) {
-        if (tileTypes[i].name === name) {
-            return tileTypes[i];
-        }
-    }
-    return null;
+    //walkableType
+    setWalkable(baseGroup, true);
+    setWalkable(baseTransitionGroup, true);
+    setWalkable(beachGroup, true);
+    groupPush(baseGroup, walkableTiles);
+    groupPush(baseTransitionGroup, walkableTiles);
+    groupPush(beachGroup, walkableTiles);
+    walkableTiles.push(flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, mush);
 }

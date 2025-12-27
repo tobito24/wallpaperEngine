@@ -1,43 +1,53 @@
 import { TILE_SIZE, CHUNK_SIZE } from './config.js';
 import Chunk from './chunk.js';
-import { tileTypes, getTileByName } from './tiles.js';
 
 export default class World {
   constructor() {
     this.time = 0;
     this.chunks = new Map();
-    this.defaultTile = getTileByName('grass') || tileTypes[0];
-    this.pathTile = getTileByName('dirt') || this.defaultTile;
+    this.chunkQueue = new Map();
+    this.currentProcessedChunk = null;
+    this.focusChunkX = 0;
+    this.focusChunkY = 0;
   }
 
-  update(dt) {
-    this.time += dt;
+  update(playerX = 0, playerY = 0) {
+    this.processChunkQueue(playerX, playerY);
   }
 
   isPath(x, y) {
-    // Temporary simple path: a winding corridor for demo movement.
-    const band = Math.floor(Math.sin(x * 0.15) * 3);
-    return Math.abs(y - band) <= 1;
-  }
-
-  getChunk(cx, cy) {
-    const key = `${cx},${cy}`;
-    if (!this.chunks.has(key)) {
-      this.chunks.set(
-        key,
-        new Chunk(cx, cy, this.defaultTile, this.pathTile, this.isPath.bind(this))
-      );
+    const piece = this.getPieceAt(x, y);
+    if (!piece || !piece.tile) {
+      return false;
     }
-    return this.chunks.get(key);
+    
   }
 
-  getTileAt(wx, wy) {
+  getChunk(cx, cy, withCreate = true) {
+    const key = `${cx},${cy}`;
+    if (!this.chunks.has(key) && withCreate) {
+      const chunk = new Chunk(
+        cx, cy,
+        {
+          north: this.getChunk(cx, cy - 1, false),
+          east: this.getChunk(cx + 1, cy, false),
+          south: this.getChunk(cx, cy + 1, false),
+          west: this.getChunk(cx - 1, cy, false)
+        }
+      );
+      this.chunks.set(key, chunk);
+      this.chunkQueue.set(key, chunk);
+    }
+    return this.chunks.get(key) || null;
+  }
+
+  getPieceAt(wx, wy) {
     const cx = Math.floor(wx / CHUNK_SIZE);
     const cy = Math.floor(wy / CHUNK_SIZE);
     const lx = wx - cx * CHUNK_SIZE;
     const ly = wy - cy * CHUNK_SIZE;
     const chunk = this.getChunk(cx, cy);
-    return chunk.getTile(lx, ly);
+    return chunk.getPiece(lx, ly);
   }
 
   render(ctx, view, camera) {
@@ -50,7 +60,7 @@ export default class World {
       for (let x = 0; x < cols; x++) {
         const wx = startX + x;
         const wy = startY + y;
-        const tile = this.getTileAt(wx, wy);
+        const tile = this.getPieceAt(wx, wy);
         if (!tile) {
           continue;
         }
@@ -60,5 +70,47 @@ export default class World {
         tile.draw(ctx, dx, dy, TILE_SIZE);
       }
     }
+  }
+
+  processChunkQueue(playerX, playerY) {
+    console.log(this.chunkQueue.size, 'chunks pending');
+    if (this.currentProcessedChunk === null) {
+      this.setCurrentProcessedChunk(playerX, playerY);
+      return;
+    }
+
+    if (!this.currentProcessedChunk.choosePieceTiles()) {
+      this.currentProcessedChunk = null;
+    }
+  }
+
+  setCurrentProcessedChunk(playerX, playerY) {
+    if (this.chunkQueue.size === 0) {
+      return;
+    }
+
+    let bestKey = 0;
+    let lowestDist = Infinity;
+    const pcx = Math.floor(playerX / CHUNK_SIZE);
+    const pcy = Math.floor(playerY / CHUNK_SIZE);
+    console.log('Player chunk:', pcx, pcy);
+
+    for (const [key, candidate] of this.chunkQueue.entries()) {
+      const dx = candidate.chunkX - pcx;
+      const dy = candidate.chunkY - pcy;
+      const dist = dx * dx + dy * dy;
+      if (dist < lowestDist) {
+        lowestDist = dist;
+        bestKey = key;
+      }
+    }
+
+    const chunk = this.chunkQueue.get(bestKey);
+    if (!chunk) {
+      return;
+    }
+
+    this.currentProcessedChunk = chunk;
+    this.chunkQueue.delete(bestKey);
   }
 }
