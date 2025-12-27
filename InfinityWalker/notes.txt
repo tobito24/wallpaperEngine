@@ -1,0 +1,22 @@
+InfinityWalker - Notizen
+
+Kern-Loop (MVP)
+- Figur bleibt zentriert, Welt scrollt in Gegenrichtung.
+- Endloser Pfad im Tile-Raster, der begehbar bleibt.
+- Welt in Chunks laden/entladen (z. B. 16x16 Tiles).
+- Pfad-Generator als gelenkter Random Walk mit Regeln (min. Kr?mmung, keine Sackgassen).
+- Umgebung wird per WFC um den Pfad herum gefuellt.
+
+Rendering & Technik
+- Canvas 2D zeigt einen festen Ausschnitt der Welt (Viewport), nicht skalieren.
+- Tile-Groesse 32px; Pixelart ohne Smoothing.
+- Sprite-Animation aus trainer_bug.png (4x4 Frames), Frame-Rate ~8 fps.
+- Resizable: Viewport bleibt gleich, Kamera zeigt mehr/weniger Welt je nach Fenster.
+
+Erweiterungs-Ideen
+- Biome-Wechsel (Farben/Tile-Sets) entlang der Strecke.
+- Deko-Layer (Baeume, Steine, Wasser) mit Gewichtung.
+- Tageszeit/Lichtverlauf und leichte Wettereffekte.
+- Parallax-Hintergrund fuer Tiefe.
+- Optionale Nebenpfade (nur visuell, Hauptpfad bleibt sicher).
+- Leichte Kamera-Drift oder Screen-Noise fuer Leben.

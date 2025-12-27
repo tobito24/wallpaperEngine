@@ -1,4 +1,26 @@
 
+Beschreibung:
+
+    This background image creates a random Pokemon-like landscape every time.
+
+    There are several options to customize the image for you.
+    All options are accessible either via Wallparer Engine or the built-in GUI.
+    You can:
+        - increase/decrease the chance of certain tiles.
+        - decrease the "Accuracy" to get more performance.
+        Be careful, errors can occur in the image (marked with the color red).
+        - align the entire image however you like.
+        - change the total number of tiles.
+        - use "Autostart" to decide whether the next landscape should be started immediately after a completed landscape.
+
+    I would like to place a special focus on the highlight mode.
+    Mark an area on the screen with the mouse to have an influence on the next landscape.
+    FREEZE_MODE: Highlighted area is transferred to the next screen.
+    WRITE_MODE: Highlighted area is standardized to the next screen.
+
+    I hope you like the wallpaper.
+    Tobito
+
 TODO :
 
     Balancing
