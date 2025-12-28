@@ -75,7 +75,7 @@ export default class Player {
       this.moving = true;
       return;
     }
-    
+
     // Shuffle choices
     const availableDirections = [DIRECTION.NORTH, DIRECTION.EAST, DIRECTION.SOUTH, DIRECTION.WEST];
     for (let i = availableDirections.length - 1; i > 0; i--) {

@@ -2,13 +2,15 @@ import { TILE_SIZE, CHUNK_SIZE } from './config.js';
 import Chunk from './chunk.js';
 
 export default class World {
-  constructor() {
+  constructor(playerX = 0, playerY = 0) {
     this.time = 0;
     this.chunks = new Map();
     this.chunkQueue = new Map();
     this.currentProcessedChunk = null;
     this.focusChunkX = 0;
     this.focusChunkY = 0;
+
+    this.getChunk(playerX, playerY);
   }
 
   update(playerX = 0, playerY = 0) {
@@ -20,7 +22,7 @@ export default class World {
     if (!piece || !piece.tile) {
       return false;
     }
-    
+    return piece.checkIfPathExists();
   }
 
   getChunk(cx, cy, withCreate = true) {

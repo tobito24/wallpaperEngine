@@ -2,13 +2,22 @@ import { CHUNK_SIZE, DIRECTION } from './config.js';
 import WorldPiece from './piece.js';
 
 export default class Chunk {
+  static chunkCount = 0;
+
   constructor(chunkX, chunkY, neighborChunks = {}) {
+    Chunk.chunkCount++;
     this.chunkX = chunkX;
     this.chunkY = chunkY;
     this.neighborChunks = neighborChunks; // { north: Chunk, east: Chunk, south: Chunk, west: Chunk }
     this.chunkPieces = new Array(CHUNK_SIZE);
     this.lastPieceChosen = null;
     this.isCollapsed = false;
+    this.chunkEntrancePoints = {
+      north: null,
+      east: null,
+      south: null,
+      west: null
+    };
 
     for (let y = 0; y < CHUNK_SIZE; y++) {
       this.chunkPieces[y] = new Array(CHUNK_SIZE);
@@ -18,11 +27,15 @@ export default class Chunk {
   }
 
   createChunkPieces() {
+    const pathCells = new Set();
+    this.createPathsFromNeighbors(pathCells);
+
     for (let y = 0; y < CHUNK_SIZE; y++) {
       for (let x = 0; x < CHUNK_SIZE; x++) {
         const wx = this.chunkX * CHUNK_SIZE + x;
         const wy = this.chunkY * CHUNK_SIZE + y;
-        this.chunkPieces[y][x] = new WorldPiece(wx, wy);
+        const isPath = pathCells.has(this.getCellKey(x, y));
+        this.chunkPieces[y][x] = new WorldPiece(wx, wy, isPath);
       }
     }
 
@@ -86,6 +99,132 @@ export default class Chunk {
         if (!neighborPiece.isUntouched) piece.updateEntropy();
       }
     }
+  }
+
+  createPathsFromNeighbors(pathCells) {
+    const entries = this.getNeighborEntrancePoints();
+    if (Chunk.chunkCount === 1 && entries.length === 0) {
+      // First chunk, create a random entry point
+      console.log(this.chunkX, this.chunkY);
+
+      entries.push({ side: 'north', x: 0, y: 0 });
+    }
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const exitSide = this.pickExitSide(entry.side);
+      const exit = this.getExitPoint(exitSide);
+      this.addPathCells(entry.x, entry.y, exit.x, exit.y, pathCells);
+    }
+  }
+
+  getNeighborEntrancePoints() {
+    const entries = [];
+    const northChunk = this.neighborChunks.north;
+    const eastChunk = this.neighborChunks.east;
+    const southChunk = this.neighborChunks.south;
+    const westChunk = this.neighborChunks.west;
+
+    if (northChunk) {
+      const point = northChunk.chunkEntrancePoints.south;
+      if (point !== null) {
+        entries.push({ side: 'north', x: point, y: 0 });
+      }
+    }
+    if (eastChunk) {
+      const point = eastChunk.chunkEntrancePoints.west;
+      if (point !== null) {
+        entries.push({ side: 'east', x: CHUNK_SIZE - 1, y: point });
+      }
+    }
+    if (southChunk) {
+      const point = southChunk.chunkEntrancePoints.north;
+      if (point !== null) {
+        entries.push({ side: 'south', x: point, y: CHUNK_SIZE - 1 });
+      }
+    }
+    if (westChunk) {
+      const point = westChunk.chunkEntrancePoints.east;
+      if (point !== null) {
+        entries.push({ side: 'west', x: 0, y: point });
+      }
+    }
+
+    return entries;
+  }
+
+  pickExitSide(entrySide) {
+    const sides = ['north', 'east', 'south', 'west'];
+    let idx = 0;
+    for (let i = 0; i < sides.length; i++) {
+      if (sides[i] === entrySide) {
+        idx = i;
+        break;
+      }
+    }
+    sides.splice(idx, 1);
+    const available = [];
+    for (let i = 0; i < sides.length; i++) {
+      if (this.chunkEntrancePoints[sides[i]] === null) {
+        available.push(sides[i]);
+      }
+    }
+    if (available.length > 0) {
+      return available[Math.floor(Math.random() * available.length)];
+    }
+    return sides[Math.floor(Math.random() * sides.length)];
+  }
+
+  getExitPoint(side) {
+    let offset = this.chunkEntrancePoints[side];
+    if (offset === null) {
+      offset = Math.floor(Math.random() * CHUNK_SIZE);
+      this.chunkEntrancePoints[side] = offset;
+    }
+    switch (side) {
+      case 'north':
+        return { x: offset, y: 0, offset };
+      case 'east':
+        return { x: CHUNK_SIZE - 1, y: offset, offset };
+      case 'south':
+        return { x: offset, y: CHUNK_SIZE - 1, offset };
+      default:
+        return { x: 0, y: offset, offset };
+    }
+  }
+
+  addPathCells(sx, sy, ex, ey, pathCells) {
+    let x = sx;
+    let y = sy;
+    pathCells.add(this.getCellKey(x, y));
+
+    if (Math.random() < 0.5) {
+      const stepX = ex > x ? 1 : -1;
+      while (x !== ex) {
+        x += stepX;
+        pathCells.add(this.getCellKey(x, y));
+      }
+      const stepY = ey > y ? 1 : -1;
+      while (y !== ey) {
+        y += stepY;
+        pathCells.add(this.getCellKey(x, y));
+      }
+      return;
+    }
+
+    const stepY = ey > y ? 1 : -1;
+    while (y !== ey) {
+      y += stepY;
+      pathCells.add(this.getCellKey(x, y));
+    }
+    const stepX = ex > x ? 1 : -1;
+    while (x !== ex) {
+      x += stepX;
+      pathCells.add(this.getCellKey(x, y));
+    }
+  }
+
+  getCellKey(x, y) {
+    return `${x},${y}`;
   }
 
   choosePieceTiles() {

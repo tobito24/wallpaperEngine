@@ -33,6 +33,13 @@ export default class WorldPiece {
     }
 
     draw(context, dx, dy, squareSize) {
+        // TODO: remove later - debug draw
+        if (this.isPath) {
+            context.strokeStyle = "#ee0dc8ff";
+            context.lineWidth = 2;
+            context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
+        }
+
         if (this.tile !== null) {
             if (this.baseTiles != null) {
                 for (let i = this.baseTiles.length - 1; i >= 0; i--) {
@@ -41,7 +48,6 @@ export default class WorldPiece {
             }
 
             this.tile.draw(context, dx, dy, squareSize);
-            return;
         }
 
         if (this.isUntouched) {
@@ -84,13 +90,19 @@ export default class WorldPiece {
             context.lineWidth = 2;
             context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
         }
+
+        if (this.isPath) {
+            context.strokeStyle = "#ee0dc8ff";
+            context.lineWidth = 2;
+            context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
+        }
     }
 
     getEntropy() {
         return this.possibleTiles.length;
     }
 
-    isPath() {
+    checkIfPathExists() {
         if (this.isPath) return true;
         if (this.tile === null) return false;
         return this.tile.walkable;
