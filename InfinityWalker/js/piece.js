@@ -103,7 +103,11 @@ export default class WorldPiece {
     }
 
     checkIfPathExists() {
-        if (this.isPath) return true;
+        if (this.isPath) {
+            console.log('im a path '+ this.pieceX + ', ' + this.pieceY);
+            
+            return true;
+        }
         if (this.tile === null) return false;
         return this.tile.walkable;
     }

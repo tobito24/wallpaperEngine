@@ -20,3 +20,13 @@ Erweiterungs-Ideen
 - Parallax-Hintergrund fuer Tiefe.
 - Optionale Nebenpfade (nur visuell, Hauptpfad bleibt sicher).
 - Leichte Kamera-Drift oder Screen-Noise fuer Leben.
+
+WFC Performance Ideen
+- Biome-Subsets pro Chunk: statt global 260 Tiles nur z. B. 30-80 je Biom.
+- Edge-Index pro Piece: possibleEdges[dir] als Set/Bitset, isCompatible nur noch lookup.
+- Bitsets statt String-Edges: Edge-Strings auf IDs mappen, kompatibilitaet per bitwise AND.
+- Propagation als Queue: Nachbarn nur einmal pro Welle anfassen (visited flag).
+- Entropy-Buckets statt Vollscan: min-Entropy Pieces pro Chunk verwalten.
+- Varianten entkoppeln: gleiche Regeln gruppieren, kosmetische Varianten spaeter zufaellig.
+- Mehrstufige Generation: erst Biome/Noise, dann WFC nur fuer Detail-Layer.
+- Chunk-Caching per Seed: generierte Chunks merken/persistieren.

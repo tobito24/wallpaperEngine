@@ -34,7 +34,7 @@ export default class Chunk {
       for (let x = 0; x < CHUNK_SIZE; x++) {
         const wx = this.chunkX * CHUNK_SIZE + x;
         const wy = this.chunkY * CHUNK_SIZE + y;
-        const isPath = pathCells.has(this.getCellKey(x, y));
+        const isPath = pathCells.has(this.getCellKey(x, y));        
         this.chunkPieces[y][x] = new WorldPiece(wx, wy, isPath);
       }
     }
