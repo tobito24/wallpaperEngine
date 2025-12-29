@@ -1,4 +1,4 @@
-import { TILE_SIZE } from './config.js';
+import { DIRECTION, TILE_SIZE } from './config.js';
 import World from './world.js';
 import Player from './player.js';
 
@@ -24,6 +24,32 @@ function resize() {
   canvas.width = Math.floor(view.width * view.dpr);
   canvas.height = Math.floor(view.height * view.dpr);
   transformDirty = true;
+}
+
+function keyHandler(e) {
+  switch (e.key) {
+    case 'ArrowUp':
+    case 'w':
+      player.currentDirection = DIRECTION.NORTH;
+      break;
+    case 'ArrowDown':
+    case 's':
+      player.currentDirection = DIRECTION.SOUTH;
+      break;
+    case 'ArrowLeft':
+    case 'a':
+      player.currentDirection = DIRECTION.WEST;
+      break;
+    case 'ArrowRight':
+    case 'd':
+      player.currentDirection = DIRECTION.EAST;
+      break;
+    case ' ':
+      if (e.type === 'keyup') {
+        player.paused = !player.paused;
+      }
+      break;
+  }
 }
 
 function update(dt) {
@@ -53,7 +79,7 @@ function render() {
   ctx.clearRect(0, 0, view.width, view.height);
 
   const camera = getCamera();
-  
+
   drawBackground();
   world.render(ctx, view, camera);
   player.render(ctx, view);
@@ -70,5 +96,7 @@ function tick(time) {
 }
 
 window.addEventListener('resize', resize);
+window.addEventListener('keydown', keyHandler);
+window.addEventListener('keyup', keyHandler);
 resize();
 requestAnimationFrame(tick);

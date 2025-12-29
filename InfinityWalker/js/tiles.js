@@ -1,160 +1,164 @@
-//TileSet Image, in it are all tiles
+import {
+    TILE_SIZE,
+    TILESET,
+    DIRECTION,
+    LAYER
+} from './config.js';
+
 const tilesetImage = new Image();
-tilesetImage.src = "img/tileset.png";
+tilesetImage.src = TILESET.sheet;
 
-//tilesize in px
-const tilesize = 32;
-
-/*
-###########################################################################################################
-    Class for a single tile
-    attribute
-        name: name
-        xPos, yPos: Coordinates in Image
-        weight: Weighted probability
-        possibleBases: array with possible bases for transparent tiles
-        rules: rule set for edges
-###########################################################################################################
-*/
 class Tile {
-    static numberOfTileSets = 0;
-
-    constructor(name, xPos, yPos, weight = 0) {
-        this.id = Tile.numberOfTileSets;
-        Tile.numberOfTileSets++;
+    constructor(name, sprites, weight, layer, walkable = false) {
         this.name = name;
-        this.xPos = xPos;
-        this.yPos = yPos;
+        this.sprites = sprites; // array of { x: int, y: int, weight: int }
         this.weight = weight;
-        this.walkable = false;
+        this.layer = layer;
+        this.walkable = walkable;
+
         this.rules = [];
-        this.possibleBases = [];
+        this.edgeMasks = [0n, 0n, 0n, 0n]; // BigInt[4] like [0b1010n, 0b1111000n, 0b101n, 0b1n] (OR of all edge masks in rules)
+
+        this.allowedBases = [];
+        this.allowedOverlays = [];
+
+        // TODO: biomes
+        this.biomes = [];
     }
 
-    addRule(rule, bases = this.possibleBases) {
+    addRule(rule) {
         if (!(rule instanceof Rule)) return;
+        this.rules.push(rule);
+    }
 
-        if (bases.length === 0) this.rules.push(rule);
+    addBases(bases) {
+        bases.forEach(base => {
+            if (!(base instanceof Tile)) return;
 
-        for (let i = 0; i < bases.length; i++) {
-            const tmpBaseRules = bases[i].rules;
+            if (this.layer == LAYER.OVERLAY)
+                this.allowedBases.push(base);
 
-            for (let j = 0; j < tmpBaseRules.length; j++) {
-                const tmpBaseRule = tmpBaseRules[j];
+            if (this.layer == LAYER.DECO)
+                this.allowedOverlays.push(base);
+        });
+    }
 
-                const north = rule.north.replace(NOTHING, tmpBaseRule.north);
-                const east = rule.east.replace(NOTHING, tmpBaseRule.east);
-                const south = rule.south.replace(NOTHING, tmpBaseRule.south);
-                const west = rule.west.replace(NOTHING, tmpBaseRule.west);
+    getDrawFunction() {
+        if (!Array.isArray(this.sprites)) return null;
 
-                const newRule = new Rule(north, east, south, west, bases[i]);
-
-                if (tmpBaseRule.hasBaseStack()) {
-                    newRule.addStack(tmpBaseRule.baseStack);
-                }
-
-                this.rules.push(newRule);
+        const totalWeight = this.sprites.reduce((sum, sprite) => sum + sprite.weight, 0);
+        let randomWeight = Math.random() * totalWeight;
+        let selectedSprite = null;
+        for (let i = 0; i < this.sprites.length; i++) {
+            randomWeight -= this.sprites[i].weight;
+            if (randomWeight <= 0) {
+                selectedSprite = this.sprites[i];
+                break;
             }
         }
-    }
-
-    addPossibleBases(bases) {
-        for (let i = 0; i < bases.length; i++) {
-            if (!(bases[i] instanceof Tile)) return;
-            this.possibleBases.push(bases[i]);
+        if (!selectedSprite) {
+            selectedSprite = this.sprites[this.sprites.length - 1];
         }
+
+        return (context, dx, dy, size = TILE_SIZE) => {
+            const { x, y } = selectedSprite;
+            const sx = x * TILE_SIZE;
+            const sy = y * TILE_SIZE;
+            context.drawImage(tilesetImage, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, size, size);
+        };
     }
 
-    needBase() {
-        return this.possibleBases.length != 0;
-    }
-
-    draw(context, dx, dy, size) {
-        let sx = this.xPos * tilesize;
-        let sy = this.yPos * tilesize;
-        let sw = tilesize;
-        let sh = tilesize;
-
-        context.drawImage(tilesetImage, sx, sy, sw, sh, dx, dy, size, size);
+    draw(context, dx, dy, size = TILE_SIZE) {
+        this.getDrawFunction()(context, dx, dy, size);
     }
 }
 
-const NORTH = 0;
-const EAST = 1;
-const SOUTH = 2;
-const WEST = 3;
-
-/*
-###########################################################################################################
-    Class for Rules
-    attribute
-        north, east, south, west: (String) edge condition
-        baseStack: with this rule you need these bases
-###########################################################################################################
-*/
 class Rule {
-
     constructor(north, east, south, west, base = null) {
-        this.north = north;
+        this.north = north; //String edge condition
         this.east = east;
         this.south = south;
         this.west = west;
-        this.baseStack = [];
-        if (base != null) this.baseStack.push(base);
+
+        this.edgeIds = null; // int[4] like [3, 5, 2, 0]
+        this.edgeMasks = null; // BigInt[4] like [0b1000n, 0b100000n, 0b100n, 0b1n] (just 1 << edgeId)
     }
 
-    getBaseStack() {
-        return this.baseStack;
+    getEdgeId(direction) {
+        if (!this.edgeIds) return -1;
+        if (!direction in DIRECTION) return -1;
+        return this.edgeIds[direction];
     }
 
-    hasBaseStack() {
-        return this.baseStack.length != 0;
-    }
-
-    addStack(otherBaseStack) {
-        for (let i = 0; i < otherBaseStack.length; i++) {
-            this.baseStack.push(otherBaseStack[i]);
-        }
-    }
-
-    getEdge(direction) {
-        switch (direction) {
-            case NORTH:
-                return this.north;
-            case EAST:
-                return this.east;
-            case SOUTH:
-                return this.south;
-            case WEST:
-                return this.west;
-            default:
-                return -1;
-        }
+    getEdgeMask(direction) {
+        if (!this.edgeMasks) return 0n;
+        if (!direction in DIRECTION) return 0n;
+        return this.edgeMasks[direction];
     }
 }
 
-/*
-###########################################################################################################
+function buildEdgeRegistryAndMasks(tiles) {
+    const stringToEdgeIdMap = new Map();
 
-   Constants
+    function getEdgeId(edgeStr) {
+        let id = stringToEdgeIdMap.get(edgeStr);
+        if (id === undefined) {
+            id = stringToEdgeIdMap.size;
+            stringToEdgeIdMap.set(edgeStr, id);
+        }
+        return id;
+    }
 
-###########################################################################################################
-*/
+    function getEdgeMaskById(id) {
+        return 1n << BigInt(id);
+    }
+
+    tiles.forEach(tile => {
+        tile.edgeMasks = [0n, 0n, 0n, 0n];
+        const rules = tile.rules;
+        rules.forEach(rule => {
+            const ids = [
+                getEdgeId(rule.north),
+                getEdgeId(rule.east),
+                getEdgeId(rule.south),
+                getEdgeId(rule.west)
+            ];
+            rule.edgeIds = ids;
+            rule.edgeMasks = [
+                getEdgeMaskById(ids[DIRECTION.NORTH]),
+                getEdgeMaskById(ids[DIRECTION.EAST]),
+                getEdgeMaskById(ids[DIRECTION.SOUTH]),
+                getEdgeMaskById(ids[DIRECTION.WEST])
+            ];
+            tile.edgeMasks[DIRECTION.NORTH] |= rule.edgeMasks[DIRECTION.NORTH];
+            tile.edgeMasks[DIRECTION.EAST] |= rule.edgeMasks[DIRECTION.EAST];
+            tile.edgeMasks[DIRECTION.SOUTH] |= rule.edgeMasks[DIRECTION.SOUTH];
+            tile.edgeMasks[DIRECTION.WEST] |= rule.edgeMasks[DIRECTION.WEST];
+        });
+    });
+    console.log(tiles);
+}
+
 
 //Frequencies - the more weight the more often
-const VERY_OFTEN_2 = 2048;
-const VERY_OFTEN_1 = 1024;
-const VERY_OFTEN_0 = 512;
-const OFTEN_2 = 256;
-const OFTEN_1 = 128;
-const OFTEN_0 = 64;
-const SOME_2 = 32;
-const SOME_1 = 16;
-const SOME_0 = 8;
-const RARE_2 = 4;
-const RARE_1 = 2;
-const RARE_0 = 1;
+const BASE = 2
+const VERY_OFTEN_2 = Math.pow(BASE, 11);
+const VERY_OFTEN_1 = Math.pow(BASE, 10);
+const VERY_OFTEN_0 = Math.pow(BASE, 9);
+const OFTEN_2 = Math.pow(BASE, 8);
+const OFTEN_1 = Math.pow(BASE, 7);
+const OFTEN_0 = Math.pow(BASE, 6);
+const SOME_2 = Math.pow(BASE, 5);
+const SOME_1 = Math.pow(BASE, 4);
+const SOME_0 = Math.pow(BASE, 3);
+const RARE_2 = Math.pow(BASE, 2);
+const RARE_1 = Math.pow(BASE, 1);
+const RARE_0 = Math.pow(BASE, 0);
 const NEVER = 0;
+
+const TRANSPARENT = 'TRANSPARENT';
+const fullTransparentRule = new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, TRANSPARENT);
+const IS_WALKABLE = true;
 
 //Frequencies multiplier
 let DECO_FREQ_MULTI = 1;
@@ -165,51 +169,6 @@ let WATER_FREQ_MULTI = 1;
 let BASE_FREQ_MULTI = 1;
 let BASE_T_FREQ_MULTI = 1;
 
-export function changeWeights(newWeight, what) {
-
-    if (newWeight === 0) {
-        newWeight = 1;
-
-    } else if (newWeight < 0) {
-        newWeight = 1 + newWeight / 1000;
-    }
-
-    switch (what) {
-        case "DECO":
-            DECO_FREQ_MULTI = newWeight;
-            break;
-        case "BRIDGE":
-            BRIDGE_FREQ_MULTI = newWeight;
-            break;
-        case "STONE":
-            STONE_FREQ_MULTI = newWeight;
-            break;
-        case "TREE":
-            TREE_FREQ_MULTI = newWeight;
-            break;
-        case "WATER":
-            WATER_FREQ_MULTI = newWeight;
-            break;
-        case "BASE":
-            BASE_FREQ_MULTI = newWeight;
-            break;
-        case "BASE_T":
-            BASE_T_FREQ_MULTI = newWeight;
-            break;
-    }
-
-    Tile.numberOfTileSets = 1;
-    makeAllTiles();
-}
-
-
-/*
-###########################################################################################################
-
-   Help functions for rules 
-
-###########################################################################################################
-*/
 
 //function to apply a rule to several tiles
 function addRuleToAll(rule, tiles) {
@@ -220,730 +179,652 @@ function addRuleToAll(rule, tiles) {
 
 function addBasesToAll(baseGroup, tiles) {
     for (let i = 0; i < tiles.length; i++) {
-        tiles[i].addPossibleBases(baseGroup);
-    }
-}
-
-function setWalkable(tiles, value) {
-    for (let i = 0; i < tiles.length; i++) {
-        tiles[i].walkable = value;
-    }
-}
-
-//function to apply self rule and push
-function addSelfRule(tile, pushDestination, isTransparent = false) {
-    if (isTransparent)
-        tile.addRule(new Rule(tile.name + NOTHING, tile.name + NOTHING, tile.name + NOTHING, tile.name + NOTHING));
-    else
-        tile.addRule(new Rule(tile.name, tile.name, tile.name, tile.name));
-
-    pushDestination.push(tile);
-}
-
-//function to push a group to a other group
-function groupPush(group, pushDestination) {
-    for (let i = 0; i < group.length; i++) {
-        pushDestination.push(group[i])
+        tiles[i].addBases(baseGroup);
     }
 }
 
 //function to apply rules for classic X-X tiles
-//tileArray is order sensitive [n, e, s, w, nw, ne, se, sw, c_nw, c_ne, c_se, c_sw, d0, d1]
-function addTransitionRules(scourceName, destinationName, tileArray, pushDestination) {
+//transitionTiles is order sensitive [n, e, s, w, nw, ne, se, sw, c_nw, c_ne, c_se, c_sw, d0, d1]
+function addTransitionRules(scourceName, destinationName, transitionTiles) {
     const trans0 = scourceName;
-    const trans1 = trans0 != NOTHING ? destinationName : destinationName + NOTHING;
-    const north = trans0 != NOTHING ? tileArray[0].name : tileArray[0].name + NOTHING;
-    const east = trans0 != NOTHING ? tileArray[1].name : tileArray[1].name + NOTHING;
-    const south = trans0 != NOTHING ? tileArray[2].name : tileArray[2].name + NOTHING;
-    const west = trans0 != NOTHING ? tileArray[3].name : tileArray[3].name + NOTHING;
+    const trans1 = destinationName;
+    const north = transitionTiles[0].name;
+    const east = transitionTiles[1].name;
+    const south = transitionTiles[2].name;
+    const west = transitionTiles[3].name;
 
-    tileArray[0].addRule(new Rule(trans0, north, trans1, north));//n
-    tileArray[1].addRule(new Rule(east, trans0, east, trans1));//e
-    tileArray[2].addRule(new Rule(trans1, south, trans0, south));//s
-    tileArray[3].addRule(new Rule(west, trans1, west, trans0));//w
+    transitionTiles[0].addRule(new Rule(trans0, north, trans1, north));//n
+    transitionTiles[1].addRule(new Rule(east, trans0, east, trans1));//e
+    transitionTiles[2].addRule(new Rule(trans1, south, trans0, south));//s
+    transitionTiles[3].addRule(new Rule(west, trans1, west, trans0));//w
 
-    tileArray[4].addRule(new Rule(trans0, north, west, trans0));//nw
-    tileArray[5].addRule(new Rule(trans0, trans0, east, north));//ne
-    tileArray[6].addRule(new Rule(east, trans0, trans0, south));//se
-    tileArray[7].addRule(new Rule(west, south, trans0, trans0));//sw
+    transitionTiles[4].addRule(new Rule(trans0, north, west, trans0));//nw
+    transitionTiles[5].addRule(new Rule(trans0, trans0, east, north));//ne
+    transitionTiles[6].addRule(new Rule(east, trans0, trans0, south));//se
+    transitionTiles[7].addRule(new Rule(west, south, trans0, trans0));//sw
 
-    if (tileArray[8] != undefined) {
-        tileArray[8].addRule(new Rule(west, trans1, trans1, north));//c_nw
-        tileArray[9].addRule(new Rule(east, north, trans1, trans1));//c_ne
-        tileArray[10].addRule(new Rule(trans1, south, east, trans1));//c_se
-        tileArray[11].addRule(new Rule(trans1, trans1, west, south));//c_sw
+    if (transitionTiles[8] != undefined) {
+        transitionTiles[8].addRule(new Rule(west, trans1, trans1, north));//c_nw
+        transitionTiles[9].addRule(new Rule(east, north, trans1, trans1));//c_ne
+        transitionTiles[10].addRule(new Rule(trans1, south, east, trans1));//c_se
+        transitionTiles[11].addRule(new Rule(trans1, trans1, west, south));//c_sw
     }
 
-    if (tileArray[12] != undefined) {
-        tileArray[12].addRule(new Rule(east, north, west, south));//d0
-        tileArray[13].addRule(new Rule(west, south, east, north));//d1
+    if (transitionTiles[12] != undefined) {
+        transitionTiles[12].addRule(new Rule(east, north, west, south));//d0
+        transitionTiles[13].addRule(new Rule(west, south, east, north));//d1
     }
-
-    for (let i = 0; i < tileArray.length; i++)
-        pushDestination.push(tileArray[i]);
-
 }
 
-/*
-###########################################################################################################
 
-   All tiles with their rules.
+export let allTiles = [];
 
-        all tiles are first divided into groups
-        and then all are put into the array "tileTypes"
-
-        groups:
-            baseGroup
-            baseTransitionGroup
-            decoGroup
-            waterGroup
-            waterDecoGroup
-            stoneGroup
-            bridgeGroup
-            treeGroup
-            beachGroup
-
-###########################################################################################################
-*/
-
-//nothing Tile - never occurs, but is used for empty edges
-const nothing = new Tile("NOTHING", 1, 0, NEVER)
-const NOTHING = nothing.name;
-const nothing_rule = new Rule(NOTHING, NOTHING, NOTHING, NOTHING);
-
-export let allTileTypes = [];
-export let walkableTiles = [];
+export let baseTiles = [];
+export let cliffTiles = [];
+export let overlayTiles = [];
+export let decoTiles = [];
 
 makeAllTiles();
 
 function makeAllTiles() {
 
-    allTileTypes = [];
-    walkableTiles = [];
+    allTiles = [];
+    baseTiles = [];
+    let transitionTiles = [];
+    cliffTiles = [];
+    overlayTiles = [];
+    decoTiles = [];
 
-    //baseGroup
-    const baseGroup = [];
+    // # Full transparent tiles (for overlays and decos)
+    const transparentOverlay = new Tile("transparentOverlay", [{ x: 1, y: 0, weight: 1 }], VERY_OFTEN_2 * BASE_FREQ_MULTI, LAYER.OVERLAY, IS_WALKABLE);
+    const transparentDeco = new Tile("transparentDeco", [{ x: 1, y: 0, weight: 1 }], VERY_OFTEN_2 * BASE_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
+    transparentOverlay.addRule(fullTransparentRule);
+    transparentDeco.addRule(fullTransparentRule);
+    allTiles.push(transparentDeco, transparentOverlay);
+    overlayTiles.push(transparentOverlay);
+    decoTiles.push(transparentDeco);
 
-    //grass
-    const grass = new Tile("grass", 0, 5, VERY_OFTEN_1 * BASE_FREQ_MULTI);
-    addSelfRule(grass, baseGroup);
+    // # Simple base tiles
+    const grass = new Tile("grass", [{ x: 0, y: 5, weight: 1 }], VERY_OFTEN_1 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirt = new Tile("dirt", [{ x: 1, y: 7, weight: 1 }], VERY_OFTEN_0 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDry = new Tile("grassDry", [{ x: 1, y: 13, weight: 1 }], VERY_OFTEN_0 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
-    //dirth
-    const dirt = new Tile("dirt", 1, 7, VERY_OFTEN_0 * BASE_FREQ_MULTI);
-    addSelfRule(dirt, baseGroup);
+    const grassLight = new Tile("grassLight", [
+        { x: 0, y: 11, weight: 2 },
+        { x: 1, y: 11, weight: 1 },
+    ], VERY_OFTEN_0 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDark = new Tile("grassDark", [
+        { x: 2, y: 17, weight: 2 },
+        { x: 0, y: 17, weight: 1 },
+    ], VERY_OFTEN_0 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mud = new Tile("mud", [
+        { x: 1, y: 19, weight: 4 },
+        { x: 1, y: 17, weight: 1 },
+    ], VERY_OFTEN_0 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
-    //grassLight
-    const grassLight = new Tile("grassLight", 0, 11, VERY_OFTEN_0 * BASE_FREQ_MULTI);
-    addSelfRule(grassLight, baseGroup);
+    const beach = new Tile("beach", [{ x: 5, y: 29, weight: 1 }], VERY_OFTEN_0 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWater = new Tile("beachWater", [{ x: 4, y: 31, weight: 1 }], VERY_OFTEN_0 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
-    //grassDry
-    const grassDry = new Tile("grassDry", 1, 13, VERY_OFTEN_0 * BASE_FREQ_MULTI);
-    addSelfRule(grassDry, baseGroup);
+    const stone0 = new Tile("stone0", [{ x: 4, y: 9, weight: 1 }], VERY_OFTEN_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone1 = new Tile("stone1", [{ x: 4, y: 15, weight: 1 }], VERY_OFTEN_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone2 = new Tile("stone2", [{ x: 4, y: 21, weight: 1 }], VERY_OFTEN_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
-    //grassDark
-    const grassDark = new Tile("grassDark", 2, 17, VERY_OFTEN_0 * BASE_FREQ_MULTI);
-    addSelfRule(grassDark, baseGroup);
+    const simpleTiles = [grass, dirt, grassLight, grassDry, grassDark, mud, beach, beachWater, stone0, stone1, stone2];
+    simpleTiles.forEach(tile => {
+        tile.addRule(new Rule(tile.name, tile.name, tile.name, tile.name));
+    });
+    baseTiles.push(...simpleTiles);
 
-    //mud
-    const mud = new Tile("mud", 1, 19, VERY_OFTEN_0 * BASE_FREQ_MULTI);
-    addSelfRule(mud, baseGroup);
-
-    //TransitionGroup
-    const baseTransitionGroup = [];
-
-    //grass to dirth
-    const dirtN = new Tile("dirtN", 1, 6, OFTEN_2 * BASE_T_FREQ_MULTI);
-    const dirtE = new Tile("dirtE", 2, 7, OFTEN_2 * BASE_T_FREQ_MULTI);
-    const dirtS = new Tile("dirtS", 1, 8, OFTEN_2 * BASE_T_FREQ_MULTI);
-    const dirtW = new Tile("dirtW", 0, 7, OFTEN_2 * BASE_T_FREQ_MULTI);
-    const dirtNW = new Tile("dirtNW", 0, 6, SOME_0 * BASE_T_FREQ_MULTI);
-    const dirtNE = new Tile("dirtNE", 2, 6, SOME_0 * BASE_T_FREQ_MULTI);
-    const dirtSE = new Tile("dirtSE", 2, 8, SOME_0 * BASE_T_FREQ_MULTI);
-    const dirtSW = new Tile("dirtSW", 0, 8, SOME_0 * BASE_T_FREQ_MULTI);
-    const dirtCurveNW = new Tile("dirtCurveNW", 0, 9, RARE_1 * BASE_T_FREQ_MULTI);
-    const dirtCurveNE = new Tile("dirtCurveNE", 1, 9, RARE_1 * BASE_T_FREQ_MULTI);
-    const dirtCurveSE = new Tile("dirtCurveSE", 1, 10, RARE_1 * BASE_T_FREQ_MULTI);
-    const dirtCurveSW = new Tile("dirtCurveSW", 0, 10, RARE_1 * BASE_T_FREQ_MULTI);
-    const dirtCurveD0 = new Tile("dirtCurveD0", 2, 9, RARE_0 * BASE_T_FREQ_MULTI);
-    const dirtCurveD1 = new Tile("dirtCurveD1", 2, 10, RARE_0 * BASE_T_FREQ_MULTI);
+    // # Base transition tiles
+    // ## grass to dirth
+    const dirtN = new Tile("dirtN", [{ x: 1, y: 6, weight: 1 }], OFTEN_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtE = new Tile("dirtE", [{ x: 2, y: 7, weight: 1 }], OFTEN_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtS = new Tile("dirtS", [{ x: 1, y: 8, weight: 1 }], OFTEN_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtW = new Tile("dirtW", [{ x: 0, y: 7, weight: 1 }], OFTEN_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtNW = new Tile("dirtNW", [{ x: 0, y: 6, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtNE = new Tile("dirtNE", [{ x: 2, y: 6, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtSE = new Tile("dirtSE", [{ x: 2, y: 8, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtSW = new Tile("dirtSW", [{ x: 0, y: 8, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtCurveNW = new Tile("dirtCurveNW", [{ x: 0, y: 9, weight: 1 }], RARE_1 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtCurveNE = new Tile("dirtCurveNE", [{ x: 1, y: 9, weight: 1 }], RARE_1 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtCurveSE = new Tile("dirtCurveSE", [{ x: 1, y: 10, weight: 1 }], RARE_1 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtCurveSW = new Tile("dirtCurveSW", [{ x: 0, y: 10, weight: 1 }], RARE_1 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtCurveD0 = new Tile("dirtCurveD0", [{ x: 2, y: 9, weight: 1 }], RARE_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirtCurveD1 = new Tile("dirtCurveD1", [{ x: 2, y: 10, weight: 1 }], RARE_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const grassDirtTrans = [dirtN, dirtE, dirtS, dirtW, dirtNW, dirtNE, dirtSE, dirtSW, dirtCurveNW, dirtCurveNE, dirtCurveSE, dirtCurveSW, dirtCurveD0, dirtCurveD1];
-    addTransitionRules(grass.name, dirt.name, grassDirtTrans, baseTransitionGroup);
+    addTransitionRules(grass.name, dirt.name, grassDirtTrans);
+    baseTiles.push(...grassDirtTrans);
+    transitionTiles.push(...grassDirtTrans);
 
-    //grassLight to grassDry
-    const grassDN = new Tile("grassDN", 1, 12, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grassDE = new Tile("grassDE", 2, 13, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grassDS = new Tile("grassDS", 1, 14, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grassDW = new Tile("grassDW", 0, 13, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grassDNW = new Tile("grassDNW", 0, 12, SOME_2 * BASE_T_FREQ_MULTI);
-    const grassDNE = new Tile("grassDNE", 2, 12, SOME_2 * BASE_T_FREQ_MULTI);
-    const grassDSE = new Tile("grassDSE", 2, 14, SOME_2 * BASE_T_FREQ_MULTI);
-    const grassDSW = new Tile("grassDSW", 0, 14, SOME_2 * BASE_T_FREQ_MULTI);
-    const grassDCurveNW = new Tile("grassDCurveNW", 0, 15, RARE_0 * BASE_T_FREQ_MULTI);
-    const grassDCurveNE = new Tile("grassDCurveNE", 1, 15, RARE_2 * BASE_T_FREQ_MULTI);
-    const grassDCurveSE = new Tile("grassDCurveSE", 1, 16, RARE_2 * BASE_T_FREQ_MULTI);
-    const grassDCurveSW = new Tile("grassDCurveSW", 0, 16, RARE_2 * BASE_T_FREQ_MULTI);
-    const grassDCurveD0 = new Tile("grassDCurveD0", 2, 15, RARE_0 * BASE_T_FREQ_MULTI);
-    const grassDCurveD1 = new Tile("grassDCurveD1", 2, 16, RARE_0 * BASE_T_FREQ_MULTI);
+    // ## grassLight to grassDry
+    const grassDN = new Tile("grassDN", [{ x: 1, y: 12, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDE = new Tile("grassDE", [{ x: 2, y: 13, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDS = new Tile("grassDS", [{ x: 1, y: 14, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDW = new Tile("grassDW", [{ x: 0, y: 13, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDNW = new Tile("grassDNW", [{ x: 0, y: 12, weight: 1 }], SOME_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDNE = new Tile("grassDNE", [{ x: 2, y: 12, weight: 1 }], SOME_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDSE = new Tile("grassDSE", [{ x: 2, y: 14, weight: 1 }], SOME_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDSW = new Tile("grassDSW", [{ x: 0, y: 14, weight: 1 }], SOME_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDCurveNW = new Tile("grassDCurveNW", [{ x: 0, y: 15, weight: 1 }], RARE_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDCurveNE = new Tile("grassDCurveNE", [{ x: 1, y: 15, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDCurveSE = new Tile("grassDCurveSE", [{ x: 1, y: 16, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDCurveSW = new Tile("grassDCurveSW", [{ x: 0, y: 16, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDCurveD0 = new Tile("grassDCurveD0", [{ x: 2, y: 15, weight: 1 }], RARE_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassDCurveD1 = new Tile("grassDCurveD1", [{ x: 2, y: 16, weight: 1 }], RARE_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const grassLgrassDryTrans = [grassDN, grassDE, grassDS, grassDW, grassDNW, grassDNE, grassDSE, grassDSW, grassDCurveNW, grassDCurveNE, grassDCurveSE, grassDCurveSW, grassDCurveD0, grassDCurveD1];
-    addTransitionRules(grassLight.name, grassDry.name, grassLgrassDryTrans, baseTransitionGroup);
+    addTransitionRules(grassLight.name, grassDry.name, grassLgrassDryTrans);
+    baseTiles.push(...grassLgrassDryTrans);
+    transitionTiles.push(...grassLgrassDryTrans);
 
-    //grassDark to mud
-    const mudN = new Tile("mudN", 1, 18, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const mudE = new Tile("mudE", 2, 19, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const mudS = new Tile("mudS", 1, 20, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const mudW = new Tile("mudW", 0, 19, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const mudNW = new Tile("mudNW", 0, 18, SOME_0 * BASE_T_FREQ_MULTI);
-    const mudNE = new Tile("mudNE", 2, 18, SOME_0 * BASE_T_FREQ_MULTI);
-    const mudSE = new Tile("mudSE", 2, 20, SOME_0 * BASE_T_FREQ_MULTI);
-    const mudSW = new Tile("mudSW", 0, 20, SOME_0 * BASE_T_FREQ_MULTI);
-    const mudCurveNW = new Tile("mudCurveNW", 0, 21, RARE_2 * BASE_T_FREQ_MULTI);
-    const mudCurveNE = new Tile("mudCurveNE", 1, 21, RARE_2 * BASE_T_FREQ_MULTI);
-    const mudCurveSE = new Tile("mudCurveSE", 1, 22, RARE_2 * BASE_T_FREQ_MULTI);
-    const mudCurveSW = new Tile("mudCurveSW", 0, 22, RARE_2 * BASE_T_FREQ_MULTI);
-    const mudCurveD0 = new Tile("mudCurveD0", 2, 21, SOME_0 * BASE_T_FREQ_MULTI);
-    const mudCurveD1 = new Tile("mudCurveD1", 2, 22, SOME_0 * BASE_T_FREQ_MULTI);
+    // ## grassDark to mud
+    const mudN = new Tile("mudN", [{ x: 1, y: 18, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudE = new Tile("mudE", [{ x: 2, y: 19, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudS = new Tile("mudS", [{ x: 1, y: 20, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudW = new Tile("mudW", [{ x: 0, y: 19, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudNW = new Tile("mudNW", [{ x: 0, y: 18, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudNE = new Tile("mudNE", [{ x: 2, y: 18, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudSE = new Tile("mudSE", [{ x: 2, y: 20, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudSW = new Tile("mudSW", [{ x: 0, y: 20, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudCurveNW = new Tile("mudCurveNW", [{ x: 0, y: 21, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudCurveNE = new Tile("mudCurveNE", [{ x: 1, y: 21, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudCurveSE = new Tile("mudCurveSE", [{ x: 1, y: 22, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudCurveSW = new Tile("mudCurveSW", [{ x: 0, y: 22, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudCurveD0 = new Tile("mudCurveD0", [{ x: 2, y: 21, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const mudCurveD1 = new Tile("mudCurveD1", [{ x: 2, y: 22, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const grassDaMudTrans = [mudN, mudE, mudS, mudW, mudNW, mudNE, mudSE, mudSW, mudCurveNW, mudCurveNE, mudCurveSE, mudCurveSW, mudCurveD0, mudCurveD1];
-    addTransitionRules(grassDark.name, mud.name, grassDaMudTrans, baseTransitionGroup);
+    addTransitionRules(grassDark.name, mud.name, grassDaMudTrans);
+    baseTiles.push(...grassDaMudTrans);
+    transitionTiles.push(...grassDaMudTrans);
 
-    //grassDark to grass
-    const grass0N = new Tile("grass0N", 1, 30, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grass0E = new Tile("grass0E", 2, 31, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grass0S = new Tile("grass0S", 1, 32, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grass0W = new Tile("grass0W", 0, 31, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const grass0NW = new Tile("grass0NW", 0, 30, SOME_0 * BASE_T_FREQ_MULTI);
-    const grass0NE = new Tile("grass0NE", 2, 30, SOME_0 * BASE_T_FREQ_MULTI);
-    const grass0SE = new Tile("grass0SE", 2, 32, SOME_0 * BASE_T_FREQ_MULTI);
-    const grass0SW = new Tile("grass0SW", 0, 32, SOME_0 * BASE_T_FREQ_MULTI);
-    const grass0CurveNW = new Tile("grass0CurveNW", 0, 33, RARE_2 * BASE_T_FREQ_MULTI);
-    const grass0CurveNE = new Tile("grass0CurveNE", 1, 33, RARE_2 * BASE_T_FREQ_MULTI);
-    const grass0CurveSE = new Tile("grass0CurveSE", 1, 34, RARE_2 * BASE_T_FREQ_MULTI);
-    const grass0CurveSW = new Tile("grass0CurveSW", 0, 34, RARE_2 * BASE_T_FREQ_MULTI);
-    const grass0CurveD0 = new Tile("grass0CurveD0", 2, 33, SOME_0 * BASE_T_FREQ_MULTI);
-    const grass0CurveD1 = new Tile("grass0CurveD1", 2, 34, SOME_0 * BASE_T_FREQ_MULTI);
+    // ## grassDark to grass
+    const grass0N = new Tile("grass0N", [{ x: 1, y: 30, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0E = new Tile("grass0E", [{ x: 2, y: 31, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0S = new Tile("grass0S", [{ x: 1, y: 32, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0W = new Tile("grass0W", [{ x: 0, y: 31, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0NW = new Tile("grass0NW", [{ x: 0, y: 30, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0NE = new Tile("grass0NE", [{ x: 2, y: 30, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0SE = new Tile("grass0SE", [{ x: 2, y: 32, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0SW = new Tile("grass0SW", [{ x: 0, y: 32, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0CurveNW = new Tile("grass0CurveNW", [{ x: 0, y: 33, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0CurveNE = new Tile("grass0CurveNE", [{ x: 1, y: 33, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0CurveSE = new Tile("grass0CurveSE", [{ x: 1, y: 34, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0CurveSW = new Tile("grass0CurveSW", [{ x: 0, y: 34, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0CurveD0 = new Tile("grass0CurveD0", [{ x: 2, y: 33, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grass0CurveD1 = new Tile("grass0CurveD1", [{ x: 2, y: 34, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const grassDarkGrassTrans = [grass0N, grass0E, grass0S, grass0W, grass0NW, grass0NE, grass0SE, grass0SW, grass0CurveNW, grass0CurveNE, grass0CurveSE, grass0CurveSW, grass0CurveD0, grass0CurveD1];
-    addTransitionRules(grassDark.name, grass.name, grassDarkGrassTrans, baseTransitionGroup);
+    addTransitionRules(grassDark.name, grass.name, grassDarkGrassTrans);
+    baseTiles.push(...grassDarkGrassTrans);
+    transitionTiles.push(...grassDarkGrassTrans);
 
-    //stoneGroup
-    const stoneGroup = [];
-    const stoneBaseGroup = [];
-
-    //stone Base
-    const stone0 = new Tile("stone0", 4, 9, VERY_OFTEN_0 * STONE_FREQ_MULTI);
-    stone0.addPossibleBases(baseGroup);
-    addSelfRule(stone0, stoneBaseGroup, true);
-
-    const stone1 = new Tile("stone1", 4, 15, VERY_OFTEN_0 * STONE_FREQ_MULTI);
-    stone1.addPossibleBases(baseGroup);
-    addSelfRule(stone1, stoneBaseGroup, true);
-
-    const stone2 = new Tile("stone2", 4, 21, VERY_OFTEN_0 * STONE_FREQ_MULTI);
-    stone2.addPossibleBases(baseGroup);
-    addSelfRule(stone2, stoneBaseGroup, true);
-
-    groupPush(stoneBaseGroup, stoneGroup);
-
-    //NOTHING to stone0
-    const stone0N = new Tile("stone0N", 4, 8, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone0E = new Tile("stone0E", 5, 9, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone0S = new Tile("stone0S", 4, 10, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone0W = new Tile("stone0W", 3, 9, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone0NW = new Tile("stone0NW", 3, 8, SOME_0 * STONE_FREQ_MULTI);
-    const stone0NE = new Tile("stone0NE", 5, 8, SOME_0 * STONE_FREQ_MULTI);
-    const stone0SE = new Tile("stone0SE", 5, 10, SOME_0 * STONE_FREQ_MULTI);
-    const stone0SW = new Tile("stone0SW", 3, 10, SOME_0 * STONE_FREQ_MULTI);
-    const stone0CurveNW = new Tile("stone0CurveNW", 7, 9, SOME_0 * STONE_FREQ_MULTI);
-    const stone0CurveNE = new Tile("stone0CurveNE", 6, 9, SOME_0 * STONE_FREQ_MULTI);
-    const stone0CurveSE = new Tile("stone0CurveSE", 6, 8, SOME_0 * STONE_FREQ_MULTI);
-    const stone0CurveSW = new Tile("stone0CurveSW", 7, 8, SOME_0 * STONE_FREQ_MULTI);
-
-    const stone0_all = [stone0N, stone0E, stone0S, stone0W, stone0NW, stone0NE, stone0SE, stone0SW, stone0CurveNW, stone0CurveNE, stone0CurveSE, stone0CurveSW];
-    addBasesToAll(baseGroup, stone0_all);
-    addBasesToAll(stoneBaseGroup, stone0_all);
-    addTransitionRules(NOTHING, stone0.name, stone0_all, stoneGroup);
-
-    //NOTHING to stone1
-    const stone1N = new Tile("stone1N", 4, 14, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone1E = new Tile("stone1E", 5, 15, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone1S = new Tile("stone1S", 4, 16, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone1W = new Tile("stone1W", 3, 15, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone1NW = new Tile("stone1NW", 3, 14, SOME_0 * STONE_FREQ_MULTI);
-    const stone1NE = new Tile("stone1NE", 5, 14, SOME_0 * STONE_FREQ_MULTI);
-    const stone1SE = new Tile("stone1SE", 5, 16, SOME_0 * STONE_FREQ_MULTI);
-    const stone1SW = new Tile("stone1SW", 3, 16, SOME_0 * STONE_FREQ_MULTI);
-    const stone1CurveNW = new Tile("stone1CurveNW", 6, 14, SOME_0 * STONE_FREQ_MULTI);
-    const stone1CurveNE = new Tile("stone1CurveNE", 7, 14, SOME_0 * STONE_FREQ_MULTI);
-    const stone1CurveSE = new Tile("stone1CurveSE", 7, 15, SOME_0 * STONE_FREQ_MULTI);
-    const stone1CurveSW = new Tile("stone1CurveSW", 6, 15, SOME_0 * STONE_FREQ_MULTI);
-
-    const stone1_all = [stone1N, stone1E, stone1S, stone1W, stone1NW, stone1NE, stone1SE, stone1SW, stone1CurveNW, stone1CurveNE, stone1CurveSE, stone1CurveSW];
-    addBasesToAll(baseGroup, stone1_all);
-    addBasesToAll(stoneBaseGroup, stone0_all);
-    addTransitionRules(NOTHING, stone1.name, stone1_all, stoneGroup);
-
-    //NOTHING to stone2
-    const stone2N = new Tile("stone2N", 4, 20, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone2E = new Tile("stone2E", 5, 21, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone2S = new Tile("stone2S", 4, 22, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone2W = new Tile("stone2W", 3, 21, OFTEN_0 * STONE_FREQ_MULTI);
-    const stone2NW = new Tile("stone2NW", 3, 20, SOME_0 * STONE_FREQ_MULTI);
-    const stone2NE = new Tile("stone2NE", 5, 20, SOME_0 * STONE_FREQ_MULTI);
-    const stone2SE = new Tile("stone2SE", 5, 22, SOME_0 * STONE_FREQ_MULTI);
-    const stone2SW = new Tile("stone2SW", 3, 22, SOME_0 * STONE_FREQ_MULTI);
-    const stone2CurveNW = new Tile("stone2CurveNW", 7, 21, SOME_0 * STONE_FREQ_MULTI);
-    const stone2CurveNE = new Tile("stone2CurveNE", 6, 21, SOME_0 * STONE_FREQ_MULTI);
-    const stone2CurveSE = new Tile("stone2CurveSE", 6, 20, SOME_0 * STONE_FREQ_MULTI);
-    const stone2CurveSW = new Tile("stone2CurveSW", 7, 20, SOME_0 * STONE_FREQ_MULTI);
-
-    const stone2_all = [stone2N, stone2E, stone2S, stone2W, stone2NW, stone2NE, stone2SE, stone2SW, stone2CurveNW, stone2CurveNE, stone2CurveSE, stone2CurveSW];
-    addBasesToAll(baseGroup, stone2_all);
-    addBasesToAll(stoneBaseGroup, stone0_all);
-    addTransitionRules(NOTHING, stone2.name, stone2_all, stoneGroup);
-
-    //beachGroup
-    const beachGroup = [];
-
-    const beach = new Tile("beach", 5, 29, VERY_OFTEN_0 * BASE_FREQ_MULTI);
-    addSelfRule(beach, beachGroup);
-
-    const beachWater = new Tile("beachWater", 4, 31, VERY_OFTEN_0 * BASE_FREQ_MULTI);
-    addSelfRule(beachWater, beachGroup);
-
-    const decoBeach0 = new Tile("decoBeach0", 0, 29, SOME_0 * DECO_FREQ_MULTI);
-    const decoBeach1 = new Tile("decoBeach1", 1, 29, SOME_0 * DECO_FREQ_MULTI);
-    const decoBeach2 = new Tile("decoBeach2", 2, 29, SOME_0 * DECO_FREQ_MULTI);
-    const decoBeach3 = new Tile("decoBeach3", 3, 29, SOME_0 * DECO_FREQ_MULTI);
-    const decoBeach4 = new Tile("decoBeach4", 4, 29, SOME_0 * DECO_FREQ_MULTI);
-
-    addBasesToAll([beach], [decoBeach0, decoBeach1, decoBeach2, decoBeach3, decoBeach4]);
-    addRuleToAll(nothing_rule, [decoBeach0, decoBeach1, decoBeach2, decoBeach3, decoBeach4]);
-    beachGroup.push(decoBeach0, decoBeach1, decoBeach2, decoBeach3, decoBeach4);
-
-    //beach to beachWater
-    const beachWaterN = new Tile("beachWaterN", 4, 30, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachWaterE = new Tile("beachWaterE", 5, 31, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachWaterS = new Tile("beachWaterS", 4, 32, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachWaterW = new Tile("beachWaterW", 3, 31, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachWaterNW = new Tile("beachWaterNW", 3, 30, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachWaterNE = new Tile("beachWaterNE", 5, 30, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachWaterSE = new Tile("beachWaterSE", 5, 32, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachWaterSW = new Tile("beachWaterSW", 3, 32, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachWaterCurveNW = new Tile("beachWaterCurveNW", 3, 33, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachWaterCurveNE = new Tile("beachWaterCurveNE", 4, 33, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachWaterCurveSE = new Tile("beachWaterCurveSE", 4, 34, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachWaterCurveSW = new Tile("beachWaterCurveSW", 3, 34, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachWaterCurveD0 = new Tile("beachWaterCurveD0", 5, 33, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachWaterCurveD1 = new Tile("beachWaterCurveD1", 5, 34, SOME_0 * BASE_T_FREQ_MULTI);
+    // ## beach to beachWater
+    const beachWaterN = new Tile("beachWaterN", [{ x: 4, y: 30, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterE = new Tile("beachWaterE", [{ x: 5, y: 31, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterS = new Tile("beachWaterS", [{ x: 4, y: 32, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterW = new Tile("beachWaterW", [{ x: 3, y: 31, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterNW = new Tile("beachWaterNW", [{ x: 3, y: 30, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterNE = new Tile("beachWaterNE", [{ x: 5, y: 30, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterSE = new Tile("beachWaterSE", [{ x: 5, y: 32, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterSW = new Tile("beachWaterSW", [{ x: 3, y: 32, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterCurveNW = new Tile("beachWaterCurveNW", [{ x: 3, y: 33, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterCurveNE = new Tile("beachWaterCurveNE", [{ x: 4, y: 33, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterCurveSE = new Tile("beachWaterCurveSE", [{ x: 4, y: 34, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterCurveSW = new Tile("beachWaterCurveSW", [{ x: 3, y: 34, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterCurveD0 = new Tile("beachWaterCurveD0", [{ x: 5, y: 33, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachWaterCurveD1 = new Tile("beachWaterCurveD1", [{ x: 5, y: 34, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const beachWaterTrans = [beachWaterN, beachWaterE, beachWaterS, beachWaterW, beachWaterNW, beachWaterNE, beachWaterSE, beachWaterSW, beachWaterCurveNW, beachWaterCurveNE, beachWaterCurveSE, beachWaterCurveSW, beachWaterCurveD0, beachWaterCurveD1];
-    addTransitionRules(beach.name, beachWater.name, beachWaterTrans, beachGroup);
+    addTransitionRules(beach.name, beachWater.name, beachWaterTrans);
+    baseTiles.push(...beachWaterTrans);
+    transitionTiles.push(...beachWaterTrans);
 
-    //grass to beach
-    const beachN = new Tile("beachN", 1, 42, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachE = new Tile("beachE", 2, 43, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachS = new Tile("beachS", 1, 44, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachW = new Tile("beachW", 0, 43, OFTEN_0 * BASE_T_FREQ_MULTI);
-    const beachNW = new Tile("beachNW", 0, 42, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachNE = new Tile("beachNE", 2, 42, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachSE = new Tile("beachSE", 2, 44, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachSW = new Tile("beachSW", 0, 44, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachCurveNW = new Tile("beachCurveNW", 0, 45, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachCurveNE = new Tile("beachCurveNE", 1, 45, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachCurveSE = new Tile("beachCurveSE", 1, 46, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachCurveSW = new Tile("beachCurveSW", 0, 46, RARE_2 * BASE_T_FREQ_MULTI);
-    const beachCurveD0 = new Tile("beachCurveD0", 2, 45, SOME_0 * BASE_T_FREQ_MULTI);
-    const beachCurveD1 = new Tile("beachCurveD1", 2, 46, SOME_0 * BASE_T_FREQ_MULTI);
+    // ## grass to beach
+    const beachN = new Tile("beachN", [{ x: 1, y: 42, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachE = new Tile("beachE", [{ x: 2, y: 43, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachS = new Tile("beachS", [{ x: 1, y: 44, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachW = new Tile("beachW", [{ x: 0, y: 43, weight: 1 }], OFTEN_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachNW = new Tile("beachNW", [{ x: 0, y: 42, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachNE = new Tile("beachNE", [{ x: 2, y: 42, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachSE = new Tile("beachSE", [{ x: 2, y: 44, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachSW = new Tile("beachSW", [{ x: 0, y: 44, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachCurveNW = new Tile("beachCurveNW", [{ x: 0, y: 45, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachCurveNE = new Tile("beachCurveNE", [{ x: 1, y: 45, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachCurveSE = new Tile("beachCurveSE", [{ x: 1, y: 46, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachCurveSW = new Tile("beachCurveSW", [{ x: 0, y: 46, weight: 1 }], RARE_2 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachCurveD0 = new Tile("beachCurveD0", [{ x: 2, y: 45, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const beachCurveD1 = new Tile("beachCurveD1", [{ x: 2, y: 46, weight: 1 }], SOME_0 * BASE_T_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const grassBeachTrans = [beachN, beachE, beachS, beachW, beachNW, beachNE, beachSE, beachSW, beachCurveNW, beachCurveNE, beachCurveSE, beachCurveSW, beachCurveD0, beachCurveD1];
-    addTransitionRules(grass.name, beach.name, grassBeachTrans, beachGroup);
+    addTransitionRules(grass.name, beach.name, grassBeachTrans);
+    baseTiles.push(...grassBeachTrans);
+    transitionTiles.push(...grassBeachTrans);
 
-    //decoGroup
-    const decoGroup = [];
-    const overlappable = [];
-    overlappable.push(stone0S, stone1S, stone2S);
-    overlappable.push(stone0SE, stone1SE, stone2SE);
-    overlappable.push(stone0SW, stone1SW, stone2SW);
+    allTiles.push(...baseTiles);
 
-    //base alternatives
-    const grassLight_alter = new Tile("grassL_alter", 1, 11, OFTEN_1);
-    grassLight_alter.addRule(new Rule(grassLight.name, grassLight.name, grassLight.name, grassLight.name));
-    decoGroup.push(grassLight_alter);
+    // # Cliffs (Stone transition tiles)
+    // ## TRANSPARENT to stone0
+    const stone0N = new Tile("stone0N", [{ x: 4, y: 8, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0E = new Tile("stone0E", [{ x: 5, y: 9, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0S = new Tile("stone0S", [{ x: 4, y: 10, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0W = new Tile("stone0W", [{ x: 3, y: 9, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0NW = new Tile("stone0NW", [{ x: 3, y: 8, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0NE = new Tile("stone0NE", [{ x: 5, y: 8, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0SE = new Tile("stone0SE", [{ x: 5, y: 10, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0SW = new Tile("stone0SW", [{ x: 3, y: 10, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0CurveNW = new Tile("stone0CurveNW", [{ x: 7, y: 9, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0CurveNE = new Tile("stone0CurveNE", [{ x: 6, y: 9, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0CurveSE = new Tile("stone0CurveSE", [{ x: 6, y: 8, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0CurveSW = new Tile("stone0CurveSW", [{ x: 7, y: 8, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone0_all = [stone0N, stone0E, stone0S, stone0W, stone0NW, stone0NE, stone0SE, stone0SW, stone0CurveNW, stone0CurveNE, stone0CurveSE, stone0CurveSW];
 
-    const grassDark_alter = new Tile("grassDa_alter", 0, 17, OFTEN_1);
-    grassDark_alter.addRule(new Rule(grassDark.name, grassDark.name, grassDark.name, grassDark.name));
-    decoGroup.push(grassDark_alter);
+    // ## TRANSPARENT to stone1
+    const stone1N = new Tile("stone1N", [{ x: 4, y: 14, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1E = new Tile("stone1E", [{ x: 5, y: 15, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1S = new Tile("stone1S", [{ x: 4, y: 16, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1W = new Tile("stone1W", [{ x: 3, y: 15, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1NW = new Tile("stone1NW", [{ x: 3, y: 14, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1NE = new Tile("stone1NE", [{ x: 5, y: 14, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1SE = new Tile("stone1SE", [{ x: 5, y: 16, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1SW = new Tile("stone1SW", [{ x: 3, y: 16, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1CurveNW = new Tile("stone1CurveNW", [{ x: 6, y: 14, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1CurveNE = new Tile("stone1CurveNE", [{ x: 7, y: 14, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1CurveSE = new Tile("stone1CurveSE", [{ x: 7, y: 15, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1CurveSW = new Tile("stone1CurveSW", [{ x: 6, y: 15, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone1_all = [stone1N, stone1E, stone1S, stone1W, stone1NW, stone1NE, stone1SE, stone1SW, stone1CurveNW, stone1CurveNE, stone1CurveSE, stone1CurveSW];
 
-    const mud_alter = new Tile("mud_alternative", 1, 17, OFTEN_1);
-    mud_alter.addRule(new Rule(mud.name, mud.name, mud.name, mud.name));
-    decoGroup.push(mud_alter);
+    // ## TRANSPARENT to stone2
+    const stone2N = new Tile("stone2N", [{ x: 4, y: 20, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2E = new Tile("stone2E", [{ x: 5, y: 21, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2S = new Tile("stone2S", [{ x: 4, y: 22, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2W = new Tile("stone2W", [{ x: 3, y: 21, weight: 1 }], OFTEN_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2NW = new Tile("stone2NW", [{ x: 3, y: 20, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2NE = new Tile("stone2NE", [{ x: 5, y: 20, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2SE = new Tile("stone2SE", [{ x: 5, y: 22, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2SW = new Tile("stone2SW", [{ x: 3, y: 22, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2CurveNW = new Tile("stone2CurveNW", [{ x: 7, y: 21, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2CurveNE = new Tile("stone2CurveNE", [{ x: 6, y: 21, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2CurveSE = new Tile("stone2CurveSE", [{ x: 6, y: 20, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2CurveSW = new Tile("stone2CurveSW", [{ x: 7, y: 20, weight: 1 }], SOME_0 * STONE_FREQ_MULTI, LAYER.OVERLAY);
+    const stone2_all = [stone2N, stone2E, stone2S, stone2W, stone2NW, stone2NE, stone2SE, stone2SW, stone2CurveNW, stone2CurveNE, stone2CurveSE, stone2CurveSW];
 
-    //deco 1-1
-    const flower0 = new Tile("flower0", 0, 2, OFTEN_1 * DECO_FREQ_MULTI);
-    const flower1 = new Tile("flower1", 1, 2, OFTEN_1 * DECO_FREQ_MULTI);
-    const flower2 = new Tile("flower2", 2, 2, OFTEN_1 * DECO_FREQ_MULTI);
-    const grassTuft0 = new Tile("grassTuft0", 3, 2, OFTEN_2 * DECO_FREQ_MULTI);
-    const grassTuft1 = new Tile("grassTuft1", 4, 2, OFTEN_2 * DECO_FREQ_MULTI);
-    const flower3 = new Tile("flower3", 5, 2, OFTEN_1 * DECO_FREQ_MULTI);
-    const treeStump = new Tile("treeStump", 6, 2, RARE_2 * DECO_FREQ_MULTI);
-    const rock0 = new Tile("rock0", 5, 3, SOME_0 * DECO_FREQ_MULTI);
-    const rock1 = new Tile("rock1", 5, 4, SOME_0 * DECO_FREQ_MULTI);
-    const rock2 = new Tile("rock2", 0, 3, SOME_0 * DECO_FREQ_MULTI);
-    const mush = new Tile("mush", 2, 4, RARE_2 * DECO_FREQ_MULTI);
-    const moss = new Tile("moss", 1, 4, SOME_0 * DECO_FREQ_MULTI);
+    cliffTiles.push(...stone0_all, ...stone1_all, ...stone2_all);
+    cliffTiles.forEach(tile => tile.addBases(baseTiles));
+    addTransitionRules(TRANSPARENT, stone0.name, stone0_all);
+    addTransitionRules(TRANSPARENT, stone1.name, stone1_all);
+    addTransitionRules(TRANSPARENT, stone2.name, stone2_all);
+    allTiles.push(...cliffTiles);
 
-    addBasesToAll(baseGroup, [nothing, flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush, moss]);
-    addBasesToAll(stoneBaseGroup, [rock0, rock1, rock2]);
-    addRuleToAll(nothing_rule, [nothing, flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush, moss]);
-    decoGroup.push(flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, treeStump, rock0, rock1, rock2, mush, moss);
+    // # Deco tiles
+    // ## deco 1x1 full transparent
+    const deco1x1_base0 = new Tile("deco1x1", [
+        { x: 0, y: 2, weight: 1 }, // flower0
+        { x: 1, y: 2, weight: 1 }, // flower1
+        { x: 2, y: 2, weight: 1 }, // flower2
+        { x: 3, y: 2, weight: 1 }, // grassTuft0
+        { x: 4, y: 2, weight: 1 }, // grassTuft1
+        { x: 5, y: 2, weight: 1 }, // flower3
+        { x: 2, y: 4, weight: 1 }, // mush
+        { x: 1, y: 4, weight: 1 } // moss
+    ], OFTEN_1 * DECO_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
+    const deco1x1_base1 = new Tile("deco1x1", [
+        { x: 6, y: 2, weight: 1 }, // treeStump
+        { x: 5, y: 3, weight: 1 }, // rock0
+        { x: 5, y: 4, weight: 1 }, // rock1
+        { x: 0, y: 3, weight: 1 }, // rock2
+    ], OFTEN_1 * DECO_FREQ_MULTI, LAYER.DECO);
+    deco1x1_base0.addBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+    deco1x1_base0.addRule(fullTransparentRule);
+    deco1x1_base1.addBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+    deco1x1_base1.addRule(fullTransparentRule);
 
-    //deco 1-2
-    const treeTrunk_0 = new Tile("treeTrunk_0", 5, 1, SOME_0 * DECO_FREQ_MULTI);
-    const treeTrunk_1 = new Tile("treeTrunk_1", 6, 1, SOME_0 * DECO_FREQ_MULTI);
-    const treeTrunkMossy_0 = new Tile("treeTrunkMossy_0", 1, 1, SOME_0 * DECO_FREQ_MULTI);
-    const treeTrunkMossy_1 = new Tile("treeTrunkMossy_1", 2, 1, SOME_0 * DECO_FREQ_MULTI);
-    const rock4_0 = new Tile("rock4_0", 1, 3, RARE_2 * DECO_FREQ_MULTI);
-    const rock4_1 = new Tile("rock4_1", 2, 3, RARE_2 * DECO_FREQ_MULTI);
+    const deco1x1_stone = new Tile("deco1x1_stone", [
+        { x: 5, y: 3, weight: 1 }, // rock0
+        { x: 5, y: 4, weight: 1 }, // rock1
+        { x: 0, y: 3, weight: 1 }  // rock2
+    ], OFTEN_1 * DECO_FREQ_MULTI, LAYER.DECO);
+    deco1x1_stone.addBases([stone0, stone1, stone2]);
+    deco1x1_stone.addRule(fullTransparentRule);
 
-    addBasesToAll(baseGroup, [treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1])
-    addBasesToAll(stoneBaseGroup, [rock4_0, rock4_1]);
-    treeTrunk_0.addRule(new Rule(NOTHING, treeTrunk_0.name + NOTHING, NOTHING, NOTHING));
-    treeTrunk_1.addRule(new Rule(NOTHING, NOTHING, NOTHING, treeTrunk_0.name + NOTHING));
-    treeTrunkMossy_0.addRule(new Rule(NOTHING, treeTrunkMossy_0.name + NOTHING, NOTHING, NOTHING));
-    treeTrunkMossy_1.addRule(new Rule(NOTHING, NOTHING, NOTHING, treeTrunkMossy_0.name + NOTHING));
-    rock4_0.addRule(new Rule(NOTHING, rock4_0.name + NOTHING, NOTHING, NOTHING));
-    rock4_1.addRule(new Rule(NOTHING, NOTHING, NOTHING, rock4_0.name + NOTHING));
-    decoGroup.push(treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1);
+    const deco1x1_beach = new Tile("deco1x1_beach", [
+        { x: 0, y: 29, weight: 1 }, // decoBeach0
+        { x: 1, y: 29, weight: 1 }, // decoBeach1
+        { x: 2, y: 29, weight: 1 }, // decoBeach2
+        { x: 3, y: 29, weight: 1 }, // decoBeach3
+        { x: 4, y: 29, weight: 1 }  // decoBeach4
+    ], SOME_0 * DECO_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
+    deco1x1_beach.addBases([beach]);
+    deco1x1_beach.addRule(fullTransparentRule);
 
-    //deco 2-2
-    const bigStone0_0 = new Tile("bigStone0_0", 3, 3, RARE_1 * DECO_FREQ_MULTI);
-    const bigStone0_1 = new Tile("bigStone0_1", 4, 3, RARE_1 * DECO_FREQ_MULTI);
-    const bigStone0_2 = new Tile("bigStone0_2", 3, 4, RARE_1 * DECO_FREQ_MULTI);
-    const bigStone0_3 = new Tile("bigStone0_3", 4, 4, RARE_1 * DECO_FREQ_MULTI);
+    decoTiles.push(deco1x1_base0, deco1x1_base1, deco1x1_stone, deco1x1_beach);
+    allTiles.push(deco1x1_base0, deco1x1_base1, deco1x1_stone, deco1x1_beach);
 
-    addBasesToAll(baseGroup, [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3])
-    addBasesToAll(stoneBaseGroup, [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3]);
-    bigStone0_0.addRule(new Rule(NOTHING, bigStone0_0.name + NOTHING, bigStone0_2.name + NOTHING, NOTHING));
-    bigStone0_1.addRule(new Rule(NOTHING, NOTHING, bigStone0_1.name + NOTHING, bigStone0_0.name + NOTHING));
-    bigStone0_2.addRule(new Rule(bigStone0_2.name + NOTHING, bigStone0_3.name + NOTHING, NOTHING, NOTHING));
-    bigStone0_3.addRule(new Rule(bigStone0_1.name + NOTHING, NOTHING, NOTHING, bigStone0_3.name + NOTHING));
+    if (false) {
+        //deco 1-2
+        const treeTrunk_0 = new Tile("treeTrunk_0", [{ x: 5, y: 1, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const treeTrunk_1 = new Tile("treeTrunk_1", [{ x: 6, y: 1, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const treeTrunkMossy_0 = new Tile("treeTrunkMossy_0", [{ x: 1, y: 1, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const treeTrunkMossy_1 = new Tile("treeTrunkMossy_1", [{ x: 2, y: 1, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const rock4_0 = new Tile("rock4_0", [{ x: 1, y: 3, weight: 1 }], RARE_2 * DECO_FREQ_MULTI);
+        const rock4_1 = new Tile("rock4_1", [{ x: 2, y: 3, weight: 1 }], RARE_2 * DECO_FREQ_MULTI);
 
-    decoGroup.push(bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3);
-    overlappable.push(bigStone0_2, bigStone0_3);
+        addBasesToAll(baseTiles, [treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1])
+        addBasesToAll(stoneBaseGroup, [rock4_0, rock4_1]);
+        treeTrunk_0.addRule(new Rule(TRANSPARENT, treeTrunk_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        treeTrunk_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, treeTrunk_0.name + TRANSPARENT));
+        treeTrunkMossy_0.addRule(new Rule(TRANSPARENT, treeTrunkMossy_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        treeTrunkMossy_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, treeTrunkMossy_0.name + TRANSPARENT));
+        rock4_0.addRule(new Rule(TRANSPARENT, rock4_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        rock4_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, rock4_0.name + TRANSPARENT));
+        decoGroup.push(treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1);
 
-    //deco X-1 (cliff)
-    const cliff_0 = new Tile("cliff_0", 5, 0, SOME_1 * DECO_FREQ_MULTI);
-    const cliff_1 = new Tile("cliff_1", 6, 0, SOME_2 * DECO_FREQ_MULTI);
-    const cliff_2 = new Tile("cliff_2", 7, 0, SOME_1 * DECO_FREQ_MULTI);
+        //deco 2-2
+        const bigStone0_0 = new Tile("bigStone0_0", [{ x: 3, y: 3, weight: 1 }], RARE_1 * DECO_FREQ_MULTI);
+        const bigStone0_1 = new Tile("bigStone0_1", [{ x: 4, y: 3, weight: 1 }], RARE_1 * DECO_FREQ_MULTI);
+        const bigStone0_2 = new Tile("bigStone0_2", [{ x: 3, y: 4, weight: 1 }], RARE_1 * DECO_FREQ_MULTI);
+        const bigStone0_3 = new Tile("bigStone0_3", [{ x: 4, y: 4, weight: 1 }], RARE_1 * DECO_FREQ_MULTI);
 
-    addBasesToAll(baseGroup, [cliff_0, cliff_1, cliff_2])
-    addBasesToAll(stoneBaseGroup, [cliff_0, cliff_1, cliff_2])
-    cliff_0.addRule(new Rule(NOTHING, cliff_1.name + NOTHING, NOTHING, NOTHING));
-    cliff_1.addRule(new Rule(NOTHING, cliff_1.name + NOTHING, NOTHING, cliff_1.name + NOTHING));
-    cliff_2.addRule(new Rule(NOTHING, NOTHING, NOTHING, cliff_1.name + NOTHING));
+        addBasesToAll(baseTiles, [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3])
+        addBasesToAll(stoneBaseGroup, [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3]);
+        bigStone0_0.addRule(new Rule(TRANSPARENT, bigStone0_0.name + TRANSPARENT, bigStone0_2.name + TRANSPARENT, TRANSPARENT));
+        bigStone0_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone0_1.name + TRANSPARENT, bigStone0_0.name + TRANSPARENT));
+        bigStone0_2.addRule(new Rule(bigStone0_2.name + TRANSPARENT, bigStone0_3.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        bigStone0_3.addRule(new Rule(bigStone0_1.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, bigStone0_3.name + TRANSPARENT));
 
-    decoGroup.push(cliff_0, cliff_1, cliff_2);
+        decoGroup.push(bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3);
+        overlappable.push(bigStone0_2, bigStone0_3);
 
-    //deco X-X (tall grasses)
-    const tallGrass0 = new Tile("tallGrass0", 4, 6, OFTEN_0 * DECO_FREQ_MULTI);
-    const tallGrass0N = new Tile("tallGrass0N", 4, 5, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass0E = new Tile("tallGrass0E", 5, 6, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass0S = new Tile("tallGrass0S", 4, 7, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass0W = new Tile("tallGrass0W", 3, 6, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass0NW = new Tile("tallGrass0NW", 3, 5, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass0NE = new Tile("tallGrass0NE", 5, 5, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass0SE = new Tile("tallGrass0SE", 5, 7, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass0SW = new Tile("tallGrass0SW", 3, 7, SOME_0 * DECO_FREQ_MULTI);
+        //deco X-1 (cliff)
+        const cliff_0 = new Tile("cliff_0", [{ x: 5, y: 0, weight: 1 }], SOME_1 * DECO_FREQ_MULTI);
+        const cliff_1 = new Tile("cliff_1", [{ x: 6, y: 0, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const cliff_2 = new Tile("cliff_2", [{ x: 7, y: 0, weight: 1 }], SOME_1 * DECO_FREQ_MULTI);
 
-    const tallGrass1 = new Tile("tallGrass1", 4, 12, OFTEN_0 * DECO_FREQ_MULTI);
-    const tallGrass1N = new Tile("tallGrass1N", 4, 11, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass1E = new Tile("tallGrass1E", 5, 12, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass1S = new Tile("tallGrass1S", 4, 13, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass1W = new Tile("tallGrass1W", 3, 12, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass1NW = new Tile("tallGrass1NW", 3, 11, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass1NE = new Tile("tallGrass1NE", 5, 11, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass1SE = new Tile("tallGrass1SE", 5, 13, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass1SW = new Tile("tallGrass1SW", 3, 13, SOME_0 * DECO_FREQ_MULTI);
+        addBasesToAll(baseTiles, [cliff_0, cliff_1, cliff_2])
+        addBasesToAll(stoneBaseGroup, [cliff_0, cliff_1, cliff_2])
+        cliff_0.addRule(new Rule(TRANSPARENT, cliff_1.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        cliff_1.addRule(new Rule(TRANSPARENT, cliff_1.name + TRANSPARENT, TRANSPARENT, cliff_1.name + TRANSPARENT));
+        cliff_2.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, cliff_1.name + TRANSPARENT));
 
-    const tallGrass2 = new Tile("tallGrass2", 4, 18, OFTEN_0 * DECO_FREQ_MULTI);
-    const tallGrass2N = new Tile("tallGrass2N", 4, 17, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass2E = new Tile("tallGrass2E", 5, 18, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass2S = new Tile("tallGrass2S", 4, 19, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass2W = new Tile("tallGrass2W", 3, 18, SOME_2 * DECO_FREQ_MULTI);
-    const tallGrass2NW = new Tile("tallGrass2NW", 3, 17, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass2NE = new Tile("tallGrass2NE", 5, 17, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass2SE = new Tile("tallGrass2SE", 5, 19, SOME_0 * DECO_FREQ_MULTI);
-    const tallGrass2SW = new Tile("tallGrass2SW", 3, 19, SOME_0 * DECO_FREQ_MULTI);
+        decoGroup.push(cliff_0, cliff_1, cliff_2);
 
-    tallGrass0.addPossibleBases(baseGroup);
-    tallGrass1.addPossibleBases(baseGroup);
-    tallGrass2.addPossibleBases(baseGroup);
+        //deco X-X (tall grasses)
+        const tallGrass0 = new Tile("tallGrass0", [{ x: 4, y: 6, weight: 1 }], OFTEN_0 * DECO_FREQ_MULTI);
+        const tallGrass0N = new Tile("tallGrass0N", [{ x: 4, y: 5, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass0E = new Tile("tallGrass0E", [{ x: 5, y: 6, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass0S = new Tile("tallGrass0S", [{ x: 4, y: 7, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass0W = new Tile("tallGrass0W", [{ x: 3, y: 6, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass0NW = new Tile("tallGrass0NW", [{ x: 3, y: 5, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass0NE = new Tile("tallGrass0NE", [{ x: 5, y: 5, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass0SE = new Tile("tallGrass0SE", [{ x: 5, y: 7, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass0SW = new Tile("tallGrass0SW", [{ x: 3, y: 7, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
 
-    addSelfRule(tallGrass0, decoGroup, true);
-    addSelfRule(tallGrass1, decoGroup, true);
-    addSelfRule(tallGrass2, decoGroup, true);
+        const tallGrass1 = new Tile("tallGrass1", [{ x: 4, y: 12, weight: 1 }], OFTEN_0 * DECO_FREQ_MULTI);
+        const tallGrass1N = new Tile("tallGrass1N", [{ x: 4, y: 11, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass1E = new Tile("tallGrass1E", [{ x: 5, y: 12, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass1S = new Tile("tallGrass1S", [{ x: 4, y: 13, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass1W = new Tile("tallGrass1W", [{ x: 3, y: 12, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass1NW = new Tile("tallGrass1NW", [{ x: 3, y: 11, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass1NE = new Tile("tallGrass1NE", [{ x: 5, y: 11, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass1SE = new Tile("tallGrass1SE", [{ x: 5, y: 13, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass1SW = new Tile("tallGrass1SW", [{ x: 3, y: 13, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
 
-    overlappable.push(tallGrass0S, tallGrass1S, tallGrass2S);
-    overlappable.push(tallGrass0SE, tallGrass1SE, tallGrass2SE);
-    overlappable.push(tallGrass0SW, tallGrass1SW, tallGrass2SW);
+        const tallGrass2 = new Tile("tallGrass2", [{ x: 4, y: 18, weight: 1 }], OFTEN_0 * DECO_FREQ_MULTI);
+        const tallGrass2N = new Tile("tallGrass2N", [{ x: 4, y: 17, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass2E = new Tile("tallGrass2E", [{ x: 5, y: 18, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass2S = new Tile("tallGrass2S", [{ x: 4, y: 19, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass2W = new Tile("tallGrass2W", [{ x: 3, y: 18, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const tallGrass2NW = new Tile("tallGrass2NW", [{ x: 3, y: 17, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass2NE = new Tile("tallGrass2NE", [{ x: 5, y: 17, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass2SE = new Tile("tallGrass2SE", [{ x: 5, y: 19, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const tallGrass2SW = new Tile("tallGrass2SW", [{ x: 3, y: 19, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
 
-    addBasesToAll(baseGroup, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW]);
-    addBasesToAll(baseGroup, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW]);
-    addBasesToAll(baseGroup, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW]);
-    addTransitionRules(NOTHING, tallGrass0.name, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW], decoGroup);
-    addTransitionRules(NOTHING, tallGrass1.name, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW], decoGroup);
-    addTransitionRules(NOTHING, tallGrass2.name, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW], decoGroup);
+        tallGrass0.addBases(baseTiles);
+        tallGrass1.addBases(baseTiles);
+        tallGrass2.addBases(baseTiles);
 
-    //waterGroup
-    const waterGroup = [];
+        addSelfRule(tallGrass0, decoGroup, true);
+        addSelfRule(tallGrass1, decoGroup, true);
+        addSelfRule(tallGrass2, decoGroup, true);
 
-    //water0
-    const water0 = new Tile("water0", 4, 27, VERY_OFTEN_1 * WATER_FREQ_MULTI);
-    water0.addPossibleBases(baseGroup);
-    addSelfRule(water0, waterGroup, true);
+        overlappable.push(tallGrass0S, tallGrass1S, tallGrass2S);
+        overlappable.push(tallGrass0SE, tallGrass1SE, tallGrass2SE);
+        overlappable.push(tallGrass0SW, tallGrass1SW, tallGrass2SW);
 
-    //NOTHING to water0
-    const water0N = new Tile("water0N", 4, 26, OFTEN_0 * WATER_FREQ_MULTI);
-    const water0E = new Tile("water0E", 5, 27, OFTEN_0 * WATER_FREQ_MULTI);
-    const water0S = new Tile("water0S", 4, 28, OFTEN_0 * WATER_FREQ_MULTI);
-    const water0W = new Tile("water0W", 3, 27, OFTEN_0 * WATER_FREQ_MULTI);
-    const water0NW = new Tile("water0NW", 3, 26, SOME_1 * WATER_FREQ_MULTI);
-    const water0NE = new Tile("water0NE", 5, 26, SOME_1 * WATER_FREQ_MULTI);
-    const water0SE = new Tile("water0SE", 5, 28, SOME_1 * WATER_FREQ_MULTI);
-    const water0SW = new Tile("water0SW", 3, 28, SOME_1 * WATER_FREQ_MULTI);
-    const water0CurveNW = new Tile("water0CurveNW", 6, 28, SOME_0 * WATER_FREQ_MULTI);
-    const water0CurveNE = new Tile("water0CurveNE", 7, 28, SOME_0 * WATER_FREQ_MULTI);
-    const water0CurveSE = new Tile("water0CurveSE", 7, 29, SOME_0 * WATER_FREQ_MULTI);
-    const water0CurveSW = new Tile("water0CurveSW", 6, 29, SOME_0 * WATER_FREQ_MULTI);
-    const water0CurveD0 = new Tile("water0CurveD0", 6, 24, RARE_0 * WATER_FREQ_MULTI);
-    const water0CurveD1 = new Tile("water0CurveD1", 6, 25, RARE_0 * WATER_FREQ_MULTI);
+        addBasesToAll(baseTiles, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW]);
+        addBasesToAll(baseTiles, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW]);
+        addBasesToAll(baseTiles, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW]);
+        addTransitionRules(TRANSPARENT, tallGrass0.name, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW], decoGroup);
+        addTransitionRules(TRANSPARENT, tallGrass1.name, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW], decoGroup);
+        addTransitionRules(TRANSPARENT, tallGrass2.name, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW], decoGroup);
 
-    const water0_all = [water0N, water0E, water0S, water0W, water0NW, water0NE, water0SE, water0SW, water0CurveNW, water0CurveNE, water0CurveSE, water0CurveSW, water0CurveD0, water0CurveD1];
-    addBasesToAll(baseGroup, water0_all);
-    addTransitionRules(NOTHING, water0.name, water0_all, waterGroup);
+        //waterGroup
+        const waterGroup = [];
 
-    //water1
-    const water1 = new Tile("water1", 1, 27, VERY_OFTEN_0 * WATER_FREQ_MULTI);
-    water1.addPossibleBases(baseGroup);
-    addSelfRule(water1, waterGroup, true);
+        //water0
+        const water0 = new Tile("water0", [{ x: 4, y: 27, weight: 1 }], VERY_OFTEN_1 * WATER_FREQ_MULTI);
+        water0.addBases(baseTiles);
+        addSelfRule(water0, waterGroup, true);
 
-    //NOTHING to water1
-    const water1N = new Tile("water1N", 1, 26, OFTEN_0 * WATER_FREQ_MULTI);
-    const water1E = new Tile("water1E", 2, 27, OFTEN_0 * WATER_FREQ_MULTI);
-    const water1S = new Tile("water1S", 1, 28, OFTEN_0 * WATER_FREQ_MULTI);
-    const water1W = new Tile("water1W", 0, 27, OFTEN_0 * WATER_FREQ_MULTI);
-    const water1NW = new Tile("water1NW", 0, 26, SOME_1 * WATER_FREQ_MULTI);
-    const water1NE = new Tile("water1NE", 2, 26, SOME_1 * WATER_FREQ_MULTI);
-    const water1SE = new Tile("water1SE", 2, 28, SOME_1 * WATER_FREQ_MULTI);
-    const water1SW = new Tile("water1SW", 0, 28, SOME_1 * WATER_FREQ_MULTI);
-    const water1CurveNW = new Tile("water1CurveNW", 6, 26, SOME_1 * WATER_FREQ_MULTI);
-    const water1CurveNE = new Tile("water1CurveNE", 7, 26, SOME_1 * WATER_FREQ_MULTI);
-    const water1CurveSE = new Tile("water1CurveSE", 7, 27, SOME_1 * WATER_FREQ_MULTI);
-    const water1CurveSW = new Tile("water1CurveSW", 6, 27, SOME_1 * WATER_FREQ_MULTI);
-    const water1CurveD0 = new Tile("water1CurveD0", 7, 24, RARE_1 * WATER_FREQ_MULTI);
-    const water1CurveD1 = new Tile("water1CurveD1", 7, 25, RARE_1 * WATER_FREQ_MULTI);
+        //NOTHING to water0
+        const water0N = new Tile("water0N", [{ x: 4, y: 26, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water0E = new Tile("water0E", [{ x: 5, y: 27, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water0S = new Tile("water0S", [{ x: 4, y: 28, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water0W = new Tile("water0W", [{ x: 3, y: 27, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water0NW = new Tile("water0NW", [{ x: 3, y: 26, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water0NE = new Tile("water0NE", [{ x: 5, y: 26, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water0SE = new Tile("water0SE", [{ x: 5, y: 28, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water0SW = new Tile("water0SW", [{ x: 3, y: 28, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water0CurveNW = new Tile("water0CurveNW", [{ x: 6, y: 28, weight: 1 }], SOME_0 * WATER_FREQ_MULTI);
+        const water0CurveNE = new Tile("water0CurveNE", [{ x: 7, y: 28, weight: 1 }], SOME_0 * WATER_FREQ_MULTI);
+        const water0CurveSE = new Tile("water0CurveSE", [{ x: 7, y: 29, weight: 1 }], SOME_0 * WATER_FREQ_MULTI);
+        const water0CurveSW = new Tile("water0CurveSW", [{ x: 6, y: 29, weight: 1 }], SOME_0 * WATER_FREQ_MULTI);
+        const water0CurveD0 = new Tile("water0CurveD0", [{ x: 6, y: 24, weight: 1 }], RARE_0 * WATER_FREQ_MULTI);
+        const water0CurveD1 = new Tile("water0CurveD1", [{ x: 6, y: 25, weight: 1 }], RARE_0 * WATER_FREQ_MULTI);
 
-    const water1_all = [water1N, water1E, water1S, water1W, water1NW, water1NE, water1SE, water1SW, water1CurveNW, water1CurveNE, water1CurveSE, water1CurveSW, water1CurveD0, water1CurveD1];
-    addBasesToAll(baseGroup, water1_all);
-    addTransitionRules(NOTHING, water1.name, water1_all, waterGroup);
+        const water0_all = [water0N, water0E, water0S, water0W, water0NW, water0NE, water0SE, water0SW, water0CurveNW, water0CurveNE, water0CurveSE, water0CurveSW, water0CurveD0, water0CurveD1];
+        addBasesToAll(baseTiles, water0_all);
+        addTransitionRules(TRANSPARENT, water0.name, water0_all, waterGroup);
 
-    overlappable.push(water0S, water1S);
-    overlappable.push(water0SE, water1SE);
-    overlappable.push(water0SW, water1SW);
+        //water1
+        const water1 = new Tile("water1", [{ x: 1, y: 27, weight: 1 }], VERY_OFTEN_0 * WATER_FREQ_MULTI);
+        water1.addBases(baseTiles);
+        addSelfRule(water1, waterGroup, true);
 
-    //waterDecoGroup
-    const waterDecoGroup = [];
-    const waterBase = [water0, water1];
+        //NOTHING to water1
+        const water1N = new Tile("water1N", [{ x: 1, y: 26, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water1E = new Tile("water1E", [{ x: 2, y: 27, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water1S = new Tile("water1S", [{ x: 1, y: 28, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water1W = new Tile("water1W", [{ x: 0, y: 27, weight: 1 }], OFTEN_0 * WATER_FREQ_MULTI);
+        const water1NW = new Tile("water1NW", [{ x: 0, y: 26, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1NE = new Tile("water1NE", [{ x: 2, y: 26, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1SE = new Tile("water1SE", [{ x: 2, y: 28, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1SW = new Tile("water1SW", [{ x: 0, y: 28, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1CurveNW = new Tile("water1CurveNW", [{ x: 6, y: 26, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1CurveNE = new Tile("water1CurveNE", [{ x: 7, y: 26, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1CurveSE = new Tile("water1CurveSE", [{ x: 7, y: 27, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1CurveSW = new Tile("water1CurveSW", [{ x: 6, y: 27, weight: 1 }], SOME_1 * WATER_FREQ_MULTI);
+        const water1CurveD0 = new Tile("water1CurveD0", [{ x: 7, y: 24, weight: 1 }], RARE_1 * WATER_FREQ_MULTI);
+        const water1CurveD1 = new Tile("water1CurveD1", [{ x: 7, y: 25, weight: 1 }], RARE_1 * WATER_FREQ_MULTI);
 
-    //deco 1-1
-    const waterLily0 = new Tile("waterLily0", 7, 5, OFTEN_1 * DECO_FREQ_MULTI);
-    const waterLily1 = new Tile("waterLily1", 6, 5, OFTEN_1 * DECO_FREQ_MULTI);
-    const waterLily2 = new Tile("waterLily2", 6, 6, OFTEN_1 * DECO_FREQ_MULTI);
-    const waterLily3 = new Tile("waterLily3", 6, 7, OFTEN_1 * DECO_FREQ_MULTI);
+        const water1_all = [water1N, water1E, water1S, water1W, water1NW, water1NE, water1SE, water1SW, water1CurveNW, water1CurveNE, water1CurveSE, water1CurveSW, water1CurveD0, water1CurveD1];
+        addBasesToAll(baseTiles, water1_all);
+        addTransitionRules(TRANSPARENT, water1.name, water1_all, waterGroup);
 
-    addBasesToAll(waterBase, [waterLily0, waterLily1, waterLily2, waterLily3])
-    addRuleToAll(nothing_rule, [waterLily0, waterLily1, waterLily2, waterLily3]);
-    waterDecoGroup.push(waterLily0, waterLily1, waterLily2, waterLily3);
+        overlappable.push(water0S, water1S);
+        overlappable.push(water0SE, water1SE);
+        overlappable.push(water0SW, water1SW);
 
-    //deco 2-2
-    const bigStone1_0 = new Tile("bigStone1_0", 6, 3, RARE_2 * DECO_FREQ_MULTI);
-    const bigStone1_1 = new Tile("bigStone1_1", 7, 3, RARE_2 * DECO_FREQ_MULTI);
-    const bigStone1_2 = new Tile("bigStone1_2", 6, 4, RARE_2 * DECO_FREQ_MULTI);
-    const bigStone1_3 = new Tile("bigStone1_3", 7, 4, RARE_2 * DECO_FREQ_MULTI);
+        //waterDecoGroup
+        const waterDecoGroup = [];
+        const waterBase = [water0, water1];
 
-    addBasesToAll(waterBase, [bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3])
-    bigStone1_0.addRule(new Rule(NOTHING, bigStone1_0.name + NOTHING, bigStone1_2.name + NOTHING, NOTHING));
-    bigStone1_1.addRule(new Rule(NOTHING, NOTHING, bigStone1_1.name + NOTHING, bigStone1_0.name + NOTHING));
-    bigStone1_2.addRule(new Rule(bigStone1_2.name + NOTHING, bigStone1_3.name + NOTHING, NOTHING, NOTHING));
-    bigStone1_3.addRule(new Rule(bigStone1_1.name + NOTHING, NOTHING, NOTHING, bigStone1_3.name + NOTHING));
-    waterDecoGroup.push(bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3);
+        //deco 1-1
+        const waterLily0 = new Tile("waterLily0", [{ x: 7, y: 5, weight: 1 }], OFTEN_1 * DECO_FREQ_MULTI);
+        const waterLily1 = new Tile("waterLily1", [{ x: 6, y: 5, weight: 1 }], OFTEN_1 * DECO_FREQ_MULTI);
+        const waterLily2 = new Tile("waterLily2", [{ x: 6, y: 6, weight: 1 }], OFTEN_1 * DECO_FREQ_MULTI);
+        const waterLily3 = new Tile("waterLily3", [{ x: 6, y: 7, weight: 1 }], OFTEN_1 * DECO_FREQ_MULTI);
 
-    ///overlappable special - also deco
-    //deco 2-1
-    const grassTuft2_0 = new Tile("grassTuft2_0", 3, 0, SOME_0 * DECO_FREQ_MULTI);
-    const grassTuft2_1 = new Tile("grassTuft2_1", 3, 1, SOME_2 * DECO_FREQ_MULTI);
-    const grassTuft3_0 = new Tile("grassTuft3_0", 4, 0, SOME_0 * DECO_FREQ_MULTI);
-    const grassTuft3_1 = new Tile("grassTuft3_1", 4, 1, SOME_2 * DECO_FREQ_MULTI);
-    const fern_0 = new Tile("fern_0", 7, 1, SOME_0 * DECO_FREQ_MULTI);
-    const fern_1 = new Tile("fern_1", 7, 2, SOME_2 * DECO_FREQ_MULTI);
+        addBasesToAll(waterBase, [waterLily0, waterLily1, waterLily2, waterLily3])
+        addRuleToAll(fullTransparentRule, [waterLily0, waterLily1, waterLily2, waterLily3]);
+        waterDecoGroup.push(waterLily0, waterLily1, waterLily2, waterLily3);
 
-    addBasesToAll(baseGroup, [grassTuft2_1, grassTuft3_1, fern_1])
-    grassTuft2_1.addRule(new Rule(grassTuft2_0.name + NOTHING, NOTHING, NOTHING, NOTHING));
-    grassTuft3_1.addRule(new Rule(grassTuft3_0.name + NOTHING, NOTHING, NOTHING, NOTHING));
-    fern_1.addRule(new Rule(fern_0.name + NOTHING, NOTHING, NOTHING, NOTHING));
+        //deco 2-2
+        const bigStone1_0 = new Tile("bigStone1_0", [{ x: 6, y: 3, weight: 1 }], RARE_2 * DECO_FREQ_MULTI);
+        const bigStone1_1 = new Tile("bigStone1_1", [{ x: 7, y: 3, weight: 1 }], RARE_2 * DECO_FREQ_MULTI);
+        const bigStone1_2 = new Tile("bigStone1_2", [{ x: 6, y: 4, weight: 1 }], RARE_2 * DECO_FREQ_MULTI);
+        const bigStone1_3 = new Tile("bigStone1_3", [{ x: 7, y: 4, weight: 1 }], RARE_2 * DECO_FREQ_MULTI);
 
-    addBasesToAll(baseGroup, [grassTuft2_0, grassTuft3_0, fern_0])//top end baseGroup
-    addBasesToAll([grassTuft2_1, grassTuft3_1, fern_1], [grassTuft2_0, grassTuft3_0, fern_0]);//repeat
-    addBasesToAll(overlappable, [grassTuft2_0, grassTuft3_0, fern_0])//top end other stuff
-    grassTuft2_0.addRule(new Rule(NOTHING, NOTHING, grassTuft2_0.name + NOTHING, NOTHING));
-    grassTuft3_0.addRule(new Rule(NOTHING, NOTHING, grassTuft3_0.name + NOTHING, NOTHING));
-    fern_0.addRule(new Rule(NOTHING, NOTHING, fern_0.name + NOTHING, NOTHING));
+        addBasesToAll(waterBase, [bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3])
+        bigStone1_0.addRule(new Rule(TRANSPARENT, bigStone1_0.name + TRANSPARENT, bigStone1_2.name + TRANSPARENT, TRANSPARENT));
+        bigStone1_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone1_1.name + TRANSPARENT, bigStone1_0.name + TRANSPARENT));
+        bigStone1_2.addRule(new Rule(bigStone1_2.name + TRANSPARENT, bigStone1_3.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        bigStone1_3.addRule(new Rule(bigStone1_1.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, bigStone1_3.name + TRANSPARENT));
+        waterDecoGroup.push(bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3);
 
-    decoGroup.push(grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1);
+        ///overlappable special - also deco
+        //deco 2-1
+        const grassTuft2_0 = new Tile("grassTuft2_0", [{ x: 3, y: 0, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const grassTuft2_1 = new Tile("grassTuft2_1", [{ x: 3, y: 1, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const grassTuft3_0 = new Tile("grassTuft3_0", [{ x: 4, y: 0, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const grassTuft3_1 = new Tile("grassTuft3_1", [{ x: 4, y: 1, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
+        const fern_0 = new Tile("fern_0", [{ x: 7, y: 1, weight: 1 }], SOME_0 * DECO_FREQ_MULTI);
+        const fern_1 = new Tile("fern_1", [{ x: 7, y: 2, weight: 1 }], SOME_2 * DECO_FREQ_MULTI);
 
-    //bridgeGroup
-    const bridgeGroup = [];
+        addBasesToAll(baseTiles, [grassTuft2_1, grassTuft3_1, fern_1])
+        grassTuft2_1.addRule(new Rule(grassTuft2_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        grassTuft3_1.addRule(new Rule(grassTuft3_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        fern_1.addRule(new Rule(fern_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, TRANSPARENT));
 
-    const bridgeSurHor0N = new Tile("bridgeSurHor0N", 1, 23, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeSurHor1N = new Tile("bridgeSurHor1N", 2, 23, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeSurHor2N = new Tile("bridgeSurHor2N", 3, 23, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeSurHor0S = new Tile("bridgeSurHor0S", 1, 24, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeSurHor1S = new Tile("bridgeSurHor1S", 2, 24, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeSurHor2S = new Tile("bridgeSurHor2S", 3, 24, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeSurVerW = new Tile("bridgeSurVerW", 6, 23, RARE_1 * BRIDGE_FREQ_MULTI);
-    const bridgeSurVerE = new Tile("bridgeSurVerE", 7, 23, RARE_1 * BRIDGE_FREQ_MULTI);
-    const bridgeEdge0 = new Tile("bridgeEdge0", 1, 25, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeEdge1 = new Tile("bridgeEdge1", 2, 25, RARE_2 * BRIDGE_FREQ_MULTI);
-    const bridgeEdge2 = new Tile("bridgeEdge2", 3, 25, SOME_0 * BRIDGE_FREQ_MULTI);
-    const bridgeCoastW = new Tile("bridgeCoastW", 0, 25, RARE_1 * BRIDGE_FREQ_MULTI);
-    const bridgeCoastE = new Tile("bridgeCoastE", 5, 25, RARE_1 * BRIDGE_FREQ_MULTI);
+        addBasesToAll(baseTiles, [grassTuft2_0, grassTuft3_0, fern_0])//top end baseGroup
+        addBasesToAll([grassTuft2_1, grassTuft3_1, fern_1], [grassTuft2_0, grassTuft3_0, fern_0]);//repeat
+        addBasesToAll(overlappable, [grassTuft2_0, grassTuft3_0, fern_0])//top end other stuff
+        grassTuft2_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft2_0.name + TRANSPARENT, TRANSPARENT));
+        grassTuft3_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft3_0.name + TRANSPARENT, TRANSPARENT));
+        fern_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, fern_0.name + TRANSPARENT, TRANSPARENT));
 
-    const bridge_all = [bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE];
-    addBasesToAll(baseGroup, bridge_all);
+        decoGroup.push(grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1);
 
-    bridgeSurHor1N.addRule(new Rule(water0.name + NOTHING, bridgeSurHor1N.name, bridgeSurHor1S.name, bridgeSurHor1N.name));
-    bridgeSurHor1N.addRule(new Rule(water0E.name + NOTHING, NOTHING, bridgeSurHor1S.name, bridgeSurHor1N.name));
-    bridgeSurHor1N.addRule(new Rule(water0W.name + NOTHING, bridgeSurHor1N.name, bridgeSurHor1S.name, NOTHING));
-    bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeEdge1.name, bridgeSurHor0S.name));
-    bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, NOTHING, bridgeCoastE.name, bridgeSurHor0S.name));
-    bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeCoastW.name, NOTHING));
-    bridgeSurHor0N.addRule(new Rule(water0.name + NOTHING, bridgeSurHor1N.name, bridgeSurHor0N.name, water0.name + NOTHING));
-    bridgeSurHor0S.addRule(new Rule(bridgeSurHor0N.name, bridgeSurHor0S.name, bridgeEdge0.name, water0.name + NOTHING));
-    bridgeSurHor2N.addRule(new Rule(water0.name + NOTHING, water0.name + NOTHING, bridgeSurHor2N.name, bridgeSurHor1N.name));
-    bridgeSurHor2S.addRule(new Rule(bridgeSurHor2N.name, water0.name + NOTHING, bridgeEdge2.name, bridgeSurHor0S.name));
-    bridgeEdge0.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + NOTHING, bridgeEdge1.name));
-    bridgeEdge0.addRule(new Rule(bridgeEdge0.name, bridgeEdge1.name, water0.name + NOTHING, water0.name + NOTHING));
-    bridgeEdge1.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + NOTHING, bridgeEdge1.name));
-    bridgeEdge2.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + NOTHING, bridgeEdge1.name));
-    bridgeEdge2.addRule(new Rule(bridgeEdge2.name, water0.name + NOTHING, water0.name + NOTHING, bridgeEdge1.name));
-    bridgeCoastW.addRule(new Rule(bridgeCoastW.name, bridgeEdge1.name, water0W.name + NOTHING, NOTHING));
-    bridgeCoastE.addRule(new Rule(bridgeCoastE.name, NOTHING, water0E.name + NOTHING, bridgeEdge1.name));
+        //bridgeGroup
+        const bridgeGroup = [];
 
-    bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeSurVerW.name, water0.name + NOTHING));
-    bridgeSurVerW.addRule(new Rule(NOTHING, bridgeSurVerW.name, bridgeSurVerW.name, water0N.name + NOTHING));
-    bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, NOTHING, water0S.name + NOTHING));
-    bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge0.name, water0.name + NOTHING));
-    bridgeSurVerW.addRule(new Rule(bridgeEdge1.name, bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge1.name));
+        const bridgeSurHor0N = new Tile("bridgeSurHor0N", [{ x: 1, y: 23, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeSurHor1N = new Tile("bridgeSurHor1N", [{ x: 2, y: 23, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeSurHor2N = new Tile("bridgeSurHor2N", [{ x: 3, y: 23, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeSurHor0S = new Tile("bridgeSurHor0S", [{ x: 1, y: 24, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeSurHor1S = new Tile("bridgeSurHor1S", [{ x: 2, y: 24, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeSurHor2S = new Tile("bridgeSurHor2S", [{ x: 3, y: 24, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeSurVerW = new Tile("bridgeSurVerW", [{ x: 6, y: 23, weight: 1 }], RARE_1 * BRIDGE_FREQ_MULTI);
+        const bridgeSurVerE = new Tile("bridgeSurVerE", [{ x: 7, y: 23, weight: 1 }], RARE_1 * BRIDGE_FREQ_MULTI);
+        const bridgeEdge0 = new Tile("bridgeEdge0", [{ x: 1, y: 25, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeEdge1 = new Tile("bridgeEdge1", [{ x: 2, y: 25, weight: 1 }], RARE_2 * BRIDGE_FREQ_MULTI);
+        const bridgeEdge2 = new Tile("bridgeEdge2", [{ x: 3, y: 25, weight: 1 }], SOME_0 * BRIDGE_FREQ_MULTI);
+        const bridgeCoastW = new Tile("bridgeCoastW", [{ x: 0, y: 25, weight: 1 }], RARE_1 * BRIDGE_FREQ_MULTI);
+        const bridgeCoastE = new Tile("bridgeCoastE", [{ x: 5, y: 25, weight: 1 }], RARE_1 * BRIDGE_FREQ_MULTI);
 
-    bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name + NOTHING, bridgeSurVerE.name, bridgeSurVerW.name));
-    bridgeSurVerE.addRule(new Rule(NOTHING, water0N.name + NOTHING, bridgeSurVerE.name, bridgeSurVerW.name));
-    bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0S.name + NOTHING, NOTHING, bridgeSurVerW.name));
-    bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name + NOTHING, bridgeEdge2.name, bridgeSurVerW.name));
-    bridgeSurVerE.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, bridgeSurVerE.name, bridgeSurVerW.name));
+        const bridge_all = [bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE];
+        addBasesToAll(baseTiles, bridge_all);
 
-    bridgeGroup.push(bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE);
+        bridgeSurHor1N.addRule(new Rule(water0.name + TRANSPARENT, bridgeSurHor1N.name, bridgeSurHor1S.name, bridgeSurHor1N.name));
+        bridgeSurHor1N.addRule(new Rule(water0E.name + TRANSPARENT, TRANSPARENT, bridgeSurHor1S.name, bridgeSurHor1N.name));
+        bridgeSurHor1N.addRule(new Rule(water0W.name + TRANSPARENT, bridgeSurHor1N.name, bridgeSurHor1S.name, TRANSPARENT));
+        bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeEdge1.name, bridgeSurHor0S.name));
+        bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, TRANSPARENT, bridgeCoastE.name, bridgeSurHor0S.name));
+        bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeCoastW.name, TRANSPARENT));
+        bridgeSurHor0N.addRule(new Rule(water0.name + TRANSPARENT, bridgeSurHor1N.name, bridgeSurHor0N.name, water0.name + TRANSPARENT));
+        bridgeSurHor0S.addRule(new Rule(bridgeSurHor0N.name, bridgeSurHor0S.name, bridgeEdge0.name, water0.name + TRANSPARENT));
+        bridgeSurHor2N.addRule(new Rule(water0.name + TRANSPARENT, water0.name + TRANSPARENT, bridgeSurHor2N.name, bridgeSurHor1N.name));
+        bridgeSurHor2S.addRule(new Rule(bridgeSurHor2N.name, water0.name + TRANSPARENT, bridgeEdge2.name, bridgeSurHor0S.name));
+        bridgeEdge0.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + TRANSPARENT, bridgeEdge1.name));
+        bridgeEdge0.addRule(new Rule(bridgeEdge0.name, bridgeEdge1.name, water0.name + TRANSPARENT, water0.name + TRANSPARENT));
+        bridgeEdge1.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + TRANSPARENT, bridgeEdge1.name));
+        bridgeEdge2.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + TRANSPARENT, bridgeEdge1.name));
+        bridgeEdge2.addRule(new Rule(bridgeEdge2.name, water0.name + TRANSPARENT, water0.name + TRANSPARENT, bridgeEdge1.name));
+        bridgeCoastW.addRule(new Rule(bridgeCoastW.name, bridgeEdge1.name, water0W.name + TRANSPARENT, TRANSPARENT));
+        bridgeCoastE.addRule(new Rule(bridgeCoastE.name, TRANSPARENT, water0E.name + TRANSPARENT, bridgeEdge1.name));
 
-    //treeGroup
-    const treeGroup = [];
-    const tree0_top_left = new Tile("tree0_top_left", 1, 36, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_top_right = new Tile("tree0_top_right", 2, 36, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_mid_edge_left = new Tile("tree0_mid_edge_left", 0, 37, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_mid_left = new Tile("tree0_mid_left", 1, 37, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_mid_right = new Tile("tree0_mid_right", 2, 37, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_mid_edge_right = new Tile("tree0_mid_edge_right", 3, 37, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_bot_left = new Tile("tree0_bot_left", 1, 38, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_bot_right = new Tile("tree0_bot_right", 2, 38, SOME_0 * TREE_FREQ_MULTI);
+        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeSurVerW.name, water0.name + TRANSPARENT));
+        bridgeSurVerW.addRule(new Rule(TRANSPARENT, bridgeSurVerW.name, bridgeSurVerW.name, water0N.name + TRANSPARENT));
+        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, TRANSPARENT, water0S.name + TRANSPARENT));
+        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge0.name, water0.name + TRANSPARENT));
+        bridgeSurVerW.addRule(new Rule(bridgeEdge1.name, bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge1.name));
 
-    const tree0_top_left_repeat_0 = new Tile("tree0_top_left_repeat_0", 4, 36, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_top_right_repeat_0 = new Tile("tree0_top_right_repeat_0", 5, 36, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_top_left_repeat_1 = new Tile("tree0_top_left_repeat_1", 4, 37, SOME_0 * TREE_FREQ_MULTI);
-    const tree0_top_right_repeat_1 = new Tile("tree0_top_right_repeat_1", 5, 37, SOME_0 * TREE_FREQ_MULTI);
+        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name + TRANSPARENT, bridgeSurVerE.name, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(TRANSPARENT, water0N.name + TRANSPARENT, bridgeSurVerE.name, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0S.name + TRANSPARENT, TRANSPARENT, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name + TRANSPARENT, bridgeEdge2.name, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, bridgeSurVerE.name, bridgeSurVerW.name));
 
-    const tree0_all = [tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1];
-    addBasesToAll(baseGroup, tree0_all);
+        bridgeGroup.push(bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE);
 
-    //self overlapping
-    //addBasesToAll([tree0_bot_left, tree0_bot_right], [tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_edge_right]);
+        //treeGroup
+        const treeGroup = [];
+        const tree0_top_left = new Tile("tree0_top_left", [{ x: 1, y: 36, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_top_right = new Tile("tree0_top_right", [{ x: 2, y: 36, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_mid_edge_left = new Tile("tree0_mid_edge_left", [{ x: 0, y: 37, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_mid_left = new Tile("tree0_mid_left", [{ x: 1, y: 37, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_mid_right = new Tile("tree0_mid_right", [{ x: 2, y: 37, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_mid_edge_right = new Tile("tree0_mid_edge_right", [{ x: 3, y: 37, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_bot_left = new Tile("tree0_bot_left", [{ x: 1, y: 38, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_bot_right = new Tile("tree0_bot_right", [{ x: 2, y: 38, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
 
-    tree0_top_left.addRule(new Rule(NOTHING, "GLUE_TREE0_T", "GLUE_TREE0_TML", NOTHING));
-    tree0_top_right.addRule(new Rule(NOTHING, NOTHING, "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
-    tree0_mid_edge_left.addRule(new Rule(NOTHING, "GLUE_TREE0_EL", NOTHING, NOTHING));
-    tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_REPEAT"));
-    tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_EL"));
-    tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
-    tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_ER", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
-    tree0_mid_edge_right.addRule(new Rule(NOTHING, NOTHING, NOTHING, "GLUE_TREE0_ER"));
-    tree0_bot_left.addRule(new Rule("GLUE_TREE0_BML", "GLUE_TREE0_B", NOTHING, NOTHING));
-    tree0_bot_right.addRule(new Rule("GLUE_TREE0_BMR", NOTHING, NOTHING, "GLUE_TREE0_B"));
+        const tree0_top_left_repeat_0 = new Tile("tree0_top_left_repeat_0", [{ x: 4, y: 36, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_top_right_repeat_0 = new Tile("tree0_top_right_repeat_0", [{ x: 5, y: 36, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_top_left_repeat_1 = new Tile("tree0_top_left_repeat_1", [{ x: 4, y: 37, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const tree0_top_right_repeat_1 = new Tile("tree0_top_right_repeat_1", [{ x: 5, y: 37, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
 
-    tree0_top_left_repeat_0.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_TR0", "GLUE_TREE0_TML", "GLUE_TREE0_REPEAT"));
-    tree0_top_right_repeat_0.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_TMR", "GLUE_TREE0_TR0"));
+        const tree0_all = [tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1];
+        addBasesToAll(baseTiles, tree0_all);
 
-    tree0_top_left_repeat_1.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_T", "GLUE_TREE0_TML", "GLUE_TREE0_M"));
-    tree0_top_right_repeat_1.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
+        //self overlapping
+        //addBasesToAll([tree0_bot_left, tree0_bot_right], [tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_edge_right]);
 
-    treeGroup.push(tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1);
+        tree0_top_left.addRule(new Rule(TRANSPARENT, "GLUE_TREE0_T", "GLUE_TREE0_TML", TRANSPARENT));
+        tree0_top_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
+        tree0_mid_edge_left.addRule(new Rule(TRANSPARENT, "GLUE_TREE0_EL", TRANSPARENT, TRANSPARENT));
+        tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_REPEAT"));
+        tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_EL"));
+        tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
+        tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_ER", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
+        tree0_mid_edge_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, "GLUE_TREE0_ER"));
+        tree0_bot_left.addRule(new Rule("GLUE_TREE0_BML", "GLUE_TREE0_B", TRANSPARENT, TRANSPARENT));
+        tree0_bot_right.addRule(new Rule("GLUE_TREE0_BMR", TRANSPARENT, TRANSPARENT, "GLUE_TREE0_B"));
 
-    //palm
-    const palm_top_left = new Tile("palm_top_left", 1, 39, SOME_0 * TREE_FREQ_MULTI);
-    const palm_top_right = new Tile("palm_top_right", 2, 39, SOME_0 * TREE_FREQ_MULTI);
-    const palm_mid_edge_left = new Tile("palm_mid_edge_left", 0, 40, SOME_0 * TREE_FREQ_MULTI);
-    const palm_mid_left = new Tile("palm_mid_left", 1, 40, SOME_0 * TREE_FREQ_MULTI);
-    const palm_mid_right = new Tile("palm_mid_right", 2, 40, SOME_0 * TREE_FREQ_MULTI);
-    const palm_mid_edge_right = new Tile("palm_mid_edge_right", 3, 40, SOME_0 * TREE_FREQ_MULTI);
-    const palm_bot_left = new Tile("palm_bot_left", 1, 41, SOME_0 * TREE_FREQ_MULTI);
-    const palm_bot_right = new Tile("palm_bot_right", 2, 41, SOME_0 * TREE_FREQ_MULTI);
+        tree0_top_left_repeat_0.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_TR0", "GLUE_TREE0_TML", "GLUE_TREE0_REPEAT"));
+        tree0_top_right_repeat_0.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_TMR", "GLUE_TREE0_TR0"));
 
-    const palm_all = [palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right];
-    addBasesToAll([beach], palm_all);
+        tree0_top_left_repeat_1.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_T", "GLUE_TREE0_TML", "GLUE_TREE0_M"));
+        tree0_top_right_repeat_1.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
 
-    palm_top_left.addRule(new Rule(NOTHING, "GLUE_PALM_T", "GLUE_PALM_TML", NOTHING));
-    palm_top_right.addRule(new Rule(NOTHING, NOTHING, "GLUE_PALM_TMR", "GLUE_PALM_T"));
-    palm_mid_edge_left.addRule(new Rule(NOTHING, "GLUE_PALM_EL", NOTHING, NOTHING));
-    palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_REPEAT"));
-    palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_EL"));
-    palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_REPEAT", "GLUE_PALM_BMR", "GLUE_PALM_M"));
-    palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_ER", "GLUE_PALM_BMR", "GLUE_PALM_M"));
-    palm_mid_edge_right.addRule(new Rule(NOTHING, NOTHING, NOTHING, "GLUE_PALM_ER"));
-    palm_bot_left.addRule(new Rule("GLUE_PALM_BML", "GLUE_PALM_B", NOTHING, NOTHING));
-    palm_bot_right.addRule(new Rule("GLUE_PALM_BMR", NOTHING, NOTHING, "GLUE_PALM_B"));
+        treeGroup.push(tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1);
 
-    treeGroup.push(palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right);
+        //palm
+        const palm_top_left = new Tile("palm_top_left", [{ x: 1, y: 39, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const palm_top_right = new Tile("palm_top_right", [{ x: 2, y: 39, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const palm_mid_edge_left = new Tile("palm_mid_edge_left", [{ x: 0, y: 40, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const palm_mid_left = new Tile("palm_mid_left", [{ x: 1, y: 40, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const palm_mid_right = new Tile("palm_mid_right", [{ x: 2, y: 40, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const palm_mid_edge_right = new Tile("palm_mid_edge_right", [{ x: 3, y: 40, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const palm_bot_left = new Tile("palm_bot_left", [{ x: 1, y: 41, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
+        const palm_bot_right = new Tile("palm_bot_right", [{ x: 2, y: 41, weight: 1 }], SOME_0 * TREE_FREQ_MULTI);
 
+        const palm_all = [palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right];
+        addBasesToAll([beach], palm_all);
 
-    //add all groups
-    setWalkable(baseGroup, true);
-    setWalkable(baseTransitionGroup, true);
-    setWalkable(beachGroup, true);
+        palm_top_left.addRule(new Rule(TRANSPARENT, "GLUE_PALM_T", "GLUE_PALM_TML", TRANSPARENT));
+        palm_top_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, "GLUE_PALM_TMR", "GLUE_PALM_T"));
+        palm_mid_edge_left.addRule(new Rule(TRANSPARENT, "GLUE_PALM_EL", TRANSPARENT, TRANSPARENT));
+        palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_REPEAT"));
+        palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_EL"));
+        palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_REPEAT", "GLUE_PALM_BMR", "GLUE_PALM_M"));
+        palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_ER", "GLUE_PALM_BMR", "GLUE_PALM_M"));
+        palm_mid_edge_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, "GLUE_PALM_ER"));
+        palm_bot_left.addRule(new Rule("GLUE_PALM_BML", "GLUE_PALM_B", TRANSPARENT, TRANSPARENT));
+        palm_bot_right.addRule(new Rule("GLUE_PALM_BMR", TRANSPARENT, TRANSPARENT, "GLUE_PALM_B"));
 
-    groupPush(baseGroup, allTileTypes);
-    groupPush(baseTransitionGroup, allTileTypes);
-    groupPush(decoGroup, allTileTypes);
-    groupPush(waterGroup, allTileTypes);
-    groupPush(waterDecoGroup, allTileTypes);
-    groupPush(stoneGroup, allTileTypes);
-    groupPush(bridgeGroup, allTileTypes);
-    groupPush(treeGroup, allTileTypes);
-    groupPush(beachGroup, allTileTypes);
+        treeGroup.push(palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right);
+    }
 
-    //walkableType
-    setWalkable(baseGroup, true);
-    setWalkable(baseTransitionGroup, true);
-    setWalkable(beachGroup, true);
-    groupPush(baseGroup, walkableTiles);
-    groupPush(baseTransitionGroup, walkableTiles);
-    groupPush(beachGroup, walkableTiles);
-    walkableTiles.push(flower0, flower1, flower2, grassTuft0, grassTuft1, flower3, mush);
+    buildEdgeRegistryAndMasks(allTiles);
 }

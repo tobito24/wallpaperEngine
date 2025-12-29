@@ -20,6 +20,7 @@ export default class Player {
     this.fromY = startY;
     this.toX = startX;
     this.toY = startY;
+    this.paused = true; // TODO: set to false for actual gameplay
 
     this.sprite = {
       image: new Image(),
@@ -33,6 +34,10 @@ export default class Player {
   }
 
   update(world, dt) {
+    if (this.paused) {
+      return;
+    }
+
     this.stepTime += dt;
     if (!this.moving && this.stepTime >= this.stepInterval) {
       this.stepTime = 0;

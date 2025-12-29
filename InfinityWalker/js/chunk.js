@@ -1,4 +1,6 @@
-import { CHUNK_SIZE, DIRECTION } from './config.js';
+import {
+  CHUNK_SIZE,
+} from './config.js';
 import WorldPiece from './piece.js';
 
 export default class Chunk {
@@ -9,9 +11,7 @@ export default class Chunk {
     this.chunkX = chunkX;
     this.chunkY = chunkY;
     this.neighborChunks = neighborChunks; // { north: Chunk, east: Chunk, south: Chunk, west: Chunk }
-    this.chunkPieces = new Array(CHUNK_SIZE);
-    this.lastPieceChosen = null;
-    this.isCollapsed = false;
+
     this.chunkEntrancePoints = {
       north: null,
       east: null,
@@ -19,6 +19,7 @@ export default class Chunk {
       west: null
     };
 
+    this.chunkPieces = new Array(CHUNK_SIZE);
     for (let y = 0; y < CHUNK_SIZE; y++) {
       this.chunkPieces[y] = new Array(CHUNK_SIZE);
     }
@@ -32,10 +33,10 @@ export default class Chunk {
 
     for (let y = 0; y < CHUNK_SIZE; y++) {
       for (let x = 0; x < CHUNK_SIZE; x++) {
-        const wx = this.chunkX * CHUNK_SIZE + x;
-        const wy = this.chunkY * CHUNK_SIZE + y;
-        const isPath = pathCells.has(this.getCellKey(x, y));        
-        this.chunkPieces[y][x] = new WorldPiece(wx, wy, isPath);
+        const worldX = this.chunkX * CHUNK_SIZE + x;
+        const worldY = this.chunkY * CHUNK_SIZE + y;
+        const isPath = pathCells.has(this.getCellKey(x, y));
+        this.chunkPieces[y][x] = new WorldPiece(worldX, worldY, isPath);
       }
     }
 
@@ -101,12 +102,48 @@ export default class Chunk {
     }
   }
 
+  choosePieceTiles() {
+    let minEntropy = Infinity;
+    let candidates = [];
+
+    for (let y = 0; y < CHUNK_SIZE; y++) {
+      for (let x = 0; x < CHUNK_SIZE; x++) {
+        const piece = this.chunkPieces[y][x];
+        if (piece.isCollapsed()) {
+          continue;
+        }
+        const entropy = piece.getEntropy();
+
+        if (entropy < minEntropy) {
+          minEntropy = entropy;
+          candidates = [piece];
+        } else if (entropy === minEntropy) {
+          candidates.push(piece);
+        }
+      }
+    }
+
+    if (candidates.length === 0) {
+      return false;
+    }
+
+    // choose a random candidate among those with the lowest entropy
+    const chosenIndex = Math.floor(Math.random() * candidates.length);
+    const chosenPiece = candidates[chosenIndex];
+    chosenPiece.chooseTile();
+
+    return true;
+  }
+
+  getPiece(localX, localY) {
+    return this.chunkPieces[localY][localX];
+  }
+
+  // TODO: Improve path generation and outscource to utility
   createPathsFromNeighbors(pathCells) {
     const entries = this.getNeighborEntrancePoints();
     if (Chunk.chunkCount === 1 && entries.length === 0) {
       // First chunk, create a random entry point
-      console.log(this.chunkX, this.chunkY);
-
       entries.push({ side: 'north', x: 0, y: 0 });
     }
     for (let i = 0; i < entries.length; i++) {
@@ -225,40 +262,5 @@ export default class Chunk {
 
   getCellKey(x, y) {
     return `${x},${y}`;
-  }
-
-  choosePieceTiles() {
-    let minEntropy = Infinity;
-    let candidates = [];
-
-    for (let y = 0; y < CHUNK_SIZE; y++) {
-      for (let x = 0; x < CHUNK_SIZE; x++) {
-        const piece = this.chunkPieces[y][x];
-        const entropy = piece.getEntropy();
-
-        if (entropy > 1 && entropy < minEntropy) {
-          minEntropy = entropy;
-          candidates = [piece];
-        } else if (entropy === minEntropy) {
-          candidates.push(piece);
-        }
-      }
-    }
-
-    if (candidates.length === 0) {
-      return false;
-    }
-
-    // choose a random candidate among those with the lowest entropy
-    const chosenIndex = Math.floor(Math.random() * candidates.length);
-    const chosenPiece = candidates[chosenIndex];
-    chosenPiece.chooseTile(this.lastPieceChosen);
-    this.lastPieceChosen = chosenPiece;
-
-    return true;
-  }
-
-  getPiece(localX, localY) {
-    return this.chunkPieces[localY][localX];
   }
 }

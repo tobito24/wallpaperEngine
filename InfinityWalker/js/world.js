@@ -18,11 +18,12 @@ export default class World {
   }
 
   isPath(x, y) {
-    const piece = this.getPieceAt(x, y);
-    if (!piece || !piece.tile) {
-      return false;
-    }
-    return piece.checkIfPathExists();
+    return true;
+    // const piece = this.getPieceAt(x, y);
+    // if (!piece || !piece.tile) {
+    //   return false;
+    // }
+    // return piece.checkIfPathExists();
   }
 
   getChunk(cx, cy, withCreate = true) {
@@ -75,7 +76,6 @@ export default class World {
   }
 
   processChunkQueue(playerX, playerY) {
-    console.log(this.chunkQueue.size, 'chunks pending');
     if (this.currentProcessedChunk === null) {
       this.setCurrentProcessedChunk(playerX, playerY);
       return;
@@ -95,7 +95,6 @@ export default class World {
     let lowestDist = Infinity;
     const pcx = Math.floor(playerX / CHUNK_SIZE);
     const pcy = Math.floor(playerY / CHUNK_SIZE);
-    console.log('Player chunk:', pcx, pcy);
 
     for (const [key, candidate] of this.chunkQueue.entries()) {
       const dx = candidate.chunkX - pcx;
