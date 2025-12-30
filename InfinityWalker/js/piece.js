@@ -91,7 +91,7 @@ export default class WorldPiece {
             this.overlayTile.draw(context, dx, dy, squareSize, this.overlayTileSpriteIndex);
         } else if (this.possibleOverlayTiles.length > 0) {
             const previousAlpha = context.globalAlpha;
-            context.globalAlpha = 0.7;
+            context.globalAlpha = 0.4;
             const rng = Math.floor(Math.random() * this.possibleOverlayTiles.length);
             this.possibleOverlayTiles[rng].draw(context, dx, dy, squareSize);
             context.globalAlpha = previousAlpha;
@@ -107,18 +107,18 @@ export default class WorldPiece {
             context.globalAlpha = previousAlpha;
         }
 
-        if (this.currentState === WORLDPIECE_STATE.ERROR) {
-            context.strokeStyle = "#ff0000";
-            context.lineWidth = 1;
-            context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
-        }
+        // if (this.currentState === WORLDPIECE_STATE.ERROR) {
+        //     context.strokeStyle = "#ff0000";
+        //     context.lineWidth = 2;
+        //     context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
+        // }
 
-        // TODO: path highlight - remove later
-        if (this.isPath) {
-            context.strokeStyle = "#ee0dc8ff";
-            context.lineWidth = 2;
-            context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
-        }
+        // // TODO: path highlight - remove later
+        // if (this.isPath) {
+        //     context.strokeStyle = "#ee0dc8ff";
+        //     context.lineWidth = 2;
+        //     context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
+        // }
     }
 
     getEntropy(layer = LAYER.BASE) {

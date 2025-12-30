@@ -5,8 +5,8 @@ export const HEIGHT_NOISE_SCALE = 32; // higher = larger height blobs
 export const HEIGHT_NOISE_OCTAVES = 1; // small number keeps it cheap
 export const HEIGHT_SEED = Math.floor(Math.random() * 1000); // change for a different world layout
 
-export const WFC_ACCURACY = 20; // higher = more accurate but slower.
-export const WFC_TIME_BUDGET_MS = 4; // time budget per frame in ms for WFC processing
+export const WFC_ACCURACY = 5; // higher = more accurate but slower.
+export const WFC_TIME_BUDGET_MS = 6; // time budget per frame in ms for WFC processing
 
 const SPRITE_COLS = 4;
 const SPRITE_ROWS = 4;
@@ -23,7 +23,7 @@ export const SPRITE = {
 
 export const TILESET = {
   sheet: 'img/tileset.png',
-  tileSize: TILE_SIZE
+  tileSize: 32
 };
 
 export const DIRECTION = {

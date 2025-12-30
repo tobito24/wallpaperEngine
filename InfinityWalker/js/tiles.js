@@ -80,9 +80,11 @@ class Tile {
 
     draw(context, dx, dy, size = TILE_SIZE, spriteIdex = 0) {
         const { x, y } = this.sprites[spriteIdex];
-        const sx = x * TILE_SIZE;
-        const sy = y * TILE_SIZE;
-        context.drawImage(tilesetImage, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, size, size);
+        const sx = x * TILESET.tileSize;
+        const sy = y * TILESET.tileSize;
+        const sw = TILESET.tileSize;
+        const sh = TILESET.tileSize;
+        context.drawImage(tilesetImage, sx, sy, sw, sh, dx, dy, size, size);
     }
 }
 
@@ -156,7 +158,6 @@ function buildEdgeRegistryAndMasks(tiles) {
     // Build transparent masks and all allowed edge masks
     const transparentId = getEdgeMaskById(getEdgeId(TRANSPARENT));
     transparentMasks = [transparentId, transparentId, transparentId, transparentId];
-    console.log(transparentMasks);
 
     allAllowedEdgeMasks = [0n, 0n, 0n, 0n];
     tiles.forEach(tile => {
@@ -164,7 +165,7 @@ function buildEdgeRegistryAndMasks(tiles) {
         allAllowedEdgeMasks[DIRECTION.EAST] |= tile.edgeMasks[DIRECTION.EAST];
         allAllowedEdgeMasks[DIRECTION.SOUTH] |= tile.edgeMasks[DIRECTION.SOUTH];
         allAllowedEdgeMasks[DIRECTION.WEST] |= tile.edgeMasks[DIRECTION.WEST];
-    });    
+    });
 }
 
 const TRANSPARENT = 'TRANSPARENT';
@@ -590,177 +591,195 @@ function makeAllTiles() {
     decoTiles.push(deco1x1_base0, deco1x1_base1, deco1x1_stone, deco1x1_beach);
     allTiles.push(deco1x1_base0, deco1x1_base1, deco1x1_stone, deco1x1_beach);
 
-    // here treeTrunk
+    // ## deco 1x2
+    const treeTrunk_0 = new Tile("treeTrunk_0", [{ x: 5, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const treeTrunk_1 = new Tile("treeTrunk_1", [{ x: 6, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const treeTrunkMossy_0 = new Tile("treeTrunkMossy_0", [{ x: 1, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const treeTrunkMossy_1 = new Tile("treeTrunkMossy_1", [{ x: 2, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const rock4_0 = new Tile("rock4_0", [{ x: 1, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
+    const rock4_1 = new Tile("rock4_1", [{ x: 2, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
+
+    [treeTrunkMossy_0, treeTrunkMossy_1, treeTrunk_0, treeTrunk_1].forEach(decoTile => {
+        decoTile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+        decoTile.addAllowedBases(transitionTiles);
+        decoTile.addAllowedOverlays([transparentOverlay]);
+    });
+
+    [rock4_0, rock4_1].forEach(decoTile => {
+        decoTile.addAllowedBases([stone0, stone1, stone2, ...stone0DirtTrans, ...stone0Stone1Trans]);
+        decoTile.addAllowedOverlays([transparentOverlay]);
+    });
+
+    treeTrunk_0.addRule(new Rule(TRANSPARENT, treeTrunk_0.name, TRANSPARENT, TRANSPARENT));
+    treeTrunk_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, treeTrunk_0.name));
+    treeTrunkMossy_0.addRule(new Rule(TRANSPARENT, treeTrunkMossy_0.name, TRANSPARENT, TRANSPARENT));
+    treeTrunkMossy_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, treeTrunkMossy_0.name));
+    rock4_0.addRule(new Rule(TRANSPARENT, rock4_0.name, TRANSPARENT, TRANSPARENT));
+    rock4_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, rock4_0.name));
+
+    decoTiles.push(treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1);
+    allTiles.push(treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1);
+
+    // ## deco 2x2
+    const bigStone0_0 = new Tile("bigStone0_0", [{ x: 3, y: 3, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI, LAYER.DECO);
+    const bigStone0_1 = new Tile("bigStone0_1", [{ x: 4, y: 3, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI, LAYER.DECO);
+    const bigStone0_2 = new Tile("bigStone0_2", [{ x: 3, y: 4, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI, LAYER.DECO);
+    const bigStone0_3 = new Tile("bigStone0_3", [{ x: 4, y: 4, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI, LAYER.DECO);
+
+    [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3].forEach(decoTile => {
+        decoTile.addAllowedBases([stone0, stone1, stone2, ...stone0DirtTrans, ...stone0Stone1Trans]);
+        decoTile.addAllowedOverlays([transparentOverlay]);
+    });
+
+    bigStone0_0.addRule(new Rule(TRANSPARENT, bigStone0_0.name, bigStone0_2.name, TRANSPARENT));
+    bigStone0_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone0_1.name, bigStone0_0.name));
+    bigStone0_2.addRule(new Rule(bigStone0_2.name, bigStone0_3.name, TRANSPARENT, TRANSPARENT));
+    bigStone0_3.addRule(new Rule(bigStone0_1.name, TRANSPARENT, TRANSPARENT, bigStone0_3.name));
+
+    decoTiles.push(bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3);
+    allTiles.push(bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3);
+
+    // ## deco 1 x Infinite
+    const cliff_0 = new Tile("cliff_0", [{ x: 5, y: 0, weight: 1 }], RARITY.RARE_4 * DECO_FREQ_MULTI, LAYER.DECO);
+    const cliff_1 = new Tile("cliff_1", [{ x: 6, y: 0, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const cliff_2 = new Tile("cliff_2", [{ x: 7, y: 0, weight: 1 }], RARITY.RARE_4 * DECO_FREQ_MULTI, LAYER.DECO);
+
+    [cliff_0, cliff_1, cliff_2].forEach(decoTile => {
+        decoTile.addAllowedBases([stone0, stone1, stone2, grass, dirt, grassLight, grassDry, grassDark, mud]);
+        decoTile.addAllowedOverlays([transparentOverlay]);
+    });
+
+    cliff_0.addRule(new Rule(TRANSPARENT, cliff_1.name, TRANSPARENT, TRANSPARENT));
+    cliff_1.addRule(new Rule(TRANSPARENT, cliff_1.name, TRANSPARENT, cliff_1.name));
+    cliff_2.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, cliff_1.name));
+
+    decoTiles.push(cliff_0, cliff_1, cliff_2);
+    allTiles.push(cliff_0, cliff_1, cliff_2);
+
+    // ## deco Infinite x Infinite (tall grasses)
+    const tallGrass0 = new Tile("tallGrass0", [{ x: 4, y: 6, weight: 1 }], RARITY.RARE_6 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0N = new Tile("tallGrass0N", [{ x: 4, y: 5, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0E = new Tile("tallGrass0E", [{ x: 5, y: 6, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0S = new Tile("tallGrass0S", [{ x: 4, y: 7, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0W = new Tile("tallGrass0W", [{ x: 3, y: 6, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0NW = new Tile("tallGrass0NW", [{ x: 3, y: 5, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0NE = new Tile("tallGrass0NE", [{ x: 5, y: 5, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0SE = new Tile("tallGrass0SE", [{ x: 5, y: 7, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass0SW = new Tile("tallGrass0SW", [{ x: 3, y: 7, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+
+    const tallGrass1 = new Tile("tallGrass1", [{ x: 4, y: 12, weight: 1 }], RARITY.RARE_6 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1N = new Tile("tallGrass1N", [{ x: 4, y: 11, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1E = new Tile("tallGrass1E", [{ x: 5, y: 12, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1S = new Tile("tallGrass1S", [{ x: 4, y: 13, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1W = new Tile("tallGrass1W", [{ x: 3, y: 12, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1NW = new Tile("tallGrass1NW", [{ x: 3, y: 11, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1NE = new Tile("tallGrass1NE", [{ x: 5, y: 11, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1SE = new Tile("tallGrass1SE", [{ x: 5, y: 13, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass1SW = new Tile("tallGrass1SW", [{ x: 3, y: 13, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+
+    const tallGrass2 = new Tile("tallGrass2", [{ x: 4, y: 18, weight: 1 }], RARITY.RARE_6 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2N = new Tile("tallGrass2N", [{ x: 4, y: 17, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2E = new Tile("tallGrass2E", [{ x: 5, y: 18, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2S = new Tile("tallGrass2S", [{ x: 4, y: 19, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2W = new Tile("tallGrass2W", [{ x: 3, y: 18, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2NW = new Tile("tallGrass2NW", [{ x: 3, y: 17, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2NE = new Tile("tallGrass2NE", [{ x: 5, y: 17, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2SE = new Tile("tallGrass2SE", [{ x: 5, y: 19, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const tallGrass2SW = new Tile("tallGrass2SW", [{ x: 3, y: 19, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+
+    [tallGrass0, tallGrass1, tallGrass2].forEach(tile => {
+        tile.addRule(new Rule(tile.name, tile.name, tile.name, tile.name));
+    });
+
+    const tallGrass = [
+        tallGrass0, tallGrass1, tallGrass2,
+        tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW,
+        tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW,
+        tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW
+    ];
+
+    tallGrass.forEach(decoTile => {
+        decoTile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+        decoTile.addAllowedOverlays([transparentOverlay]);
+    });
+
+    addTransitionRules(TRANSPARENT, tallGrass0.name, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW]);
+    addTransitionRules(TRANSPARENT, tallGrass1.name, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW]);
+    addTransitionRules(TRANSPARENT, tallGrass2.name, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW]);
+
+    decoTiles.push(...tallGrass);
+    allTiles.push(...tallGrass);
+
+    // # Water tiles overlay
+    const water0 = new Tile("water0", [{ x: 4, y: 27, weight: 1 }], RARITY.RARE_10 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1 = new Tile("water1", [{ x: 1, y: 27, weight: 1 }], RARITY.RARE_9 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+
+    [water0, water1].forEach(tile => {
+        tile.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
+        tile.addRule(new Rule(tile.name, tile.name, tile.name, tile.name));
+    });
+
+    const water0N = new Tile("water0N", [{ x: 4, y: 26, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0E = new Tile("water0E", [{ x: 5, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0S = new Tile("water0S", [{ x: 4, y: 28, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0W = new Tile("water0W", [{ x: 3, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0NW = new Tile("water0NW", [{ x: 3, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0NE = new Tile("water0NE", [{ x: 5, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0SE = new Tile("water0SE", [{ x: 5, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0SW = new Tile("water0SW", [{ x: 3, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0CurveNW = new Tile("water0CurveNW", [{ x: 6, y: 28, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0CurveNE = new Tile("water0CurveNE", [{ x: 7, y: 28, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0CurveSE = new Tile("water0CurveSE", [{ x: 7, y: 29, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0CurveSW = new Tile("water0CurveSW", [{ x: 6, y: 29, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0CurveD0 = new Tile("water0CurveD0", [{ x: 6, y: 24, weight: 1 }], RARITY.RARE_0 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0CurveD1 = new Tile("water0CurveD1", [{ x: 6, y: 25, weight: 1 }], RARITY.RARE_0 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+
+    const water0_all = [water0N, water0E, water0S, water0W, water0NW, water0NE, water0SE, water0SW, water0CurveNW, water0CurveNE, water0CurveSE, water0CurveSW, water0CurveD0, water0CurveD1];
+    addTransitionRules(TRANSPARENT, water0.name, water0_all);
+    water0_all.forEach(tile => {
+        tile.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
+    });
+
+    const water1N = new Tile("water1N", [{ x: 1, y: 26, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1E = new Tile("water1E", [{ x: 2, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1S = new Tile("water1S", [{ x: 1, y: 28, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1W = new Tile("water1W", [{ x: 0, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1NW = new Tile("water1NW", [{ x: 0, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1NE = new Tile("water1NE", [{ x: 2, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1SE = new Tile("water1SE", [{ x: 2, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1SW = new Tile("water1SW", [{ x: 0, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1CurveNW = new Tile("water1CurveNW", [{ x: 6, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1CurveNE = new Tile("water1CurveNE", [{ x: 7, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1CurveSE = new Tile("water1CurveSE", [{ x: 7, y: 27, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1CurveSW = new Tile("water1CurveSW", [{ x: 6, y: 27, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1CurveD0 = new Tile("water1CurveD0", [{ x: 7, y: 24, weight: 1 }], RARITY.RARE_1 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1CurveD1 = new Tile("water1CurveD1", [{ x: 7, y: 25, weight: 1 }], RARITY.RARE_1 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+
+    const water1_all = [water1N, water1E, water1S, water1W, water1NW, water1NE, water1SE, water1SW, water1CurveNW, water1CurveNE, water1CurveSE, water1CurveSW, water1CurveD0, water1CurveD1];
+    addTransitionRules(TRANSPARENT, water1.name, water1_all);
+    water1_all.forEach(tile => {
+        tile.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
+    });
+
+    overlayTiles.push(water0, water1, ...water0_all, ...water1_all);
+    allTiles.push(water0, water1, ...water0_all, ...water1_all);
+
+    // ## water deco tiles
+    const waterLily = new Tile("waterLily0", [
+        { x: 7, y: 5, weight: 1 },
+        { x: 6, y: 5, weight: 1 },
+        { x: 6, y: 6, weight: 1 },
+        { x: 6, y: 7, weight: 1 }
+    ], RARITY.RARE_8 * DECO_FREQ_MULTI, LAYER.DECO);
+    waterLily.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
+    waterLily.addAllowedOverlays([water0, water1]);
+    waterLily.addRule(fullTransparentRule);
+
+    decoTiles.push(waterLily);
+    allTiles.push(waterLily);
 
     if (false) {
-        //deco 1-2
-        const treeTrunk_0 = new Tile("treeTrunk_0", [{ x: 5, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const treeTrunk_1 = new Tile("treeTrunk_1", [{ x: 6, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const treeTrunkMossy_0 = new Tile("treeTrunkMossy_0", [{ x: 1, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const treeTrunkMossy_1 = new Tile("treeTrunkMossy_1", [{ x: 2, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const rock4_0 = new Tile("rock4_0", [{ x: 1, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
-        const rock4_1 = new Tile("rock4_1", [{ x: 2, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
-
-        addBasesToAll(baseTiles, [treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1])
-        addBasesToAll(stoneBaseGroup, [rock4_0, rock4_1]);
-        treeTrunk_0.addRule(new Rule(TRANSPARENT, treeTrunk_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        treeTrunk_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, treeTrunk_0.name + TRANSPARENT));
-        treeTrunkMossy_0.addRule(new Rule(TRANSPARENT, treeTrunkMossy_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        treeTrunkMossy_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, treeTrunkMossy_0.name + TRANSPARENT));
-        rock4_0.addRule(new Rule(TRANSPARENT, rock4_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        rock4_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, rock4_0.name + TRANSPARENT));
-        decoGroup.push(treeTrunk_0, treeTrunk_1, treeTrunkMossy_0, treeTrunkMossy_1, rock4_0, rock4_1);
-
-        //deco 2-2
-        const bigStone0_0 = new Tile("bigStone0_0", [{ x: 3, y: 3, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI);
-        const bigStone0_1 = new Tile("bigStone0_1", [{ x: 4, y: 3, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI);
-        const bigStone0_2 = new Tile("bigStone0_2", [{ x: 3, y: 4, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI);
-        const bigStone0_3 = new Tile("bigStone0_3", [{ x: 4, y: 4, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI);
-
-        addBasesToAll(baseTiles, [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3])
-        addBasesToAll(stoneBaseGroup, [bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3]);
-        bigStone0_0.addRule(new Rule(TRANSPARENT, bigStone0_0.name + TRANSPARENT, bigStone0_2.name + TRANSPARENT, TRANSPARENT));
-        bigStone0_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone0_1.name + TRANSPARENT, bigStone0_0.name + TRANSPARENT));
-        bigStone0_2.addRule(new Rule(bigStone0_2.name + TRANSPARENT, bigStone0_3.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        bigStone0_3.addRule(new Rule(bigStone0_1.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, bigStone0_3.name + TRANSPARENT));
-
-        decoGroup.push(bigStone0_0, bigStone0_1, bigStone0_2, bigStone0_3);
-        overlappable.push(bigStone0_2, bigStone0_3);
-
-        //deco X-1 (cliff)
-        const cliff_0 = new Tile("cliff_0", [{ x: 5, y: 0, weight: 1 }], RARITY.RARE_4 * DECO_FREQ_MULTI);
-        const cliff_1 = new Tile("cliff_1", [{ x: 6, y: 0, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const cliff_2 = new Tile("cliff_2", [{ x: 7, y: 0, weight: 1 }], RARITY.RARE_4 * DECO_FREQ_MULTI);
-
-        addBasesToAll(baseTiles, [cliff_0, cliff_1, cliff_2])
-        addBasesToAll(stoneBaseGroup, [cliff_0, cliff_1, cliff_2])
-        cliff_0.addRule(new Rule(TRANSPARENT, cliff_1.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        cliff_1.addRule(new Rule(TRANSPARENT, cliff_1.name + TRANSPARENT, TRANSPARENT, cliff_1.name + TRANSPARENT));
-        cliff_2.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, cliff_1.name + TRANSPARENT));
-
-        decoGroup.push(cliff_0, cliff_1, cliff_2);
-
-        //deco X-X (tall grasses)
-        const tallGrass0 = new Tile("tallGrass0", [{ x: 4, y: 6, weight: 1 }], RARITY.RARE_6 * DECO_FREQ_MULTI);
-        const tallGrass0N = new Tile("tallGrass0N", [{ x: 4, y: 5, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass0E = new Tile("tallGrass0E", [{ x: 5, y: 6, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass0S = new Tile("tallGrass0S", [{ x: 4, y: 7, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass0W = new Tile("tallGrass0W", [{ x: 3, y: 6, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass0NW = new Tile("tallGrass0NW", [{ x: 3, y: 5, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass0NE = new Tile("tallGrass0NE", [{ x: 5, y: 5, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass0SE = new Tile("tallGrass0SE", [{ x: 5, y: 7, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass0SW = new Tile("tallGrass0SW", [{ x: 3, y: 7, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-
-        const tallGrass1 = new Tile("tallGrass1", [{ x: 4, y: 12, weight: 1 }], RARITY.RARE_6 * DECO_FREQ_MULTI);
-        const tallGrass1N = new Tile("tallGrass1N", [{ x: 4, y: 11, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass1E = new Tile("tallGrass1E", [{ x: 5, y: 12, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass1S = new Tile("tallGrass1S", [{ x: 4, y: 13, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass1W = new Tile("tallGrass1W", [{ x: 3, y: 12, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass1NW = new Tile("tallGrass1NW", [{ x: 3, y: 11, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass1NE = new Tile("tallGrass1NE", [{ x: 5, y: 11, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass1SE = new Tile("tallGrass1SE", [{ x: 5, y: 13, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass1SW = new Tile("tallGrass1SW", [{ x: 3, y: 13, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-
-        const tallGrass2 = new Tile("tallGrass2", [{ x: 4, y: 18, weight: 1 }], RARITY.RARE_6 * DECO_FREQ_MULTI);
-        const tallGrass2N = new Tile("tallGrass2N", [{ x: 4, y: 17, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass2E = new Tile("tallGrass2E", [{ x: 5, y: 18, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass2S = new Tile("tallGrass2S", [{ x: 4, y: 19, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass2W = new Tile("tallGrass2W", [{ x: 3, y: 18, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const tallGrass2NW = new Tile("tallGrass2NW", [{ x: 3, y: 17, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass2NE = new Tile("tallGrass2NE", [{ x: 5, y: 17, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass2SE = new Tile("tallGrass2SE", [{ x: 5, y: 19, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const tallGrass2SW = new Tile("tallGrass2SW", [{ x: 3, y: 19, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-
-        tallGrass0.addBases(baseTiles);
-        tallGrass1.addBases(baseTiles);
-        tallGrass2.addBases(baseTiles);
-
-        addSelfRule(tallGrass0, decoGroup, true);
-        addSelfRule(tallGrass1, decoGroup, true);
-        addSelfRule(tallGrass2, decoGroup, true);
-
-        overlappable.push(tallGrass0S, tallGrass1S, tallGrass2S);
-        overlappable.push(tallGrass0SE, tallGrass1SE, tallGrass2SE);
-        overlappable.push(tallGrass0SW, tallGrass1SW, tallGrass2SW);
-
-        addBasesToAll(baseTiles, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW]);
-        addBasesToAll(baseTiles, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW]);
-        addBasesToAll(baseTiles, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW]);
-        addTransitionRules(TRANSPARENT, tallGrass0.name, [tallGrass0N, tallGrass0E, tallGrass0S, tallGrass0W, tallGrass0NW, tallGrass0NE, tallGrass0SE, tallGrass0SW], decoGroup);
-        addTransitionRules(TRANSPARENT, tallGrass1.name, [tallGrass1N, tallGrass1E, tallGrass1S, tallGrass1W, tallGrass1NW, tallGrass1NE, tallGrass1SE, tallGrass1SW], decoGroup);
-        addTransitionRules(TRANSPARENT, tallGrass2.name, [tallGrass2N, tallGrass2E, tallGrass2S, tallGrass2W, tallGrass2NW, tallGrass2NE, tallGrass2SE, tallGrass2SW], decoGroup);
-
-        //waterGroup
-        const waterGroup = [];
-
-        //water0
-        const water0 = new Tile("water0", [{ x: 4, y: 27, weight: 1 }], RARITY.RARE_10 * WATER_FREQ_MULTI);
-        water0.addBases(baseTiles);
-        addSelfRule(water0, waterGroup, true);
-
-        //NOTHING to water0
-        const water0N = new Tile("water0N", [{ x: 4, y: 26, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water0E = new Tile("water0E", [{ x: 5, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water0S = new Tile("water0S", [{ x: 4, y: 28, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water0W = new Tile("water0W", [{ x: 3, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water0NW = new Tile("water0NW", [{ x: 3, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water0NE = new Tile("water0NE", [{ x: 5, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water0SE = new Tile("water0SE", [{ x: 5, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water0SW = new Tile("water0SW", [{ x: 3, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water0CurveNW = new Tile("water0CurveNW", [{ x: 6, y: 28, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI);
-        const water0CurveNE = new Tile("water0CurveNE", [{ x: 7, y: 28, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI);
-        const water0CurveSE = new Tile("water0CurveSE", [{ x: 7, y: 29, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI);
-        const water0CurveSW = new Tile("water0CurveSW", [{ x: 6, y: 29, weight: 1 }], RARITY.RARE_3 * WATER_FREQ_MULTI);
-        const water0CurveD0 = new Tile("water0CurveD0", [{ x: 6, y: 24, weight: 1 }], RARITY.RARE_0 * WATER_FREQ_MULTI);
-        const water0CurveD1 = new Tile("water0CurveD1", [{ x: 6, y: 25, weight: 1 }], RARITY.RARE_0 * WATER_FREQ_MULTI);
-
-        const water0_all = [water0N, water0E, water0S, water0W, water0NW, water0NE, water0SE, water0SW, water0CurveNW, water0CurveNE, water0CurveSE, water0CurveSW, water0CurveD0, water0CurveD1];
-        addBasesToAll(baseTiles, water0_all);
-        addTransitionRules(TRANSPARENT, water0.name, water0_all, waterGroup);
-
-        //water1
-        const water1 = new Tile("water1", [{ x: 1, y: 27, weight: 1 }], RARITY.RARE_9 * WATER_FREQ_MULTI);
-        water1.addBases(baseTiles);
-        addSelfRule(water1, waterGroup, true);
-
-        //NOTHING to water1
-        const water1N = new Tile("water1N", [{ x: 1, y: 26, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water1E = new Tile("water1E", [{ x: 2, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water1S = new Tile("water1S", [{ x: 1, y: 28, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water1W = new Tile("water1W", [{ x: 0, y: 27, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI);
-        const water1NW = new Tile("water1NW", [{ x: 0, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1NE = new Tile("water1NE", [{ x: 2, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1SE = new Tile("water1SE", [{ x: 2, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1SW = new Tile("water1SW", [{ x: 0, y: 28, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1CurveNW = new Tile("water1CurveNW", [{ x: 6, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1CurveNE = new Tile("water1CurveNE", [{ x: 7, y: 26, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1CurveSE = new Tile("water1CurveSE", [{ x: 7, y: 27, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1CurveSW = new Tile("water1CurveSW", [{ x: 6, y: 27, weight: 1 }], RARITY.RARE_4 * WATER_FREQ_MULTI);
-        const water1CurveD0 = new Tile("water1CurveD0", [{ x: 7, y: 24, weight: 1 }], RARITY.RARE_1 * WATER_FREQ_MULTI);
-        const water1CurveD1 = new Tile("water1CurveD1", [{ x: 7, y: 25, weight: 1 }], RARITY.RARE_1 * WATER_FREQ_MULTI);
-
-        const water1_all = [water1N, water1E, water1S, water1W, water1NW, water1NE, water1SE, water1SW, water1CurveNW, water1CurveNE, water1CurveSE, water1CurveSW, water1CurveD0, water1CurveD1];
-        addBasesToAll(baseTiles, water1_all);
-        addTransitionRules(TRANSPARENT, water1.name, water1_all, waterGroup);
-
-        overlappable.push(water0S, water1S);
-        overlappable.push(water0SE, water1SE);
-        overlappable.push(water0SW, water1SW);
-
-        //waterDecoGroup
-        const waterDecoGroup = [];
-        const waterBase = [water0, water1];
-
-        //deco 1-1
-        const waterLily0 = new Tile("waterLily0", [{ x: 7, y: 5, weight: 1 }], RARITY.RARE_7 * DECO_FREQ_MULTI);
-        const waterLily1 = new Tile("waterLily1", [{ x: 6, y: 5, weight: 1 }], RARITY.RARE_7 * DECO_FREQ_MULTI);
-        const waterLily2 = new Tile("waterLily2", [{ x: 6, y: 6, weight: 1 }], RARITY.RARE_7 * DECO_FREQ_MULTI);
-        const waterLily3 = new Tile("waterLily3", [{ x: 6, y: 7, weight: 1 }], RARITY.RARE_7 * DECO_FREQ_MULTI);
-
-        addBasesToAll(waterBase, [waterLily0, waterLily1, waterLily2, waterLily3])
-        addRuleToAll(fullTransparentRule, [waterLily0, waterLily1, waterLily2, waterLily3]);
-        waterDecoGroup.push(waterLily0, waterLily1, waterLily2, waterLily3);
-
+       
         //deco 2-2
         const bigStone1_0 = new Tile("bigStone1_0", [{ x: 6, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
         const bigStone1_1 = new Tile("bigStone1_1", [{ x: 7, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
@@ -768,10 +787,10 @@ function makeAllTiles() {
         const bigStone1_3 = new Tile("bigStone1_3", [{ x: 7, y: 4, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
 
         addBasesToAll(waterBase, [bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3])
-        bigStone1_0.addRule(new Rule(TRANSPARENT, bigStone1_0.name + TRANSPARENT, bigStone1_2.name + TRANSPARENT, TRANSPARENT));
-        bigStone1_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone1_1.name + TRANSPARENT, bigStone1_0.name + TRANSPARENT));
-        bigStone1_2.addRule(new Rule(bigStone1_2.name + TRANSPARENT, bigStone1_3.name + TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        bigStone1_3.addRule(new Rule(bigStone1_1.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, bigStone1_3.name + TRANSPARENT));
+        bigStone1_0.addRule(new Rule(TRANSPARENT, bigStone1_0.name, bigStone1_2.name, TRANSPARENT));
+        bigStone1_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone1_1.name, bigStone1_0.name));
+        bigStone1_2.addRule(new Rule(bigStone1_2.name, bigStone1_3.name, TRANSPARENT, TRANSPARENT));
+        bigStone1_3.addRule(new Rule(bigStone1_1.name, TRANSPARENT, TRANSPARENT, bigStone1_3.name));
         waterDecoGroup.push(bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3);
 
         ///overlappable special - also deco
@@ -783,17 +802,17 @@ function makeAllTiles() {
         const fern_0 = new Tile("fern_0", [{ x: 7, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
         const fern_1 = new Tile("fern_1", [{ x: 7, y: 2, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
 
-        addBasesToAll(baseTiles, [grassTuft2_1, grassTuft3_1, fern_1])
-        grassTuft2_1.addRule(new Rule(grassTuft2_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        grassTuft3_1.addRule(new Rule(grassTuft3_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        fern_1.addRule(new Rule(fern_0.name + TRANSPARENT, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        addBasesToAll(baseTiles, [grassTuft2_1, grassTuft3_1, fern_1])  
+        grassTuft2_1.addRule(new Rule(grassTuft2_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        grassTuft3_1.addRule(new Rule(grassTuft3_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+        fern_1.addRule(new Rule(fern_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
 
         addBasesToAll(baseTiles, [grassTuft2_0, grassTuft3_0, fern_0])//top end baseGroup
         addBasesToAll([grassTuft2_1, grassTuft3_1, fern_1], [grassTuft2_0, grassTuft3_0, fern_0]);//repeat
         addBasesToAll(overlappable, [grassTuft2_0, grassTuft3_0, fern_0])//top end other stuff
-        grassTuft2_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft2_0.name + TRANSPARENT, TRANSPARENT));
-        grassTuft3_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft3_0.name + TRANSPARENT, TRANSPARENT));
-        fern_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, fern_0.name + TRANSPARENT, TRANSPARENT));
+        grassTuft2_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft2_0.name, TRANSPARENT));
+        grassTuft3_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft3_0.name, TRANSPARENT));
+        fern_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, fern_0.name, TRANSPARENT));
 
         decoGroup.push(grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1);
 
@@ -817,34 +836,34 @@ function makeAllTiles() {
         const bridge_all = [bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE];
         addBasesToAll(baseTiles, bridge_all);
 
-        bridgeSurHor1N.addRule(new Rule(water0.name + TRANSPARENT, bridgeSurHor1N.name, bridgeSurHor1S.name, bridgeSurHor1N.name));
-        bridgeSurHor1N.addRule(new Rule(water0E.name + TRANSPARENT, TRANSPARENT, bridgeSurHor1S.name, bridgeSurHor1N.name));
-        bridgeSurHor1N.addRule(new Rule(water0W.name + TRANSPARENT, bridgeSurHor1N.name, bridgeSurHor1S.name, TRANSPARENT));
+        bridgeSurHor1N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor1S.name, bridgeSurHor1N.name));
+        bridgeSurHor1N.addRule(new Rule(water0E.name, TRANSPARENT, bridgeSurHor1S.name, bridgeSurHor1N.name));
+        bridgeSurHor1N.addRule(new Rule(water0W.name, bridgeSurHor1N.name, bridgeSurHor1S.name, TRANSPARENT));
         bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeEdge1.name, bridgeSurHor0S.name));
         bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, TRANSPARENT, bridgeCoastE.name, bridgeSurHor0S.name));
         bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeCoastW.name, TRANSPARENT));
-        bridgeSurHor0N.addRule(new Rule(water0.name + TRANSPARENT, bridgeSurHor1N.name, bridgeSurHor0N.name, water0.name + TRANSPARENT));
-        bridgeSurHor0S.addRule(new Rule(bridgeSurHor0N.name, bridgeSurHor0S.name, bridgeEdge0.name, water0.name + TRANSPARENT));
-        bridgeSurHor2N.addRule(new Rule(water0.name + TRANSPARENT, water0.name + TRANSPARENT, bridgeSurHor2N.name, bridgeSurHor1N.name));
-        bridgeSurHor2S.addRule(new Rule(bridgeSurHor2N.name, water0.name + TRANSPARENT, bridgeEdge2.name, bridgeSurHor0S.name));
-        bridgeEdge0.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + TRANSPARENT, bridgeEdge1.name));
-        bridgeEdge0.addRule(new Rule(bridgeEdge0.name, bridgeEdge1.name, water0.name + TRANSPARENT, water0.name + TRANSPARENT));
-        bridgeEdge1.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + TRANSPARENT, bridgeEdge1.name));
-        bridgeEdge2.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name + TRANSPARENT, bridgeEdge1.name));
-        bridgeEdge2.addRule(new Rule(bridgeEdge2.name, water0.name + TRANSPARENT, water0.name + TRANSPARENT, bridgeEdge1.name));
-        bridgeCoastW.addRule(new Rule(bridgeCoastW.name, bridgeEdge1.name, water0W.name + TRANSPARENT, TRANSPARENT));
-        bridgeCoastE.addRule(new Rule(bridgeCoastE.name, TRANSPARENT, water0E.name + TRANSPARENT, bridgeEdge1.name));
+        bridgeSurHor0N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor0N.name, water0.name));
+        bridgeSurHor0S.addRule(new Rule(bridgeSurHor0N.name, bridgeSurHor0S.name, bridgeEdge0.name, water0.name));
+        bridgeSurHor2N.addRule(new Rule(water0.name, water0.name, bridgeSurHor2N.name, bridgeSurHor1N.name));
+        bridgeSurHor2S.addRule(new Rule(bridgeSurHor2N.name, water0.name, bridgeEdge2.name, bridgeSurHor0S.name));
+        bridgeEdge0.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+        bridgeEdge0.addRule(new Rule(bridgeEdge0.name, bridgeEdge1.name, water0.name, water0.name));
+        bridgeEdge1.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+        bridgeEdge2.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+        bridgeEdge2.addRule(new Rule(bridgeEdge2.name, water0.name, water0.name, bridgeEdge1.name));
+        bridgeCoastW.addRule(new Rule(bridgeCoastW.name, bridgeEdge1.name, water0W.name, TRANSPARENT));
+        bridgeCoastE.addRule(new Rule(bridgeCoastE.name, TRANSPARENT, water0E.name, bridgeEdge1.name));
 
-        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeSurVerW.name, water0.name + TRANSPARENT));
-        bridgeSurVerW.addRule(new Rule(TRANSPARENT, bridgeSurVerW.name, bridgeSurVerW.name, water0N.name + TRANSPARENT));
-        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, TRANSPARENT, water0S.name + TRANSPARENT));
-        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge0.name, water0.name + TRANSPARENT));
+        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeSurVerW.name, water0.name));
+        bridgeSurVerW.addRule(new Rule(TRANSPARENT, bridgeSurVerW.name, bridgeSurVerW.name, water0N.name));
+        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, TRANSPARENT, water0S.name));
+        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge0.name, water0.name));
         bridgeSurVerW.addRule(new Rule(bridgeEdge1.name, bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge1.name));
 
-        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name + TRANSPARENT, bridgeSurVerE.name, bridgeSurVerW.name));
-        bridgeSurVerE.addRule(new Rule(TRANSPARENT, water0N.name + TRANSPARENT, bridgeSurVerE.name, bridgeSurVerW.name));
-        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0S.name + TRANSPARENT, TRANSPARENT, bridgeSurVerW.name));
-        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name + TRANSPARENT, bridgeEdge2.name, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeSurVerE.name, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(TRANSPARENT, water0N.name, bridgeSurVerE.name, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0S.name, TRANSPARENT, bridgeSurVerW.name));
+        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeEdge2.name, bridgeSurVerW.name));
         bridgeSurVerE.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, bridgeSurVerE.name, bridgeSurVerW.name));
 
         bridgeGroup.push(bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE);

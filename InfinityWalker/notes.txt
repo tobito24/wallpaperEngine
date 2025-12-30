@@ -23,8 +23,17 @@ Erweiterungs-Ideen
 WFC Performance Ideen
 - Biome-Subsets pro Chunk: statt global 260 Tiles nur z. B. 30-80 je Biom.
 
+Feature-Idee: Prefab-Stamping fuer grosse Deco
+- Ziel: grosse Deko/Haeuser ohne grosse Regel-Sets platzieren.
+- Prefab = Footprint (w/h) + Tile-Matrix + AllowedBase/Overlay + Weight + Varianten-Set.
+- Ablauf: Base-WFC -> Overlay -> Prefab-Stamps (fixe Tiles) -> Deco-WFC fuer Rest.
+- Prefab-Anchor deterministisch ueber Weltkoordinaten (Seed), damit Chunk-Grenzen stabil sind.
+- Prefab-Varianten: normal/mossy etc. werden ueber Anchor-Seed gewaehlt, konsistent pro Prefab.
+- Prefab-Footprint prueft Base/Overlay-Kompatibilitaet vor dem Setzen.
 
-Naechste Schritte (Height-Map + Layer)
-- WFC für Overlay und Deco Layer
+
+Naechste Schritte
 - alle tiles wieder implementieren
 - Balancing
+
+- rein raus zoom wäre cool. Tilesize anpassen
