@@ -15,28 +15,16 @@ Rendering & Technik
 
 Erweiterungs-Ideen
 - Biome-Wechsel (Farben/Tile-Sets) entlang der Strecke.
-- Deko-Layer (Baeume, Steine, Wasser) mit Gewichtung.
 - Tageszeit/Lichtverlauf und leichte Wettereffekte.
-- Parallax-Hintergrund fuer Tiefe.
 - Optionale Nebenpfade (nur visuell, Hauptpfad bleibt sicher).
 - Leichte Kamera-Drift oder Screen-Noise fuer Leben.
+- Wolken effekt
 
 WFC Performance Ideen
 - Biome-Subsets pro Chunk: statt global 260 Tiles nur z. B. 30-80 je Biom.
 
-- Edge-Index pro Piece: possibleEdges[dir] als Set/Bitset, isCompatible nur noch lookup.
-- Bitsets statt String-Edges: Edge-Strings auf IDs mappen, kompatibilitaet per bitwise AND.
-
-- Propagation als Queue: Nachbarn nur einmal pro Welle anfassen (visited flag).
-- Entropy-Buckets statt Vollscan: min-Entropy Pieces pro Chunk verwalten.
-- Varianten entkoppeln: gleiche Regeln gruppieren, kosmetische Varianten spaeter zufaellig.
-- Mehrstufige Generation: erst Biome/Noise, dann WFC nur fuer Detail-Layer.
-- Chunk-Caching per Seed: generierte Chunks merken/persistieren.
-
-
 
 Naechste Schritte (Height-Map + Layer)
-- Base-Tiles an height koppeln (z. B. ground_h0..h3) in InfinityWalker/js/tiles.js.
-- Wasser als Overlay-Layer (transparent) einfuehren, nur auf erlaubten Bases per baseStack in InfinityWalker/js/tiles.js.
-- Render-Order fuer ueber-Spieler-Flags definieren (Ground -> Player -> Overlay) in InfinityWalker/js/world.js bzw. Player-Render.
-- Seed/Height-Config stabilisieren (kein Math.random() im Config) in InfinityWalker/js/config.js.
+- WFC für Overlay und Deco Layer
+- alle tiles wieder implementieren
+- Balancing

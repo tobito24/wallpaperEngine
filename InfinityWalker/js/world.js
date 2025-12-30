@@ -78,10 +78,14 @@ export default class World {
   processChunkQueue(playerX, playerY) {
     if (this.currentProcessedChunk === null) {
       this.setCurrentProcessedChunk(playerX, playerY);
+      this.time = performance.now();
       return;
     }
 
     if (!this.currentProcessedChunk.choosePieceTiles()) {
+      console.log('chunk ready in', (performance.now() - this.time) / 1000, 's');
+      console.log('chunks in queue: ', this.chunkQueue.size);
+      
       this.currentProcessedChunk = null;
     }
   }

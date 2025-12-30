@@ -6,7 +6,7 @@ import {
     CLIFF_TYPES,
     RARITY
 } from './config.js';
-
+// TODO: check unique Tile names across all layers
 const tilesetImage = new Image();
 tilesetImage.src = TILESET.sheet;
 
@@ -21,8 +21,8 @@ class Tile {
         this.rules = [];
         this.edgeMasks = [0n, 0n, 0n, 0n]; // BigInt[4] like [0b1010n, 0b1111000n, 0b101n, 0b1n] (OR of all edge masks in rules)
 
-        this.allowedBases = [];
-        this.allowedOverlays = [];
+        this.allowedBases = new Set();
+        this.allowedOverlays = new Set();
 
         // TODO: biomes
         this.biomes = [];
@@ -33,45 +33,56 @@ class Tile {
         this.rules.push(rule);
     }
 
-    addBases(bases) {
+    addAllowedBases(bases) {
         bases.forEach(base => {
             if (!(base instanceof Tile)) return;
-
-            if (this.layer == LAYER.OVERLAY)
-                this.allowedBases.push(base);
-
-            if (this.layer == LAYER.DECO)
-                this.allowedOverlays.push(base);
+            this.allowedBases.add(base.name);
         });
     }
 
-    getDrawFunction() {
-        if (!Array.isArray(this.sprites)) return null;
+    addAllowedOverlays(overlays) {
+        overlays.forEach(overlay => {
+            if (!(overlay instanceof Tile)) return;
+            this.allowedOverlays.add(overlay.name);
+        });
+    }
+
+    isUndergroundAllowed(tileBase, tileOverlay) {
+        switch (this.layer) {
+            case LAYER.BASE:
+                return true;
+            case LAYER.OVERLAY:
+                return tileBase instanceof Tile
+                    && this.allowedBases.has(tileBase.name);
+            case LAYER.DECO:
+                return tileBase instanceof Tile
+                    && tileOverlay instanceof Tile
+                    && this.allowedBases.has(tileBase.name)
+                    && this.allowedOverlays.has(tileOverlay.name);
+            default:
+                return false;
+        }
+    }
+
+    getSpriteIndex() {
+        if (!Array.isArray(this.sprites)) return -1;
 
         const totalWeight = this.sprites.reduce((sum, sprite) => sum + sprite.weight, 0);
         let randomWeight = Math.random() * totalWeight;
-        let selectedSprite = null;
         for (let i = 0; i < this.sprites.length; i++) {
             randomWeight -= this.sprites[i].weight;
             if (randomWeight <= 0) {
-                selectedSprite = this.sprites[i];
-                break;
+                return i;
             }
         }
-        if (!selectedSprite) {
-            selectedSprite = this.sprites[this.sprites.length - 1];
-        }
-
-        return (context, dx, dy, size = TILE_SIZE) => {
-            const { x, y } = selectedSprite;
-            const sx = x * TILE_SIZE;
-            const sy = y * TILE_SIZE;
-            context.drawImage(tilesetImage, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, size, size);
-        };
+        return 0;
     }
 
-    draw(context, dx, dy, size = TILE_SIZE) {
-        this.getDrawFunction()(context, dx, dy, size);
+    draw(context, dx, dy, size = TILE_SIZE, spriteIdex = 0) {
+        const { x, y } = this.sprites[spriteIdex];
+        const sx = x * TILE_SIZE;
+        const sy = y * TILE_SIZE;
+        context.drawImage(tilesetImage, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, size, size);
     }
 }
 
@@ -138,7 +149,6 @@ function buildEdgeRegistryAndMasks(tiles) {
             tile.edgeMasks[DIRECTION.WEST] |= rule.edgeMasks[DIRECTION.WEST];
         });
     });
-    console.log(tiles);
 }
 
 const TRANSPARENT = 'TRANSPARENT';
@@ -215,7 +225,7 @@ function makeAllTiles() {
 
     // # Full transparent tiles (for overlays and decos)
     const transparentOverlay = new Tile("transparentOverlay", [{ x: 1, y: 0, weight: 1 }], RARITY.RARE_11 * BASE_FREQ_MULTI, LAYER.OVERLAY, IS_WALKABLE);
-    const transparentDeco = new Tile("transparentDeco", [{ x: 1, y: 0, weight: 1 }], RARITY.RARE_11 * BASE_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
+    const transparentDeco = new Tile("transparentDeco", [{ x: 1, y: 0, weight: 1 }], RARITY.RARE_10 * BASE_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
     transparentOverlay.addRule(fullTransparentRule);
     transparentDeco.addRule(fullTransparentRule);
     allTiles.push(transparentDeco, transparentOverlay);
@@ -518,7 +528,7 @@ function makeAllTiles() {
 
     // # Deco tiles
     // ## deco 1x1 full transparent
-    const deco1x1_base0 = new Tile("deco1x1", [
+    const deco1x1_base0 = new Tile("deco1x1_base0", [
         { x: 0, y: 2, weight: 1 }, // flower0
         { x: 1, y: 2, weight: 1 }, // flower1
         { x: 2, y: 2, weight: 1 }, // flower2
@@ -528,15 +538,17 @@ function makeAllTiles() {
         { x: 2, y: 4, weight: 1 }, // mush
         { x: 1, y: 4, weight: 1 } // moss
     ], RARITY.RARE_7 * DECO_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
-    const deco1x1_base1 = new Tile("deco1x1", [
+    const deco1x1_base1 = new Tile("deco1x1_base1", [
         { x: 6, y: 2, weight: 1 }, // treeStump
         { x: 5, y: 3, weight: 1 }, // rock0
         { x: 5, y: 4, weight: 1 }, // rock1
         { x: 0, y: 3, weight: 1 }, // rock2
     ], RARITY.RARE_7 * DECO_FREQ_MULTI, LAYER.DECO);
-    deco1x1_base0.addBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+    deco1x1_base0.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+    deco1x1_base0.addAllowedOverlays([transparentOverlay]);
     deco1x1_base0.addRule(fullTransparentRule);
-    deco1x1_base1.addBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+    deco1x1_base1.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+    deco1x1_base1.addAllowedOverlays([transparentOverlay]);
     deco1x1_base1.addRule(fullTransparentRule);
 
     const deco1x1_stone = new Tile("deco1x1_stone", [
@@ -544,7 +556,8 @@ function makeAllTiles() {
         { x: 5, y: 4, weight: 1 }, // rock1
         { x: 0, y: 3, weight: 1 }  // rock2
     ], RARITY.RARE_7 * DECO_FREQ_MULTI, LAYER.DECO);
-    deco1x1_stone.addBases([stone0, stone1, stone2]);
+    deco1x1_stone.addAllowedBases([stone0, stone1, stone2]);
+    deco1x1_stone.addAllowedOverlays([transparentOverlay]);
     deco1x1_stone.addRule(fullTransparentRule);
 
     const deco1x1_beach = new Tile("deco1x1_beach", [
@@ -554,11 +567,14 @@ function makeAllTiles() {
         { x: 3, y: 29, weight: 1 }, // decoBeach3
         { x: 4, y: 29, weight: 1 }  // decoBeach4
     ], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
-    deco1x1_beach.addBases([beach]);
+    deco1x1_beach.addAllowedBases([beach]);
+    deco1x1_beach.addAllowedOverlays([transparentOverlay]);
     deco1x1_beach.addRule(fullTransparentRule);
 
     decoTiles.push(deco1x1_base0, deco1x1_base1, deco1x1_stone, deco1x1_beach);
     allTiles.push(deco1x1_base0, deco1x1_base1, deco1x1_stone, deco1x1_beach);
+
+    // here treeTrunk
 
     if (false) {
         //deco 1-2
@@ -884,6 +900,17 @@ function makeAllTiles() {
 
         treeGroup.push(palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right);
     }
+
+    transparentOverlay.addAllowedBases(allTiles);
+    transparentDeco.addAllowedBases(allTiles);
+    transparentDeco.addAllowedOverlays(allTiles);
+
+    console.log('Base');
+    console.log(baseTiles);
+    console.log('Overlay');
+    console.log(overlayTiles);
+    console.log('Deco');
+    console.log(decoTiles);
 
     buildEdgeRegistryAndMasks(allTiles);
 }

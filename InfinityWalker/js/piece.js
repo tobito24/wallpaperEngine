@@ -4,8 +4,19 @@ import {
     decoTiles,
     getCliffOverlayTile
 } from "./tiles.js";
-import { DIRECTION, LAYER, OPPOSITE_DIRECTION, WFC_ACCURACY, CLIFF_TYPES } from "./config.js";
-import { getHeightLevel, getCliffType } from './utility/getHeightLevel.js';
+import {
+    DIRECTION,
+    LAYER,
+    OPPOSITE_DIRECTION,
+    WFC_ACCURACY,
+    CLIFF_TYPES,
+    WORLDPIECE_STATE,
+    TRANSPARENT_MASK
+} from "./config.js";
+import {
+    getHeightLevel,
+    getCliffType
+} from './utility/getHeightLevel.js';
 
 export default class WorldPiece {
     constructor(worldX, worldY, isPath = false) {
@@ -14,7 +25,6 @@ export default class WorldPiece {
         this.isPath = isPath;
         this.height = getHeightLevel(worldX, worldY);
 
-        // TODO: if isCliff adjust possibleBaseTiles accordingly
         this.cliffType = getCliffType(worldX, worldY);
         this.isCliff = this.cliffType !== null;
         const cliffOverlayTile = this.isCliff ? getCliffOverlayTile(this.cliffType, this.height) : null;
@@ -26,11 +36,14 @@ export default class WorldPiece {
         this.currentOverlayEdgeMasks = [0n, 0n, 0n, 0n];
         this.currentDecoEdgeMasks = [0n, 0n, 0n, 0n];
 
-        // chosen tile and rule after collapse
+        // chosen tile after collapse
         this.baseTile = null;
         this.overlayTile = this.isCliff ? cliffOverlayTile : null;
         this.decoTile = null;
-        this.drawFunction = null;
+
+        this.baseTileSpriteIndex = 0;
+        this.overlayTileSpriteIndex = 0;
+        this.decoTileSpriteIndex = 0;
 
         // neighbors
         this.northPiece = null;
@@ -38,9 +51,7 @@ export default class WorldPiece {
         this.southPiece = null;
         this.westPiece = null;
 
-        //flags
-        this.isErrorState = false;
-        this.isUntouched = true;
+        this.currentState = WORLDPIECE_STATE.UNTOUCHED;
 
         this.updateEdgeMasks();
     }
@@ -53,31 +64,49 @@ export default class WorldPiece {
     }
 
     isCollapsed() {
-        // TODO: adjust if overlay and deco tiles are added
-        return this.baseTile != null;
+        return this.currentState === WORLDPIECE_STATE.COLLAPSED || this.currentState === WORLDPIECE_STATE.ERROR;
+    }
+
+    isUntouched() {
+        return this.currentState === WORLDPIECE_STATE.UNTOUCHED;
     }
 
     draw(context, dx, dy, squareSize) {
-        if (this.isUntouched) {
+        if (this.currentState === WORLDPIECE_STATE.UNTOUCHED) {
             return;
         }
 
-        if (this.drawFunction !== null) {
-            this.drawFunction(context, dx, dy);
-        }
-        if (this.overlayTile !== null) {
-            this.overlayTile.draw(context, dx, dy, squareSize);
-        }
-
-        if (this.baseTile === null) {
+        if (this.baseTile !== null) {
+            this.baseTile.draw(context, dx, dy, squareSize, this.baseTileSpriteIndex);
+        } else if (this.possibleBaseTiles.length > 0) {
             const previousAlpha = context.globalAlpha;
-            context.globalAlpha = 0.7;
+            context.globalAlpha = 0.9;
             const rng = Math.floor(Math.random() * this.possibleBaseTiles.length);
-            this.possibleBaseTiles[rng].draw(context, dx, dy);
+            this.possibleBaseTiles[rng].draw(context, dx, dy, squareSize);
             context.globalAlpha = previousAlpha;
         }
 
-        if (this.isErrorState) {
+        if (this.overlayTile !== null) {
+            this.overlayTile.draw(context, dx, dy, squareSize, this.overlayTileSpriteIndex);
+        } else if (this.possibleOverlayTiles.length > 0) {
+            const previousAlpha = context.globalAlpha;
+            context.globalAlpha = 0.7;
+            const rng = Math.floor(Math.random() * this.possibleOverlayTiles.length);
+            this.possibleOverlayTiles[rng].draw(context, dx, dy, squareSize);
+            context.globalAlpha = previousAlpha;
+        }
+
+        if (this.decoTile !== null) {
+            this.decoTile.draw(context, dx, dy, squareSize, this.decoTileSpriteIndex);
+        } else if (this.possibleDecoTiles.length > 0) {
+            const previousAlpha = context.globalAlpha;
+            context.globalAlpha = 0.2;
+            const rng = Math.floor(Math.random() * this.possibleDecoTiles.length);
+            this.possibleDecoTiles[rng].draw(context, dx, dy, squareSize);
+            context.globalAlpha = previousAlpha;
+        }
+
+        if (this.currentState === WORLDPIECE_STATE.ERROR) {
             context.strokeStyle = "#ff0000";
             context.lineWidth = 2;
             context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
@@ -89,12 +118,6 @@ export default class WorldPiece {
             context.lineWidth = 2;
             context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
         }
-
-        context.font = "20px Arial";
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillStyle = "#fff";
-        context.fillText(this.height, dx + squareSize / 2, dy + squareSize / 2);
     }
 
     getEntropy(layer = LAYER.BASE) {
@@ -107,52 +130,128 @@ export default class WorldPiece {
         }
     }
 
-    checkIfPathExists() {
+    getEdgeMasks(layer = LAYER.BASE) {
+        if (layer === LAYER.BASE) {
+            return this.currentBaseEdgeMasks;
+        } else if (layer === LAYER.OVERLAY) {
+            return this.currentOverlayEdgeMasks;
+        } else if (layer === LAYER.DECO) {
+            return this.currentDecoEdgeMasks;
+        }
+    }
+
+    isWalkable() {
+        // TODO: rework after path implementation
         if (this.isPath) {
             return true;
         }
-        if (this.baseTile === null) return false;
-        return this.baseTile.walkable;
     }
 
-    chooseTile() {
-        if (this.baseTile != null) return;
+    updateState() {
+        if (
+            this.currentState === WORLDPIECE_STATE.ERROR ||
+            this.currentState === WORLDPIECE_STATE.COLLAPSED
+        ) {
+            return;
+        }
+
+        switch (this.currentState) {
+            case WORLDPIECE_STATE.UNTOUCHED:
+            case WORLDPIECE_STATE.TOUCHED:
+                if (this.baseTile !== null && this.overlayTile !== null) {
+                    this.currentState = WORLDPIECE_STATE.OVERLAY_GENERATED;
+                } else if (this.baseTile !== null && this.overlayTile === null) {
+                    this.currentState = WORLDPIECE_STATE.BASE_GENERATED;
+                }
+                break;
+            case WORLDPIECE_STATE.BASE_GENERATED:
+                if (this.overlayTile !== null) {
+                    this.currentState = WORLDPIECE_STATE.OVERLAY_GENERATED;
+                }
+                break;
+            case WORLDPIECE_STATE.OVERLAY_GENERATED:
+                if (this.decoTile !== null) {
+                    this.currentState = WORLDPIECE_STATE.COLLAPSED;
+                }
+                break;
+            default:
+                this.currentState = WORLDPIECE_STATE.ERROR;
+                return;
+        }
+    }
+
+    getPossibleTiles() {
+        switch (this.currentState) {
+            case WORLDPIECE_STATE.UNTOUCHED:
+            case WORLDPIECE_STATE.TOUCHED:
+                return this.possibleBaseTiles;
+            case WORLDPIECE_STATE.BASE_GENERATED:
+                return this.possibleOverlayTiles;
+            case WORLDPIECE_STATE.OVERLAY_GENERATED:
+                return this.possibleDecoTiles;
+            default:
+                return null;
+        }
+    }
+
+    collapse() {
+        if (this.isCollapsed()) return;
+
+        const possibleTiles = this.getPossibleTiles();
+        if (!possibleTiles) {
+            this.currentState = WORLDPIECE_STATE.ERROR;
+            return;
+        }
 
         //random choose with weights
         let totalWeight = 0;
-        for (let i = 0; i < this.possibleBaseTiles.length; i++) {
-            totalWeight += this.possibleBaseTiles[i].weight;
-        }
+        possibleTiles.forEach(tile => {
+            totalWeight += tile.weight;
+        });
 
         const rngWeight = Math.random() * totalWeight;
 
         let tmpWeight = 0;
+        let selectedTile = null;
 
-        for (let i = 0; i < this.possibleBaseTiles.length; i++) {
-            tmpWeight += this.possibleBaseTiles[i].weight;
-
+        for (const tile of possibleTiles) {
+            tmpWeight += tile.weight;
             if (tmpWeight >= rngWeight) {
-                this.baseTile = this.possibleBaseTiles[i];
-                this.possibleBaseTiles = [this.baseTile];
-                this.updateEdgeMasks();
+                selectedTile = tile;
                 break;
             }
         }
 
-        // TODO: overlay and deco tile selection
+        if (selectedTile === null) {
+            this.currentState = WORLDPIECE_STATE.ERROR;
+            return;
+        }
 
-        this.drawFunction = this.baseTile.getDrawFunction();
+        switch (this.currentState) {
+            case WORLDPIECE_STATE.UNTOUCHED:
+            case WORLDPIECE_STATE.TOUCHED:
+                this.baseTile = selectedTile;
+                this.possibleBaseTiles = [this.baseTile];
+                this.baseTileSpriteIndex = selectedTile.getSpriteIndex();
+                break;
+            case WORLDPIECE_STATE.BASE_GENERATED:
+                this.overlayTile = selectedTile;
+                this.possibleOverlayTiles = [this.overlayTile];
+                this.overlayTileSpriteIndex = selectedTile.getSpriteIndex();
+                break;
+            case WORLDPIECE_STATE.OVERLAY_GENERATED:
+                this.decoTile = selectedTile;
+                this.possibleDecoTiles = [this.decoTile];
+                this.decoTileSpriteIndex = selectedTile.getSpriteIndex();
+                break;
+            default:
+                this.currentState = WORLDPIECE_STATE.ERROR;
+                return;
+        }
 
-        this.isUntouched = false;
-
-        //update Neighbors
+        this.updateEdgeMasks();
+        this.updateState();
         this.callNeighbors(this.pieceX, this.pieceY);
-    }
-
-    isCompatible(edge0Mask, edge1Mask) {
-        if (edge0Mask === null || edge1Mask === null) return true;
-
-        return (edge0Mask & edge1Mask) !== 0n;
     }
 
     callNeighbors(origenX, origenY) {
@@ -175,74 +274,129 @@ export default class WorldPiece {
     }
 
     updateEntropy(origenX = this.pieceX, origenY = this.pieceY, previousPiece = null) {
+        // TODO: if newPossibleTiles is empty -> ERROR state
+        if (this.isCollapsed()) return;
+        if (previousPiece === this) return;
 
-        if (this.baseTile != null) return;
-        if (previousPiece == this) return;
+        const oldEntropies = [this.getEntropy(LAYER.BASE), this.getEntropy(LAYER.OVERLAY), this.getEntropy(LAYER.DECO)];
 
-        let oldEntropy = this.getEntropy();
-        let newPossibleTiles = [];
+        // Base layer
+        if (this.baseTile === null) {
+            const newPossibleBaseTiles = [];
+            this.possibleBaseTiles.forEach(tile => {
+                // same layer neighbor check
+                if (this.isEdgeMasksValid(tile.edgeMasks, LAYER.BASE)) {
+                    newPossibleBaseTiles.push(tile);
+                }
+            });
+            this.possibleBaseTiles = newPossibleBaseTiles;
 
-        this.possibleBaseTiles.forEach(tile => {
-            const edgeMasks = tile.edgeMasks;
-
-            let northValid, easthValid, southValid, westValid;
-            northValid = easthValid = southValid = westValid = true;
-
-            if (this.northPiece) {
-                const northTileMask = edgeMasks[DIRECTION.NORTH];
-                const northNeighborMask = this.northPiece.currentBaseEdgeMasks[OPPOSITE_DIRECTION[DIRECTION.NORTH]];
-                northValid = this.isCompatible(northTileMask, northNeighborMask);
+            if (oldEntropies[0] !== this.getEntropy(LAYER.BASE)) {
+                this.currentState = WORLDPIECE_STATE.TOUCHED;
             }
+        }
 
-            if (this.eastPiece) {
-                const eastTileMask = edgeMasks[DIRECTION.EAST];
-                const eastNeighborMask = this.eastPiece.currentBaseEdgeMasks[OPPOSITE_DIRECTION[DIRECTION.EAST]];
-                easthValid = this.isCompatible(eastTileMask, eastNeighborMask);
-            }
+        // Overlay layer
+        if (this.overlayTile === null) {
+            const newPossibleOverlayTiles = [];
+            this.possibleOverlayTiles.forEach(tile => {
+                // same layer neighbor check
+                let isValid = this.isEdgeMasksValid(tile.edgeMasks, LAYER.OVERLAY);
+                if (!isValid) return;
 
-            if (this.southPiece) {
-                const southTileMask = edgeMasks[DIRECTION.SOUTH];
-                const southNeighborMask = this.southPiece.currentBaseEdgeMasks[OPPOSITE_DIRECTION[DIRECTION.SOUTH]];
-                southValid = this.isCompatible(southTileMask, southNeighborMask);
-            }
+                isValid = this.possibleBaseTiles.some(baseTile =>
+                    tile.isUndergroundAllowed(baseTile, null)
+                );
 
-            if (this.westPiece) {
-                const westTileMask = edgeMasks[DIRECTION.WEST];
-                const westNeighborMask = this.westPiece.currentBaseEdgeMasks[OPPOSITE_DIRECTION[DIRECTION.WEST]];
-                westValid = this.isCompatible(westTileMask, westNeighborMask);
-            }
+                if (isValid) newPossibleOverlayTiles.push(tile);
+            });
+            this.possibleOverlayTiles = newPossibleOverlayTiles;
+        }
 
-            if (northValid && easthValid && southValid && westValid) {
-                newPossibleTiles.push(tile);
-            }
-        });
+        // Deco layer
+        if (this.decoTile === null) {
+            const newPossibleDecoTiles = [];
+            this.possibleDecoTiles.forEach(tile => {
+                let isValid = this.isEdgeMasksValid(tile.edgeMasks, LAYER.DECO);
+                if (!isValid) return;
 
-        if (newPossibleTiles.length != 0) {
-            this.possibleBaseTiles = newPossibleTiles;
-            this.isUntouched = false;
-            this.updateEdgeMasks();
-        } else {
-            this.isErrorState = true;
+                isValid = this.possibleBaseTiles.some(baseTile =>
+                    this.possibleOverlayTiles.some(overlayTile =>
+                        tile.isUndergroundAllowed(baseTile, overlayTile)
+                    )
+                );
+
+                if (isValid) newPossibleDecoTiles.push(tile);
+            });
+            this.possibleDecoTiles = newPossibleDecoTiles;
         }
 
         //entropy has changed -> call neighbors
-        if (oldEntropy != this.getEntropy()) {
+        const isChanged = oldEntropies.some((entropy, index) => entropy !== this.getEntropy(index));
+        if (isChanged) {
+            this.updateEdgeMasks();
             this.callNeighbors(origenX, origenY);
         }
     }
 
-    updateEdgeMasks() {
-        const masks = [0n, 0n, 0n, 0n];
-        this.possibleBaseTiles.forEach(tile => {
-            const tileMask = tile.edgeMasks;
-            masks[DIRECTION.NORTH] |= tileMask[DIRECTION.NORTH];
-            masks[DIRECTION.EAST] |= tileMask[DIRECTION.EAST];
-            masks[DIRECTION.SOUTH] |= tileMask[DIRECTION.SOUTH];
-            masks[DIRECTION.WEST] |= tileMask[DIRECTION.WEST];
-        });
-        this.currentBaseEdgeMasks = masks;
+    isEdgeMasksValid(edgeMasks, layer) {
+        let northValid, easthValid, southValid, westValid;
+        northValid = easthValid = southValid = westValid = true;
 
-        // TODO: if isCliff adjust masks accordingly. overlayTile influence base masks
+        if (this.northPiece) {
+            const northTileMask = edgeMasks[DIRECTION.NORTH];
+            const northNeighborMask = this.northPiece.getEdgeMasks(layer)[OPPOSITE_DIRECTION[DIRECTION.NORTH]];
+            northValid = this.isCompatible(northTileMask, northNeighborMask);
+        }
+
+        if (this.eastPiece) {
+            const eastTileMask = edgeMasks[DIRECTION.EAST];
+            const eastNeighborMask = this.eastPiece.getEdgeMasks(layer)[OPPOSITE_DIRECTION[DIRECTION.EAST]];
+            easthValid = this.isCompatible(eastTileMask, eastNeighborMask);
+        }
+
+        if (this.southPiece) {
+            const southTileMask = edgeMasks[DIRECTION.SOUTH];
+            const southNeighborMask = this.southPiece.getEdgeMasks(layer)[OPPOSITE_DIRECTION[DIRECTION.SOUTH]];
+            southValid = this.isCompatible(southTileMask, southNeighborMask);
+        }
+
+        if (this.westPiece) {
+            const westTileMask = edgeMasks[DIRECTION.WEST];
+            const westNeighborMask = this.westPiece.getEdgeMasks(layer)[OPPOSITE_DIRECTION[DIRECTION.WEST]];
+            westValid = this.isCompatible(westTileMask, westNeighborMask);
+        }
+
+        return northValid && easthValid && southValid && westValid;
+    }
+
+    isCompatible(edge0Mask, edge1Mask) {
+        if (edge0Mask === null || edge1Mask === null) return true;
+        return (edge0Mask & edge1Mask) !== 0n;
+    }
+
+    updateEdgeMasks() {
+        const masks = [[0n, 0n, 0n, 0n], [0n, 0n, 0n, 0n], [0n, 0n, 0n, 0n]]; // base, overlay, deco
+
+        const allPossibleTiles = [this.possibleBaseTiles, this.possibleOverlayTiles, this.possibleDecoTiles];
+        allPossibleTiles.forEach((possibleTiles, index) => {
+            if (possibleTiles.length === 0) return;
+
+            possibleTiles.forEach(tile => {
+                const tileMask = tile.edgeMasks;
+                masks[index][DIRECTION.NORTH] |= tileMask[DIRECTION.NORTH];
+                masks[index][DIRECTION.EAST] |= tileMask[DIRECTION.EAST];
+                masks[index][DIRECTION.SOUTH] |= tileMask[DIRECTION.SOUTH];
+                masks[index][DIRECTION.WEST] |= tileMask[DIRECTION.WEST];
+            });
+        });
+        this.currentBaseEdgeMasks = masks[0];
+        this.currentOverlayEdgeMasks = masks[1];
+        this.setCliffEdgeMasks();
+        this.currentDecoEdgeMasks = masks[2];
+    }
+
+    setCliffEdgeMasks() {
         if (this.isCliff && this.overlayTile !== null) {
             const cliffOverlayMasks = this.overlayTile.edgeMasks;
             switch (this.cliffType) {
@@ -275,6 +429,7 @@ export default class WorldPiece {
                     this.currentBaseEdgeMasks[DIRECTION.EAST] = cliffOverlayMasks[DIRECTION.EAST];
                     break;
             }
+            this.currentOverlayEdgeMasks = TRANSPARENT_MASK;
         }
     }
 }

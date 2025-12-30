@@ -3,9 +3,10 @@ export const CHUNK_SIZE = 16; // 16x16 tiles per chunk
 export const HEIGHT_LEVELS = 6; // number of discrete height steps
 export const HEIGHT_NOISE_SCALE = 32; // higher = larger height blobs
 export const HEIGHT_NOISE_OCTAVES = 1; // small number keeps it cheap
-export const HEIGHT_SEED = Math.random(); // change for a different world layout
+export const HEIGHT_SEED = Math.floor(Math.random() * 1000); // change for a different world layout
 
-export const WFC_ACCURACY = 10; // higher = more accurate but slower. 
+// TODO: change accuracy, stack based instead of position/distance based
+export const WFC_ACCURACY = 5; // higher = more accurate but slower. 
 
 const SPRITE_COLS = 4;
 const SPRITE_ROWS = 4;
@@ -60,6 +61,15 @@ export const LAYER = {
   DECO: 2
 };
 
+export const WORLDPIECE_STATE = {
+  ERROR: -1,
+  UNTOUCHED: 0,
+  TOUCHED: 1,
+  BASE_GENERATED: 2,
+  OVERLAY_GENERATED: 3,
+  COLLAPSED: 4
+}
+
 export const CLIFF_TYPES = {
   // Direction in which it goes down 
   NORTH_EDGE: 0,
@@ -90,3 +100,5 @@ export const RARITY = {
   RARE_10: Math.pow(2, 10),
   RARE_11: Math.pow(2, 11),
 };
+
+export const TRANSPARENT_MASK = [1n, 1n, 1n, 1n];

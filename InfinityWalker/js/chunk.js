@@ -72,7 +72,7 @@ export default class Chunk {
         const piece = this.chunkPieces[0][x];
         const neighborPiece = neighborRow[x];
         neighborPiece.southPiece = piece;
-        if (!neighborPiece.isUntouched) piece.updateEntropy();
+        if (!neighborPiece.isUntouched()) piece.updateEntropy();
       }
     }
     if (eastChunk) {
@@ -80,7 +80,7 @@ export default class Chunk {
         const piece = this.chunkPieces[y][CHUNK_SIZE - 1];
         const neighborPiece = eastChunk.chunkPieces[y][0];
         neighborPiece.westPiece = piece;
-        if (!neighborPiece.isUntouched) piece.updateEntropy();
+        if (!neighborPiece.isUntouched()) piece.updateEntropy();
       }
     }
     if (southChunk) {
@@ -89,7 +89,7 @@ export default class Chunk {
         const piece = this.chunkPieces[CHUNK_SIZE - 1][x];
         const neighborPiece = neighborRow[x];
         neighborPiece.northPiece = piece;
-        if (!neighborPiece.isUntouched) piece.updateEntropy();
+        if (!neighborPiece.isUntouched()) piece.updateEntropy();
       }
     }
     if (westChunk) {
@@ -97,7 +97,7 @@ export default class Chunk {
         const piece = this.chunkPieces[y][0];
         const neighborPiece = westChunk.chunkPieces[y][CHUNK_SIZE - 1];
         neighborPiece.eastPiece = piece;
-        if (!neighborPiece.isUntouched) piece.updateEntropy();
+        if (!neighborPiece.isUntouched()) piece.updateEntropy();
       }
     }
   }
@@ -130,7 +130,7 @@ export default class Chunk {
     // choose a random candidate among those with the lowest entropy
     const chosenIndex = Math.floor(Math.random() * candidates.length);
     const chosenPiece = candidates[chosenIndex];
-    chosenPiece.chooseTile();
+    chosenPiece.collapse();
 
     return true;
   }
