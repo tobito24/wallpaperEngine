@@ -23,6 +23,9 @@ export default class Chunk {
     };
 
     this.chunkState = CHUNK_STATE.WAITING;
+    this.baseCandidates = new Set();
+    this.overlayCandidates = new Set();
+    this.decoCandidates = new Set();
 
     this.chunkPieces = new Array(CHUNK_SIZE);
     for (let y = 0; y < CHUNK_SIZE; y++) {
@@ -41,7 +44,9 @@ export default class Chunk {
         const worldX = this.chunkX * CHUNK_SIZE + x;
         const worldY = this.chunkY * CHUNK_SIZE + y;
         const isPath = pathCells.has(this.getCellKey(x, y));
-        this.chunkPieces[y][x] = new WorldPiece(worldX, worldY, isPath);
+        const piece = new WorldPiece(worldX, worldY, isPath);
+        this.chunkPieces[y][x] = piece;
+        this.baseCandidates.add(piece);
       }
     }
 
@@ -110,31 +115,28 @@ export default class Chunk {
   getChunkPieces() {
     switch (this.chunkState) {
       case CHUNK_STATE.BASE_GENERATING:
-        const chunkBasePieces = this.chunkPieces.flat().filter(piece => piece.currentState === WORLDPIECE_STATE.UNTOUCHED || piece.currentState === WORLDPIECE_STATE.TOUCHED);
-        if (chunkBasePieces.length === 0) {
+        if (this.baseCandidates.size === 0) {
           console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
           this.time = performance.now();
           this.chunkState = CHUNK_STATE.OVERLAY_GENERATING;
           return this.getChunkPieces();
         }
-        return chunkBasePieces;
+        return Array.from(this.baseCandidates);
       case CHUNK_STATE.OVERLAY_GENERATING:
-        const chunkOverlayPieces = this.chunkPieces.flat().filter(piece => piece.currentState === WORLDPIECE_STATE.BASE_GENERATED);
-        if (chunkOverlayPieces.length === 0) {
+        if (this.overlayCandidates.size === 0) {
           console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
           this.time = performance.now();
           this.chunkState = CHUNK_STATE.DECO_GENERATING;
           return this.getChunkPieces();
         }
-        return chunkOverlayPieces;
+        return Array.from(this.overlayCandidates);
       case CHUNK_STATE.DECO_GENERATING:
-        const chunkDecoPieces = this.chunkPieces.flat().filter(piece => piece.currentState === WORLDPIECE_STATE.OVERLAY_GENERATED);
-        if (chunkDecoPieces.length === 0) {
+        if (this.decoCandidates.size === 0) {
           console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
           this.chunkState = CHUNK_STATE.COLLAPSED;
           return null;
         }
-        return chunkDecoPieces;
+        return Array.from(this.decoCandidates);
       default:
         return null;
     }
@@ -164,7 +166,7 @@ export default class Chunk {
       );
 
       if (entropy === 1) {
-        piece.collapse(); // immediate collapse
+        this.collapsePiece(piece); // immediate collapse
         return true;
       }
 
@@ -176,16 +178,42 @@ export default class Chunk {
       }
     }
 
-    if (candidates.length === 0) {
-      return false;
-    }
-
     // choose a random candidate among those with the lowest entropy
     const chosenIndex = Math.floor(Math.random() * candidates.length);
     const chosenPiece = candidates[chosenIndex];
-    chosenPiece.collapse();
+    this.collapsePiece(chosenPiece);
 
     return true;
+  }
+
+  collapsePiece(piece) {
+    const prevState = piece.currentState;
+    piece.collapse();
+    this.updateCandidateSets(piece, prevState);
+  }
+
+  updateCandidateSets(piece, prevState) {
+    const nextState = piece.currentState;
+
+    if (prevState === WORLDPIECE_STATE.UNTOUCHED || prevState === WORLDPIECE_STATE.TOUCHED) {
+      this.baseCandidates.delete(piece);
+    }
+
+    if (prevState === WORLDPIECE_STATE.BASE_GENERATED) {
+      this.overlayCandidates.delete(piece);
+    }
+
+    if (prevState === WORLDPIECE_STATE.OVERLAY_GENERATED) {
+      this.decoCandidates.delete(piece);
+    }
+
+    if (nextState === WORLDPIECE_STATE.BASE_GENERATED) {
+      this.overlayCandidates.add(piece);
+    }
+
+    if (nextState === WORLDPIECE_STATE.OVERLAY_GENERATED) {
+      this.decoCandidates.add(piece);
+    }
   }
 
   getPiece(localX, localY) {
