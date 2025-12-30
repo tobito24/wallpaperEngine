@@ -1,11 +1,11 @@
 import {
     baseTiles,
-    cliffTiles,
     overlayTiles,
-    decoTiles
+    decoTiles,
+    getCliffOverlayTile
 } from "./tiles.js";
-import { DIRECTION, LAYER, OPPOSITE_DIRECTION, WFC_ACCURACY } from "./config.js";
-import { getHeightLevel, isCliff } from './utility/getHeightLevel.js';
+import { DIRECTION, LAYER, OPPOSITE_DIRECTION, WFC_ACCURACY, CLIFF_TYPES } from "./config.js";
+import { getHeightLevel, getCliffType } from './utility/getHeightLevel.js';
 
 export default class WorldPiece {
     constructor(worldX, worldY, isPath = false) {
@@ -13,25 +13,22 @@ export default class WorldPiece {
         this.pieceY = worldY;
         this.isPath = isPath;
         this.height = getHeightLevel(worldX, worldY);
-        this.isCliff = isCliff(worldX, worldY);
+
+        // TODO: if isCliff adjust possibleBaseTiles accordingly
+        this.cliffType = getCliffType(worldX, worldY);
+        this.isCliff = this.cliffType !== null;
+        const cliffOverlayTile = this.isCliff ? getCliffOverlayTile(this.cliffType, this.height) : null;
 
         this.possibleBaseTiles = Array.from(baseTiles);
-        //possible tiles, edge masks and entropy
-        if (this.isCliff) {
-            this.possibleOverlayTiles = Array.from(cliffTiles);
-        } else {
-            this.possibleOverlayTiles = Array.from(overlayTiles);
-        }
+        this.possibleOverlayTiles = this.isCliff ? [cliffOverlayTile] : Array.from(overlayTiles);
         this.possibleDecoTiles = Array.from(decoTiles);
-
         this.currentBaseEdgeMasks = [0n, 0n, 0n, 0n];
         this.currentOverlayEdgeMasks = [0n, 0n, 0n, 0n];
         this.currentDecoEdgeMasks = [0n, 0n, 0n, 0n];
-        this.updateEdgeMasks();
 
         // chosen tile and rule after collapse
         this.baseTile = null;
-        this.overlayTile = null;
+        this.overlayTile = this.isCliff ? cliffOverlayTile : null;
         this.decoTile = null;
         this.drawFunction = null;
 
@@ -44,6 +41,8 @@ export default class WorldPiece {
         //flags
         this.isErrorState = false;
         this.isUntouched = true;
+
+        this.updateEdgeMasks();
     }
 
     setNeighborhoodRelationship(northPiece, eastPiece, southPiece, westPiece) {
@@ -66,6 +65,9 @@ export default class WorldPiece {
         if (this.drawFunction !== null) {
             this.drawFunction(context, dx, dy);
         }
+        if (this.overlayTile !== null) {
+            this.overlayTile.draw(context, dx, dy, squareSize);
+        }
 
         if (this.baseTile === null) {
             const previousAlpha = context.globalAlpha;
@@ -84,12 +86,6 @@ export default class WorldPiece {
         // TODO: path highlight - remove later
         if (this.isPath) {
             context.strokeStyle = "#ee0dc8ff";
-            context.lineWidth = 2;
-            context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
-        }
-
-        if (this.isCliff) {
-            context.strokeStyle = "#ffa500";
             context.lineWidth = 2;
             context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
         }
@@ -245,5 +241,40 @@ export default class WorldPiece {
             masks[DIRECTION.WEST] |= tileMask[DIRECTION.WEST];
         });
         this.currentBaseEdgeMasks = masks;
+
+        // TODO: if isCliff adjust masks accordingly. overlayTile influence base masks
+        if (this.isCliff && this.overlayTile !== null) {
+            const cliffOverlayMasks = this.overlayTile.edgeMasks;
+            switch (this.cliffType) {
+                case CLIFF_TYPES.NORTH_EDGE:
+                    this.currentBaseEdgeMasks[DIRECTION.SOUTH] = cliffOverlayMasks[DIRECTION.SOUTH];
+                    break;
+                case CLIFF_TYPES.EAST_EDGE:
+                    this.currentBaseEdgeMasks[DIRECTION.WEST] = cliffOverlayMasks[DIRECTION.WEST];
+                    break;
+                case CLIFF_TYPES.SOUTH_EDGE:
+                    this.currentBaseEdgeMasks[DIRECTION.NORTH] = cliffOverlayMasks[DIRECTION.NORTH];
+                    break;
+                case CLIFF_TYPES.WEST_EDGE:
+                    this.currentBaseEdgeMasks[DIRECTION.EAST] = cliffOverlayMasks[DIRECTION.EAST];
+                    break;
+                case CLIFF_TYPES.NORTH_WEST_INNER_CORNER:
+                    this.currentBaseEdgeMasks[DIRECTION.SOUTH] = cliffOverlayMasks[DIRECTION.SOUTH];
+                    this.currentBaseEdgeMasks[DIRECTION.EAST] = cliffOverlayMasks[DIRECTION.EAST];
+                    break;
+                case CLIFF_TYPES.NORTH_EAST_INNER_CORNER:
+                    this.currentBaseEdgeMasks[DIRECTION.SOUTH] = cliffOverlayMasks[DIRECTION.SOUTH];
+                    this.currentBaseEdgeMasks[DIRECTION.WEST] = cliffOverlayMasks[DIRECTION.WEST];
+                    break;
+                case CLIFF_TYPES.SOUTH_EAST_INNER_CORNER:
+                    this.currentBaseEdgeMasks[DIRECTION.NORTH] = cliffOverlayMasks[DIRECTION.NORTH];
+                    this.currentBaseEdgeMasks[DIRECTION.WEST] = cliffOverlayMasks[DIRECTION.WEST];
+                    break;
+                case CLIFF_TYPES.SOUTH_WEST_INNER_CORNER:
+                    this.currentBaseEdgeMasks[DIRECTION.NORTH] = cliffOverlayMasks[DIRECTION.NORTH];
+                    this.currentBaseEdgeMasks[DIRECTION.EAST] = cliffOverlayMasks[DIRECTION.EAST];
+                    break;
+            }
+        }
     }
 }

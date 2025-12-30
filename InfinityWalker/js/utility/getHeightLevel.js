@@ -2,7 +2,8 @@ import {
     HEIGHT_LEVELS,
     HEIGHT_NOISE_SCALE,
     HEIGHT_NOISE_OCTAVES,
-    HEIGHT_SEED
+    HEIGHT_SEED,
+    CLIFF_TYPES
 } from '../config.js';
 
 // TODO: Understand this noise function
@@ -27,24 +28,40 @@ export function getHeightLevel(worldX, worldY) {
 }
 
 export function isCliff(worldX, worldY) {
+    return getCliffType(worldX, worldY) !== null;
+}
+
+export function getCliffType(worldX, worldY) {
     const currentLevel = getHeightLevel(worldX, worldY);
-    const adjacentOffsets = [
-        { dx: 1, dy: 0 }, // w
-        { dx: -1, dy: 0 }, // e
-        { dx: 0, dy: 1 }, // n
-        { dx: 0, dy: -1 }, // s
-        { dx: -1, dy: -1 }, // nw
-        { dx: -1, dy: 1 }, // sw
-        { dx: 1, dy: -1 }, // ne
-        { dx: 1, dy: 1 }, // se
-    ];
-    for (const offset of adjacentOffsets) {
-        const neighborLevel = getHeightLevel(worldX + offset.dx, worldY + offset.dy);
-        if (neighborLevel - currentLevel >= 1) {
-            return true;
-        }
+    const n = getHeightLevel(worldX, worldY - 1) > currentLevel;
+    const e = getHeightLevel(worldX + 1, worldY) > currentLevel;
+    const s = getHeightLevel(worldX, worldY + 1) > currentLevel;
+    const w = getHeightLevel(worldX - 1, worldY) > currentLevel;
+    const nw = getHeightLevel(worldX - 1, worldY - 1) > currentLevel;
+    const ne = getHeightLevel(worldX + 1, worldY - 1) > currentLevel;
+    const se = getHeightLevel(worldX + 1, worldY + 1) > currentLevel;
+    const sw = getHeightLevel(worldX - 1, worldY + 1) > currentLevel;
+
+    if (!(n || e || s || w || nw || ne || se || sw)) {
+        return null;
     }
-    return false;
+
+    if (!n && e && s && !w) return CLIFF_TYPES.NORTH_WEST_INNER_CORNER;
+    if (!n && !e && s && w) return CLIFF_TYPES.NORTH_EAST_INNER_CORNER;
+    if (n && e && !s && !w) return CLIFF_TYPES.SOUTH_WEST_INNER_CORNER;
+    if (n && !e && !s && w) return CLIFF_TYPES.SOUTH_EAST_INNER_CORNER;
+
+    if (n && !e && !s && !w) return CLIFF_TYPES.SOUTH_EDGE;
+    if (!n && e && !s && !w) return CLIFF_TYPES.WEST_EDGE;
+    if (!n && !e && s && !w) return CLIFF_TYPES.NORTH_EDGE;
+    if (!n && !e && !s && w) return CLIFF_TYPES.EAST_EDGE;
+
+    if (nw) return CLIFF_TYPES.SOUTH_EAST_OUTER_CORNER;
+    if (ne) return CLIFF_TYPES.SOUTH_WEST_OUTER_CORNER;
+    if (se) return CLIFF_TYPES.NORTH_WEST_OUTER_CORNER;
+    if (sw) return CLIFF_TYPES.NORTH_EAST_OUTER_CORNER;
+
+    return null;
 }
 
 function valueNoise2D(wx, wy, scale) {

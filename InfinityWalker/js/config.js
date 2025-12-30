@@ -46,6 +46,7 @@ export const DIRECTION_VECTORS = [
   { x: -1, y: 0 }  // WEST
 ];
 
+// Payer sprite row mapping for each direction
 export const SPRITE_ROW_DIRECTION = [
   3, // NORTH
   2, // EAST
@@ -57,4 +58,35 @@ export const LAYER = {
   BASE: 0,
   OVERLAY: 1,
   DECO: 2
+};
+
+export const CLIFF_TYPES = {
+  // Direction in which it goes down 
+  NORTH_EDGE: 0,
+  EAST_EDGE: 1,
+  SOUTH_EDGE: 2,
+  WEST_EDGE: 3,
+  NORTH_WEST_OUTER_CORNER: 4,
+  NORTH_EAST_OUTER_CORNER: 5,
+  SOUTH_EAST_OUTER_CORNER: 6,
+  SOUTH_WEST_OUTER_CORNER: 7,
+  NORTH_WEST_INNER_CORNER: 8,
+  NORTH_EAST_INNER_CORNER: 9,
+  SOUTH_EAST_INNER_CORNER: 10,
+  SOUTH_WEST_INNER_CORNER: 11
+}
+
+export const RARITY = {
+  RARE_0: Math.pow(2, 0),
+  RARE_1: Math.pow(2, 1),
+  RARE_2: Math.pow(2, 2),
+  RARE_3: Math.pow(2, 3),
+  RARE_4: Math.pow(2, 4),
+  RARE_5: Math.pow(2, 5),
+  RARE_6: Math.pow(2, 6),
+  RARE_7: Math.pow(2, 7),
+  RARE_8: Math.pow(2, 8),
+  RARE_9: Math.pow(2, 9),
+  RARE_10: Math.pow(2, 10),
+  RARE_11: Math.pow(2, 11),
 };
