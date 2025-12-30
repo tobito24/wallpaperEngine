@@ -6,7 +6,7 @@ export const HEIGHT_NOISE_OCTAVES = 1; // small number keeps it cheap
 export const HEIGHT_SEED = Math.floor(Math.random() * 1000); // change for a different world layout
 
 // TODO: change accuracy, stack based instead of position/distance based
-export const WFC_ACCURACY = 5; // higher = more accurate but slower. 
+export const WFC_ACCURACY = 5; // higher = more accurate but slower.
 
 const SPRITE_COLS = 4;
 const SPRITE_ROWS = 4;
@@ -60,6 +60,14 @@ export const LAYER = {
   OVERLAY: 1,
   DECO: 2
 };
+
+export const CHUNK_STATE = {
+  WAITING: 0,
+  BASE_GENERATING: 1,
+  OVERLAY_GENERATING: 2,
+  DECO_GENERATING: 3,
+  COLLAPSED: 4
+}
 
 export const WORLDPIECE_STATE = {
   ERROR: -1,

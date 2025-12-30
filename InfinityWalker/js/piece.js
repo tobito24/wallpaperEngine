@@ -251,32 +251,31 @@ export default class WorldPiece {
 
         this.updateEdgeMasks();
         this.updateState();
-        this.callNeighbors(this.pieceX, this.pieceY);
+        this.callNeighbors(new Set([this]), { x: this.pieceX, y: this.pieceY });
     }
 
-    callNeighbors(origenX, origenY) {
-
-        if (Math.abs(origenX - this.pieceX) > WFC_ACCURACY) return;
-        if (Math.abs(origenY - this.pieceY) > WFC_ACCURACY) return;
-
+    callNeighbors(visitedSet, origin) {
         if (this.northPiece) {
-            this.northPiece.updateEntropy(origenX, origenY, this);
+            this.northPiece.updateEntropy(visitedSet, origin);
         }
         if (this.eastPiece) {
-            this.eastPiece.updateEntropy(origenX, origenY, this);
+            this.eastPiece.updateEntropy(visitedSet, origin);
         }
         if (this.southPiece) {
-            this.southPiece.updateEntropy(origenX, origenY, this);
+            this.southPiece.updateEntropy(visitedSet, origin);
         }
         if (this.westPiece) {
-            this.westPiece.updateEntropy(origenX, origenY, this);
+            this.westPiece.updateEntropy(visitedSet, origin);
         }
     }
 
-    updateEntropy(origenX = this.pieceX, origenY = this.pieceY, previousPiece = null) {
+    updateEntropy(visitedSet = new Set(), origin = { x: this.pieceX, y: this.pieceY }) {
         // TODO: if newPossibleTiles is empty -> ERROR state
         if (this.isCollapsed()) return;
-        if (previousPiece === this) return;
+        const manhattanDist = Math.abs(origin.x - this.pieceX) + Math.abs(origin.y - this.pieceY);
+        if (manhattanDist > WFC_ACCURACY) return;
+        if (visitedSet.has(this)) return;
+        visitedSet.add(this);
 
         const oldEntropies = [this.getEntropy(LAYER.BASE), this.getEntropy(LAYER.OVERLAY), this.getEntropy(LAYER.DECO)];
 
@@ -331,11 +330,11 @@ export default class WorldPiece {
             this.possibleDecoTiles = newPossibleDecoTiles;
         }
 
-        //entropy has changed -> call neighbors
+        //entropy has changed -> call neighbors        
         const isChanged = oldEntropies.some((entropy, index) => entropy !== this.getEntropy(index));
         if (isChanged) {
             this.updateEdgeMasks();
-            this.callNeighbors(origenX, origenY);
+            this.callNeighbors(visitedSet, origin);
         }
     }
 

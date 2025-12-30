@@ -1,5 +1,8 @@
 import {
   CHUNK_SIZE,
+  CHUNK_STATE,
+  LAYER,
+  WORLDPIECE_STATE
 } from './config.js';
 import WorldPiece from './piece.js';
 
@@ -18,6 +21,8 @@ export default class Chunk {
       south: null,
       west: null
     };
+
+    this.chunkState = CHUNK_STATE.WAITING;
 
     this.chunkPieces = new Array(CHUNK_SIZE);
     for (let y = 0; y < CHUNK_SIZE; y++) {
@@ -102,24 +107,72 @@ export default class Chunk {
     }
   }
 
-  choosePieceTiles() {
+  getChunkPieces() {
+    switch (this.chunkState) {
+      case CHUNK_STATE.BASE_GENERATING:
+        const chunkBasePieces = this.chunkPieces.flat().filter(piece => piece.currentState === WORLDPIECE_STATE.UNTOUCHED || piece.currentState === WORLDPIECE_STATE.TOUCHED);
+        if (chunkBasePieces.length === 0) {
+          console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
+          this.time = performance.now();
+          this.chunkState = CHUNK_STATE.OVERLAY_GENERATING;
+          return this.getChunkPieces();
+        }
+        return chunkBasePieces;
+      case CHUNK_STATE.OVERLAY_GENERATING:
+        const chunkOverlayPieces = this.chunkPieces.flat().filter(piece => piece.currentState === WORLDPIECE_STATE.BASE_GENERATED);
+        if (chunkOverlayPieces.length === 0) {
+          console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
+          this.time = performance.now();
+          this.chunkState = CHUNK_STATE.DECO_GENERATING;
+          return this.getChunkPieces();
+        }
+        return chunkOverlayPieces;
+      case CHUNK_STATE.DECO_GENERATING:
+        const chunkDecoPieces = this.chunkPieces.flat().filter(piece => piece.currentState === WORLDPIECE_STATE.OVERLAY_GENERATED);
+        if (chunkDecoPieces.length === 0) {
+          console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
+          this.chunkState = CHUNK_STATE.COLLAPSED;
+          return null;
+        }
+        return chunkDecoPieces;
+      default:
+        return null;
+    }
+  }
+
+
+  collapseRandomPiece() {
+    if (this.chunkState === CHUNK_STATE.WAITING) {
+      this.chunkState = CHUNK_STATE.BASE_GENERATING;
+      this.time = performance.now();
+    }
+
+    const chunkPieces = this.getChunkPieces();
+    if (chunkPieces === null) {
+      return false;
+    }
+
     let minEntropy = Infinity;
     let candidates = [];
 
-    for (let y = 0; y < CHUNK_SIZE; y++) {
-      for (let x = 0; x < CHUNK_SIZE; x++) {
-        const piece = this.chunkPieces[y][x];
-        if (piece.isCollapsed()) {
-          continue;
-        }
-        const entropy = piece.getEntropy();
+    for (let i = 0; i < chunkPieces.length; i++) {
+      const piece = chunkPieces[i];
+      const entropy = piece.getEntropy(
+        this.chunkState === CHUNK_STATE.BASE_GENERATING ? LAYER.BASE :
+          this.chunkState === CHUNK_STATE.OVERLAY_GENERATING ? LAYER.OVERLAY :
+            LAYER.DECO
+      );
 
-        if (entropy < minEntropy) {
-          minEntropy = entropy;
-          candidates = [piece];
-        } else if (entropy === minEntropy) {
-          candidates.push(piece);
-        }
+      if (entropy === 1) {
+        piece.collapse(); // immediate collapse
+        return true;
+      }
+
+      if (entropy < minEntropy) {
+        minEntropy = entropy;
+        candidates = [piece];
+      } else if (entropy === minEntropy) {
+        candidates.push(piece);
       }
     }
 

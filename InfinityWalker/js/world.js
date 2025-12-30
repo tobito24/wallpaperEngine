@@ -82,10 +82,12 @@ export default class World {
       return;
     }
 
-    if (!this.currentProcessedChunk.choosePieceTiles()) {
+    if (!this.currentProcessedChunk.collapseRandomPiece()) {
       console.log('chunk ready in', (performance.now() - this.time) / 1000, 's');
       console.log('chunks in queue: ', this.chunkQueue.size);
-      
+      console.log('#####');
+
+
       this.currentProcessedChunk = null;
     }
   }
