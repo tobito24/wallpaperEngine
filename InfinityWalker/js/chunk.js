@@ -116,23 +116,18 @@ export default class Chunk {
     switch (this.chunkState) {
       case CHUNK_STATE.BASE_GENERATING:
         if (this.baseCandidates.size === 0) {
-          console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
-          this.time = performance.now();
           this.chunkState = CHUNK_STATE.OVERLAY_GENERATING;
           return this.getChunkPieces();
         }
         return Array.from(this.baseCandidates);
       case CHUNK_STATE.OVERLAY_GENERATING:
         if (this.overlayCandidates.size === 0) {
-          console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
-          this.time = performance.now();
           this.chunkState = CHUNK_STATE.DECO_GENERATING;
           return this.getChunkPieces();
         }
         return Array.from(this.overlayCandidates);
       case CHUNK_STATE.DECO_GENERATING:
         if (this.decoCandidates.size === 0) {
-          console.log(`[${this.chunkX}, ${this.chunkY}]: state ${this.chunkState} time ${(performance.now() - this.time) / 1000}s`);
           this.chunkState = CHUNK_STATE.COLLAPSED;
           return null;
         }
@@ -146,7 +141,6 @@ export default class Chunk {
   collapseRandomPiece() {
     if (this.chunkState === CHUNK_STATE.WAITING) {
       this.chunkState = CHUNK_STATE.BASE_GENERATING;
-      this.time = performance.now();
     }
 
     const chunkPieces = this.getChunkPieces();

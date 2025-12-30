@@ -1,4 +1,4 @@
-import { TILE_SIZE, CHUNK_SIZE } from './config.js';
+import { TILE_SIZE, CHUNK_SIZE, WFC_TIME_BUDGET_MS } from './config.js';
 import Chunk from './chunk.js';
 
 export default class World {
@@ -78,17 +78,16 @@ export default class World {
   processChunkQueue(playerX, playerY) {
     if (this.currentProcessedChunk === null) {
       this.setCurrentProcessedChunk(playerX, playerY);
-      this.time = performance.now();
       return;
     }
 
-    if (!this.currentProcessedChunk.collapseRandomPiece()) {
-      console.log('chunk ready in', (performance.now() - this.time) / 1000, 's');
-      console.log('chunks in queue: ', this.chunkQueue.size);
-      console.log('#####');
+    const start = performance.now();
 
-
-      this.currentProcessedChunk = null;
+    while (performance.now() - start < WFC_TIME_BUDGET_MS) {
+      if (!this.currentProcessedChunk.collapseRandomPiece()) {
+        this.currentProcessedChunk = null;
+        break;
+      }
     }
   }
 
