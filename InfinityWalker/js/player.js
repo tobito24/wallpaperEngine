@@ -20,7 +20,7 @@ export default class Player {
     this.fromY = startY;
     this.toX = startX;
     this.toY = startY;
-    this.paused = true; // TODO: set to false for actual gameplay
+    this.paused = false;
 
     this.sprite = {
       image: new Image(),

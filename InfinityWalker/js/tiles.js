@@ -110,6 +110,9 @@ class Rule {
     }
 }
 
+export let transparentMasks = [1n, 1n, 1n, 1n];
+export let allAllowedEdgeMasks = [0n, 0n, 0n, 0n];
+
 function buildEdgeRegistryAndMasks(tiles) {
     const stringToEdgeIdMap = new Map();
 
@@ -149,6 +152,19 @@ function buildEdgeRegistryAndMasks(tiles) {
             tile.edgeMasks[DIRECTION.WEST] |= rule.edgeMasks[DIRECTION.WEST];
         });
     });
+
+    // Build transparent masks and all allowed edge masks
+    const transparentId = getEdgeMaskById(getEdgeId(TRANSPARENT));
+    transparentMasks = [transparentId, transparentId, transparentId, transparentId];
+    console.log(transparentMasks);
+
+    allAllowedEdgeMasks = [0n, 0n, 0n, 0n];
+    tiles.forEach(tile => {
+        allAllowedEdgeMasks[DIRECTION.NORTH] |= tile.edgeMasks[DIRECTION.NORTH];
+        allAllowedEdgeMasks[DIRECTION.EAST] |= tile.edgeMasks[DIRECTION.EAST];
+        allAllowedEdgeMasks[DIRECTION.SOUTH] |= tile.edgeMasks[DIRECTION.SOUTH];
+        allAllowedEdgeMasks[DIRECTION.WEST] |= tile.edgeMasks[DIRECTION.WEST];
+    });    
 }
 
 const TRANSPARENT = 'TRANSPARENT';

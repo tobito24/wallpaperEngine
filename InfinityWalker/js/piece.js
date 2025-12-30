@@ -2,7 +2,9 @@ import {
     baseTiles,
     overlayTiles,
     decoTiles,
-    getCliffOverlayTile
+    getCliffOverlayTile,
+    transparentMasks,
+    allAllowedEdgeMasks,
 } from "./tiles.js";
 import {
     DIRECTION,
@@ -11,7 +13,6 @@ import {
     WFC_ACCURACY,
     CLIFF_TYPES,
     WORLDPIECE_STATE,
-    TRANSPARENT_MASK
 } from "./config.js";
 import {
     getHeightLevel,
@@ -108,7 +109,7 @@ export default class WorldPiece {
 
         if (this.currentState === WORLDPIECE_STATE.ERROR) {
             context.strokeStyle = "#ff0000";
-            context.lineWidth = 2;
+            context.lineWidth = 1;
             context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
         }
 
@@ -148,10 +149,7 @@ export default class WorldPiece {
     }
 
     updateState() {
-        if (
-            this.currentState === WORLDPIECE_STATE.ERROR ||
-            this.currentState === WORLDPIECE_STATE.COLLAPSED
-        ) {
+        if (this.isCollapsed()) {
             return;
         }
 
@@ -175,7 +173,7 @@ export default class WorldPiece {
                 }
                 break;
             default:
-                this.currentState = WORLDPIECE_STATE.ERROR;
+                this.setErrorState();
                 return;
         }
     }
@@ -198,8 +196,9 @@ export default class WorldPiece {
         if (this.isCollapsed()) return;
 
         const possibleTiles = this.getPossibleTiles();
-        if (!possibleTiles) {
-            this.currentState = WORLDPIECE_STATE.ERROR;
+        if (!possibleTiles || possibleTiles.length === 0) {
+            console.log('Error: no possible tiles during collapse');
+            this.setErrorState();
             return;
         }
 
@@ -223,7 +222,8 @@ export default class WorldPiece {
         }
 
         if (selectedTile === null) {
-            this.currentState = WORLDPIECE_STATE.ERROR;
+            console.log('Error: no tile selected during collapse');
+            this.setErrorState();
             return;
         }
 
@@ -245,7 +245,8 @@ export default class WorldPiece {
                 this.decoTileSpriteIndex = selectedTile.getSpriteIndex();
                 break;
             default:
-                this.currentState = WORLDPIECE_STATE.ERROR;
+                console.log('Error: invalid state during collapse');
+                this.setErrorState();
                 return;
         }
 
@@ -288,6 +289,12 @@ export default class WorldPiece {
                     newPossibleBaseTiles.push(tile);
                 }
             });
+
+            if (newPossibleBaseTiles.length === 0) {
+                console.log('Error: no possible base tiles during entropy update');
+                this.setErrorState();
+                return;
+            }
             this.possibleBaseTiles = newPossibleBaseTiles;
 
             if (oldEntropies[0] !== this.getEntropy(LAYER.BASE)) {
@@ -309,6 +316,12 @@ export default class WorldPiece {
 
                 if (isValid) newPossibleOverlayTiles.push(tile);
             });
+
+            if (newPossibleOverlayTiles.length === 0) {
+                console.log('Error: no possible overlay tiles during entropy update');
+                this.setErrorState();
+                return;
+            }
             this.possibleOverlayTiles = newPossibleOverlayTiles;
         }
 
@@ -327,6 +340,12 @@ export default class WorldPiece {
 
                 if (isValid) newPossibleDecoTiles.push(tile);
             });
+
+            if (newPossibleDecoTiles.length === 0) {
+                console.log('Error: no possible deco tiles during entropy update');
+                this.setErrorState();
+                return;
+            }
             this.possibleDecoTiles = newPossibleDecoTiles;
         }
 
@@ -428,7 +447,14 @@ export default class WorldPiece {
                     this.currentBaseEdgeMasks[DIRECTION.EAST] = cliffOverlayMasks[DIRECTION.EAST];
                     break;
             }
-            this.currentOverlayEdgeMasks = TRANSPARENT_MASK;
+            this.currentOverlayEdgeMasks = transparentMasks;
         }
+    }
+
+    setErrorState() {
+        this.currentState = WORLDPIECE_STATE.ERROR;
+        this.currentBaseEdgeMasks = allAllowedEdgeMasks;
+        this.currentOverlayEdgeMasks = allAllowedEdgeMasks;
+        this.currentDecoEdgeMasks = allAllowedEdgeMasks;
     }
 }

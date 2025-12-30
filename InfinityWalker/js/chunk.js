@@ -208,6 +208,13 @@ export default class Chunk {
     if (nextState === WORLDPIECE_STATE.OVERLAY_GENERATED) {
       this.decoCandidates.add(piece);
     }
+
+    if (nextState === WORLDPIECE_STATE.ERROR || nextState === WORLDPIECE_STATE.COLLAPSED) {
+      this.baseCandidates.delete(piece);
+      this.overlayCandidates.delete(piece);
+      this.decoCandidates.delete(piece);
+    }
+
   }
 
   getPiece(localX, localY) {
