@@ -1,25 +1,25 @@
-export const TILE_SIZE = 32; // pixels
+export let TILE_SIZE = 32; // pixels
+export function setTileSize(value) {
+  TILE_SIZE = Math.floor(Math.max(8, Math.min(256, value)));
+}
+
+export let IS_DEBUG_MODE = false;
+export function toggleDebugMode() {
+  IS_DEBUG_MODE = !IS_DEBUG_MODE;
+};
+
 export const CHUNK_SIZE = 16; // 16x16 tiles per chunk
 export const HEIGHT_LEVELS = 6; // number of discrete height steps
-export const HEIGHT_NOISE_SCALE = 32; // higher = larger height blobs
+export const HEIGHT_NOISE_SCALE = 64; // higher = larger height blobs
 export const HEIGHT_NOISE_OCTAVES = 1; // small number keeps it cheap
 export const HEIGHT_SEED = Math.floor(Math.random() * 1000); // change for a different world layout
 
-export const WFC_ACCURACY = 5; // higher = more accurate but slower.
-export const WFC_TIME_BUDGET_MS = 6; // time budget per frame in ms for WFC processing
+export const WFC_ACCURACY = 8; // higher = more accurate but slower.
+export const WFC_TIME_BUDGET_MS = 5; // time budget per frame in ms for WFC processing
 
-const SPRITE_COLS = 4;
-const SPRITE_ROWS = 4;
-const SPRITE_STEP_FRAMES = 2;
-
-export const SPRITE = {
-  sheet: 'img/trainer_bug.png',
-  cols: SPRITE_COLS,
-  rows: SPRITE_ROWS,
-  stepFrames: SPRITE_STEP_FRAMES,
-  fps: 8,
-  scale: 1
-};
+export const PLAYER_SPEED = 2;
+export const PLAYER_START_VECTOR = { x: 1, y: 0 };
+export const PLAYER_START_AUTO_MOVE = true;
 
 export const TILESET = {
   sheet: 'img/tileset.png',
@@ -45,14 +45,6 @@ export const DIRECTION_VECTORS = [
   { x: 1, y: 0 },  // EAST
   { x: 0, y: 1 },  // SOUTH
   { x: -1, y: 0 }  // WEST
-];
-
-// Payer sprite row mapping for each direction
-export const SPRITE_ROW_DIRECTION = [
-  3, // NORTH
-  2, // EAST
-  0, // SOUTH
-  1  // WEST
 ];
 
 export const LAYER = {

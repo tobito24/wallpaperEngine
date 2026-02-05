@@ -7,23 +7,12 @@ export default class World {
     this.chunks = new Map();
     this.chunkQueue = new Map();
     this.currentProcessedChunk = null;
-    this.focusChunkX = 0;
-    this.focusChunkY = 0;
 
     this.getChunk(playerX, playerY);
   }
 
   update(playerX = 0, playerY = 0) {
     this.processChunkQueue(playerX, playerY);
-  }
-
-  isPath(x, y) {
-    return true;
-    // const piece = this.getPieceAt(x, y);
-    // if (!piece || !piece.tile) {
-    //   return false;
-    // }
-    // return piece.checkIfPathExists();
   }
 
   getChunk(cx, cy, withCreate = true) {
@@ -54,8 +43,10 @@ export default class World {
   }
 
   render(ctx, view, camera) {
-    const startX = Math.floor(camera.x / TILE_SIZE);
-    const startY = Math.floor(camera.y / TILE_SIZE);
+    const camX = Math.round(camera.x);
+    const camY = Math.round(camera.y);
+    const startX = Math.floor(camX / TILE_SIZE);
+    const startY = Math.floor(camY / TILE_SIZE);
     const cols = Math.ceil(view.width / TILE_SIZE) + 2;
     const rows = Math.ceil(view.height / TILE_SIZE) + 2;
 
@@ -68,8 +59,8 @@ export default class World {
           continue;
         }
 
-        const dx = wx * TILE_SIZE - camera.x;
-        const dy = wy * TILE_SIZE - camera.y;
+        const dx = wx * TILE_SIZE - camX;
+        const dy = wy * TILE_SIZE - camY;
         tile.draw(ctx, dx, dy, TILE_SIZE);
       }
     }

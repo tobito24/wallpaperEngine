@@ -13,6 +13,7 @@ import {
     WFC_ACCURACY,
     CLIFF_TYPES,
     WORLDPIECE_STATE,
+    IS_DEBUG_MODE,
 } from "./config.js";
 import {
     getHeightLevel,
@@ -20,10 +21,10 @@ import {
 } from './utility/getHeightLevel.js';
 
 export default class WorldPiece {
-    constructor(worldX, worldY, isPath = false) {
+    constructor(worldX, worldY, chunkBorder = null) {
         this.pieceX = worldX;
         this.pieceY = worldY;
-        this.isPath = isPath;
+        this.chunkBorder = chunkBorder; // just for drawing chunks edges
         this.height = getHeightLevel(worldX, worldY);
 
         this.cliffType = getCliffType(worldX, worldY);
@@ -77,48 +78,79 @@ export default class WorldPiece {
             return;
         }
 
+        const hideError = !IS_DEBUG_MODE && this.currentState === WORLDPIECE_STATE.ERROR;
+
         if (this.baseTile !== null) {
             this.baseTile.draw(context, dx, dy, squareSize, this.baseTileSpriteIndex);
+        } else if (hideError) {
+            this.possibleBaseTiles[0].draw(context, dx, dy, squareSize);
         } else if (this.possibleBaseTiles.length > 0) {
-            const previousAlpha = context.globalAlpha;
             context.globalAlpha = 0.9;
             const rng = Math.floor(Math.random() * this.possibleBaseTiles.length);
             this.possibleBaseTiles[rng].draw(context, dx, dy, squareSize);
-            context.globalAlpha = previousAlpha;
+            context.globalAlpha = 1;
         }
 
         if (this.overlayTile !== null) {
             this.overlayTile.draw(context, dx, dy, squareSize, this.overlayTileSpriteIndex);
+        } else if (hideError) {
+            this.possibleOverlayTiles[0].draw(context, dx, dy, squareSize);
         } else if (this.possibleOverlayTiles.length > 0) {
-            const previousAlpha = context.globalAlpha;
             context.globalAlpha = 0.4;
             const rng = Math.floor(Math.random() * this.possibleOverlayTiles.length);
             this.possibleOverlayTiles[rng].draw(context, dx, dy, squareSize);
-            context.globalAlpha = previousAlpha;
+            context.globalAlpha = 1;
         }
 
         if (this.decoTile !== null) {
             this.decoTile.draw(context, dx, dy, squareSize, this.decoTileSpriteIndex);
+        } else if (hideError) {
+            this.possibleDecoTiles[0].draw(context, dx, dy, squareSize);
         } else if (this.possibleDecoTiles.length > 0) {
-            const previousAlpha = context.globalAlpha;
             context.globalAlpha = 0.2;
             const rng = Math.floor(Math.random() * this.possibleDecoTiles.length);
             this.possibleDecoTiles[rng].draw(context, dx, dy, squareSize);
-            context.globalAlpha = previousAlpha;
+            context.globalAlpha = 1;
         }
 
-        // if (this.currentState === WORLDPIECE_STATE.ERROR) {
-        //     context.strokeStyle = "#ff0000";
-        //     context.lineWidth = 2;
-        //     context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
-        // }
+        if (!IS_DEBUG_MODE) {
+            return;
+        }
 
-        // // TODO: path highlight - remove later
-        // if (this.isPath) {
-        //     context.strokeStyle = "#ee0dc8ff";
-        //     context.lineWidth = 2;
-        //     context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
-        // }
+        if (this.currentState === WORLDPIECE_STATE.ERROR) {
+            context.strokeStyle = "#ff0000";
+            context.lineWidth = 2;
+            context.strokeRect(dx + 1, dy + 1, squareSize - 2, squareSize - 2);
+        }
+
+        if (this.chunkBorder) {
+            context.strokeStyle = "#0000ff";
+            context.lineWidth = 2;
+            if (this.chunkBorder.north) {
+                context.beginPath();
+                context.moveTo(dx, dy);
+                context.lineTo(dx + squareSize, dy);
+                context.stroke();
+            }
+            if (this.chunkBorder.east) {
+                context.beginPath();
+                context.moveTo(dx + squareSize, dy);
+                context.lineTo(dx + squareSize, dy + squareSize);
+                context.stroke();
+            }
+            if (this.chunkBorder.south) {
+                context.beginPath();
+                context.moveTo(dx, dy + squareSize);
+                context.lineTo(dx + squareSize, dy + squareSize);
+                context.stroke();
+            }
+            if (this.chunkBorder.west) {
+                context.beginPath();
+                context.moveTo(dx, dy);
+                context.lineTo(dx, dy + squareSize);
+                context.stroke();
+            }
+        }
     }
 
     getEntropy(layer = LAYER.BASE) {
@@ -138,13 +170,6 @@ export default class WorldPiece {
             return this.currentOverlayEdgeMasks;
         } else if (layer === LAYER.DECO) {
             return this.currentDecoEdgeMasks;
-        }
-    }
-
-    isWalkable() {
-        // TODO: rework after path implementation
-        if (this.isPath) {
-            return true;
         }
     }
 
@@ -291,7 +316,7 @@ export default class WorldPiece {
             });
 
             if (newPossibleBaseTiles.length === 0) {
-                console.log('Error: no possible base tiles during entropy update');
+                // console.log('Error: no possible base tiles during entropy update');
                 this.setErrorState();
                 return;
             }
@@ -318,7 +343,7 @@ export default class WorldPiece {
             });
 
             if (newPossibleOverlayTiles.length === 0) {
-                console.log('Error: no possible overlay tiles during entropy update');
+                // console.log('Error: no possible overlay tiles during entropy update');
                 this.setErrorState();
                 return;
             }
@@ -342,7 +367,7 @@ export default class WorldPiece {
             });
 
             if (newPossibleDecoTiles.length === 0) {
-                console.log('Error: no possible deco tiles during entropy update');
+                // console.log('Error: no possible deco tiles during entropy update');
                 this.setErrorState();
                 return;
             }

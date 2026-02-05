@@ -1,9 +1,7 @@
 import {
-  TILE_SIZE,
-  SPRITE,
-  DIRECTION_VECTORS,
-  DIRECTION,
-  SPRITE_ROW_DIRECTION
+  PLAYER_SPEED,
+  PLAYER_START_VECTOR,
+  PLAYER_START_AUTO_MOVE,
 } from './config.js';
 
 export default class Player {
@@ -12,116 +10,104 @@ export default class Player {
     this.y = startY;
     this.worldX = startX;
     this.worldY = startY;
-    this.currentDirection = DIRECTION.SOUTH;
-    this.stepTime = 0;
-    this.stepInterval = SPRITE.stepFrames / SPRITE.fps; // seconds per step
-    this.moving = false;
-    this.fromX = startX;
-    this.fromY = startY;
-    this.toX = startX;
-    this.toY = startY;
-    this.paused = false;
-
-    this.sprite = {
-      image: new Image(),
-      frame: 0,
-      acc: 0,
-      cols: SPRITE.cols,
-      rows: SPRITE.rows
+    this.currentDirectionVector = PLAYER_START_VECTOR;
+    this.isAutoMovement = PLAYER_START_AUTO_MOVE;
+    this.speed = PLAYER_SPEED;
+    this.keysPressed = {
+      north: false,
+      east: false,
+      south: false,
+      west: false
     };
-
-    this.sprite.image.src = SPRITE.sheet;
   }
 
-  update(world, dt) {
-    if (this.paused) {
-      return;
-    }
-
-    this.stepTime += dt;
-    if (!this.moving && this.stepTime >= this.stepInterval) {
-      this.stepTime = 0;
-      this.move(world);
-    }
-
-    // smooth movement update
-    if (this.moving) {
-      const t = Math.min(1, this.stepTime / this.stepInterval);
-      this.worldX = this.fromX + (this.toX - this.fromX) * t;
-      this.worldY = this.fromY + (this.toY - this.fromY) * t;
-      if (t >= 1) {
-        this.moving = false;
-        this.x = this.toX;
-        this.y = this.toY;
-        this.worldX = this.x;
-        this.worldY = this.y;
-      }
-    }
-
-    // Walk animation frame update / current column
-    this.sprite.acc += dt;
-    if (this.sprite.acc >= 1 / SPRITE.fps) {
-      this.sprite.acc = 0;
-      this.sprite.frame = (this.sprite.frame + 1) % this.sprite.cols;
-    }
+  setSpeed(multiplier) {
+    this.speed = Math.max(0.5, Math.min(20, multiplier));
   }
 
-  move(world) {
-    // check if current direction is valid
-    const dirVec = DIRECTION_VECTORS[this.currentDirection];
-    const nx = this.x + dirVec.x;
-    const ny = this.y + dirVec.y;
-    if (world.isPath(nx, ny)) {
-      this.fromX = this.x;
-      this.fromY = this.y;
-      this.toX = nx;
-      this.toY = ny;
-      this.stepTime = 0;
-      this.moving = true;
-      return;
-    }
+  keyInput(event) {
+    const isClick = event.type === 'keyup';
+    const isDown = event.type === 'keydown';
 
-    // Shuffle choices
-    const availableDirections = [DIRECTION.NORTH, DIRECTION.EAST, DIRECTION.SOUTH, DIRECTION.WEST];
-    for (let i = availableDirections.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [availableDirections[i], availableDirections[j]] = [availableDirections[j], availableDirections[i]];
-    }
-
-    for (const direction of availableDirections) {
-      const dir = DIRECTION_VECTORS[direction];
-      const nx = this.x + dir.x;
-      const ny = this.y + dir.y;
-      if (world.isPath(nx, ny)) {
-        this.fromX = this.x;
-        this.fromY = this.y;
-        this.toX = nx;
-        this.toY = ny;
-        this.stepTime = 0;
-        this.moving = true;
-        this.currentDirection = direction;
-        return;
-      }
+    switch (event.key) {
+      case 'ArrowUp':
+      case 'w':
+        this.keysPressed.north = isDown;
+        this.updateDirectionVector();
+        break;
+      case 'ArrowDown':
+      case 's':
+        this.keysPressed.south = isDown;
+        this.updateDirectionVector();
+        break;
+      case 'ArrowLeft':
+      case 'a':
+        this.keysPressed.west = isDown;
+        this.updateDirectionVector();
+        break;
+      case 'ArrowRight':
+      case 'd':
+        this.keysPressed.east = isDown;
+        this.updateDirectionVector();
+        break;
+      case ' ':
+        isClick ? this.isAutoMovement = !this.isAutoMovement : null;
+        break;
+      case '+':
+      case 'c':
+      case '2':
+        this.setSpeed(this.speed + 0.5);
+        break;
+      case '-':
+      case 'x':
+      case '1':
+        this.setSpeed(this.speed - 0.5);
+        break;
+      default:
+        break;
     }
   }
 
-  render(ctx, view) {
-    if (!this.sprite.image.complete) {
+  updateDirectionVector() {
+    const isManualMovement = this.keysPressed.north || this.keysPressed.east || this.keysPressed.south || this.keysPressed.west;
+    if (!isManualMovement) {
       return;
     }
 
-    const spriteWidth = this.sprite.image.width / this.sprite.cols;
-    const spriteHeight = this.sprite.image.height / this.sprite.rows;
+    const dirVector = { x: 0, y: 0 };
+    if (this.keysPressed.north) {
+      dirVector.y -= 1;
+    }
+    if (this.keysPressed.south) {
+      dirVector.y += 1;
+    }
+    if (this.keysPressed.west) {
+      dirVector.x -= 1;
+    }
+    if (this.keysPressed.east) {
+      dirVector.x += 1;
+    }
+    // Normalize vector
+    const length = Math.hypot(dirVector.x, dirVector.y);
+    if (length > 0) {
+      dirVector.x /= length;
+      dirVector.y /= length;
+    }
 
-    const sx = this.sprite.frame * spriteWidth;
-    const sy = SPRITE_ROW_DIRECTION[this.currentDirection] * spriteHeight;
+    this.currentDirectionVector = dirVector;
+  }
 
-    const dw = TILE_SIZE * SPRITE.scale;
-    const dh = TILE_SIZE * SPRITE.scale;
-    const dx = view.width / 2 - dw / 2;
-    const dy = view.height / 2 - dh / 2;
+  update(dt) {
+    const isManualMovement = this.keysPressed.north || this.keysPressed.east || this.keysPressed.south || this.keysPressed.west;
+    if (!this.isAutoMovement && !isManualMovement) {
+      return;
+    }
 
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(this.sprite.image, sx, sy, spriteWidth, spriteHeight, dx, dy, dw, dh);
+    this.x += this.currentDirectionVector.x * this.speed * dt;
+    this.y += this.currentDirectionVector.y * this.speed * dt;
+    this.x = Math.round(this.x * 100) / 100;
+    this.y = Math.round(this.y * 100) / 100;
+    this.worldX = Math.round(this.x);
+    this.worldY = Math.round(this.y);
   }
 }

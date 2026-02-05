@@ -16,7 +16,7 @@ class Tile {
         this.sprites = sprites; // array of { x: int, y: int, weight: int }
         this.weight = weight;
         this.layer = layer;
-        this.walkable = walkable;
+        this.walkable = walkable; // currently not used, but can be used for pathfinding or other logic
 
         this.rules = [];
         this.edgeMasks = [0n, 0n, 0n, 0n]; // BigInt[4] like [0b1010n, 0b1111000n, 0b101n, 0b1n] (OR of all edge masks in rules)
@@ -447,6 +447,26 @@ function makeAllTiles() {
     baseTiles.push(...stone0Stone1Trans);
     transitionTiles.push(...stone0Stone1Trans);
 
+    // ## grassLight to grass
+    const grassLightGrassN = new Tile("grassLightGrassN", [{ x: 4, y: 47, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassE = new Tile("grassLightGrassE", [{ x: 5, y: 48, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassS = new Tile("grassLightGrassS", [{ x: 4, y: 49, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassW = new Tile("grassLightGrassW", [{ x: 3, y: 48, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassNW = new Tile("grassLightGrassNW", [{ x: 3, y: 47, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassNE = new Tile("grassLightGrassNE", [{ x: 5, y: 47, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassSE = new Tile("grassLightGrassSE", [{ x: 5, y: 49, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassSW = new Tile("grassLightGrassSW", [{ x: 3, y: 49, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassCurveNW = new Tile("grassLightGrassCurveNW", [{ x: 3, y: 50, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassCurveNE = new Tile("grassLightGrassCurveNE", [{ x: 4, y: 50, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassCurveSE = new Tile("grassLightGrassCurveSE", [{ x: 4, y: 51, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassCurveSW = new Tile("grassLightGrassCurveSW", [{ x: 3, y: 51, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassCurveD0 = new Tile("grassLightGrassCurveD0", [{ x: 5, y: 50, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassCurveD1 = new Tile("grassLightGrassCurveD1", [{ x: 5, y: 51, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const grassLightGrassTrans = [grassLightGrassN, grassLightGrassE, grassLightGrassS, grassLightGrassW, grassLightGrassNW, grassLightGrassNE, grassLightGrassSE, grassLightGrassSW, grassLightGrassCurveNW, grassLightGrassCurveNE, grassLightGrassCurveSE, grassLightGrassCurveSW, grassLightGrassCurveD0, grassLightGrassCurveD1];
+    addTransitionRules(grassLight.name, grass.name, grassLightGrassTrans);
+    baseTiles.push(...grassLightGrassTrans);
+    transitionTiles.push(...grassLightGrassTrans);
+
     allTiles.push(...baseTiles);
 
     // # Cliffs (Stone transition tiles) are used as overlays and are deterministic (so no rules needed)
@@ -600,7 +620,7 @@ function makeAllTiles() {
     const rock4_1 = new Tile("rock4_1", [{ x: 2, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
 
     [treeTrunkMossy_0, treeTrunkMossy_1, treeTrunk_0, treeTrunk_1].forEach(decoTile => {
-        decoTile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+        decoTile.addAllowedBases([stone0, stone1, stone2, grass, dirt, grassLight, grassDry, grassDark, mud]);
         decoTile.addAllowedBases(transitionTiles);
         decoTile.addAllowedOverlays([transparentOverlay]);
     });
@@ -737,7 +757,7 @@ function makeAllTiles() {
     const water0_all = [water0N, water0E, water0S, water0W, water0NW, water0NE, water0SE, water0SW, water0CurveNW, water0CurveNE, water0CurveSE, water0CurveSW, water0CurveD0, water0CurveD1];
     addTransitionRules(TRANSPARENT, water0.name, water0_all);
     water0_all.forEach(tile => {
-        tile.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
+        tile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
     });
 
     const water1N = new Tile("water1N", [{ x: 1, y: 26, weight: 1 }], RARITY.RARE_6 * WATER_FREQ_MULTI, LAYER.OVERLAY);
@@ -758,7 +778,7 @@ function makeAllTiles() {
     const water1_all = [water1N, water1E, water1S, water1W, water1NW, water1NE, water1SE, water1SW, water1CurveNW, water1CurveNE, water1CurveSE, water1CurveSW, water1CurveD0, water1CurveD1];
     addTransitionRules(TRANSPARENT, water1.name, water1_all);
     water1_all.forEach(tile => {
-        tile.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
+        tile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
     });
 
     overlayTiles.push(water0, water1, ...water0_all, ...water1_all);
@@ -779,7 +799,7 @@ function makeAllTiles() {
     allTiles.push(waterLily);
 
     if (false) {
-       
+
         //deco 2-2
         const bigStone1_0 = new Tile("bigStone1_0", [{ x: 6, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
         const bigStone1_1 = new Tile("bigStone1_1", [{ x: 7, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
@@ -802,7 +822,7 @@ function makeAllTiles() {
         const fern_0 = new Tile("fern_0", [{ x: 7, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
         const fern_1 = new Tile("fern_1", [{ x: 7, y: 2, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
 
-        addBasesToAll(baseTiles, [grassTuft2_1, grassTuft3_1, fern_1])  
+        addBasesToAll(baseTiles, [grassTuft2_1, grassTuft3_1, fern_1])
         grassTuft2_1.addRule(new Rule(grassTuft2_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
         grassTuft3_1.addRule(new Rule(grassTuft3_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
         fern_1.addRule(new Rule(fern_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));

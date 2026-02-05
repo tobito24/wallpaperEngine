@@ -1,4 +1,8 @@
-import { DIRECTION, TILE_SIZE } from './config.js';
+import {
+  TILE_SIZE,
+  setTileSize,
+  toggleDebugMode,
+} from './config.js';
 import World from './world.js';
 import Player from './player.js';
 
@@ -23,38 +27,36 @@ function resize() {
   canvas.style.height = `${view.height}px`;
   canvas.width = Math.floor(view.width * view.dpr);
   canvas.height = Math.floor(view.height * view.dpr);
+  ctx.imageSmoothingEnabled = false;
   transformDirty = true;
 }
 
 function keyHandler(e) {
   switch (e.key) {
-    case 'ArrowUp':
-    case 'w':
-      player.currentDirection = DIRECTION.NORTH;
+    case 'q':
+      setTileSize(TILE_SIZE + 1);
       break;
-    case 'ArrowDown':
-    case 's':
-      player.currentDirection = DIRECTION.SOUTH;
+    case 'e':
+      setTileSize(TILE_SIZE - 1);
       break;
-    case 'ArrowLeft':
-    case 'a':
-      player.currentDirection = DIRECTION.WEST;
-      break;
-    case 'ArrowRight':
-    case 'd':
-      player.currentDirection = DIRECTION.EAST;
-      break;
-    case ' ':
+    case 'r':
       if (e.type === 'keyup') {
-        player.paused = !player.paused;
+        toggleDebugMode();
       }
+    default:
       break;
   }
+  player.keyInput(e);
+}
+
+function wheelHandler(e) {
+  const step = e.deltaY > 0 ? -2 : 2;
+  setTileSize(TILE_SIZE + step);
 }
 
 function update(dt) {
-  world.update(player.x, player.y);
-  player.update(world, dt);
+  world.update(player.worldX, player.worldY);
+  player.update(dt);
 }
 
 function drawBackground() {
@@ -63,8 +65,8 @@ function drawBackground() {
 }
 
 function getCamera() {
-  const px = player.worldX * TILE_SIZE + TILE_SIZE / 2;
-  const py = player.worldY * TILE_SIZE + TILE_SIZE / 2;
+  const px = player.x * TILE_SIZE + TILE_SIZE / 2;
+  const py = player.y * TILE_SIZE + TILE_SIZE / 2;
   return {
     x: px - view.width / 2,
     y: py - view.height / 2
@@ -82,7 +84,6 @@ function render() {
 
   drawBackground();
   world.render(ctx, view, camera);
-  player.render(ctx, view);
 }
 
 let lastTime = performance.now();
@@ -98,5 +99,6 @@ function tick(time) {
 window.addEventListener('resize', resize);
 window.addEventListener('keydown', keyHandler);
 window.addEventListener('keyup', keyHandler);
+window.addEventListener('wheel', wheelHandler, { passive: true });
 resize();
 requestAnimationFrame(tick);
