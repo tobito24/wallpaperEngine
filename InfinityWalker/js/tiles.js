@@ -251,7 +251,7 @@ function makeAllTiles() {
 
     // # Simple base tiles
     const grass = new Tile("grass", [{ x: 0, y: 5, weight: 1 }], RARITY.RARE_11 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const dirt = new Tile("dirt", [{ x: 1, y: 7, weight: 1 }], RARITY.RARE_9 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const dirt = new Tile("dirt", [{ x: 1, y: 7, weight: 1 }], RARITY.RARE_10 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const grassDry = new Tile("grassDry", [{ x: 1, y: 13, weight: 1 }], RARITY.RARE_9 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const grassLight = new Tile("grassLight", [
@@ -270,9 +270,9 @@ function makeAllTiles() {
     const beach = new Tile("beach", [{ x: 5, y: 29, weight: 1 }], RARITY.RARE_9 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const beachWater = new Tile("beachWater", [{ x: 4, y: 31, weight: 1 }], RARITY.RARE_8 * BASE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
-    const stone0 = new Tile("stone0", [{ x: 4, y: 9, weight: 1 }], RARITY.RARE_5 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone1 = new Tile("stone1", [{ x: 4, y: 15, weight: 1 }], RARITY.RARE_5 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone2 = new Tile("stone2", [{ x: 4, y: 21, weight: 1 }], RARITY.RARE_5 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0 = new Tile("stone0", [{ x: 4, y: 9, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone1 = new Tile("stone1", [{ x: 4, y: 15, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone2 = new Tile("stone2", [{ x: 4, y: 21, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
 
     const simpleTiles = [grass, dirt, grassLight, grassDry, grassDark, mud, beach, beachWater, stone0, stone1, stone2];
     simpleTiles.forEach(tile => {
@@ -408,10 +408,10 @@ function makeAllTiles() {
     transitionTiles.push(...grassBeachTrans);
 
     // ## stone0 to dirt
-    const stone0DirtN = new Tile("stone0DirtN", [{ x: 4, y: 42, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0DirtE = new Tile("stone0DirtE", [{ x: 5, y: 43, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0DirtS = new Tile("stone0DirtS", [{ x: 4, y: 44, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0DirtW = new Tile("stone0DirtW", [{ x: 3, y: 43, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0DirtN = new Tile("stone0DirtN", [{ x: 4, y: 42, weight: 1 }], RARITY.RARE_6 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0DirtE = new Tile("stone0DirtE", [{ x: 5, y: 43, weight: 1 }], RARITY.RARE_6 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0DirtS = new Tile("stone0DirtS", [{ x: 4, y: 44, weight: 1 }], RARITY.RARE_6 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0DirtW = new Tile("stone0DirtW", [{ x: 3, y: 43, weight: 1 }], RARITY.RARE_6 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const stone0DirtNW = new Tile("stone0DirtNW", [{ x: 3, y: 42, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const stone0DirtNE = new Tile("stone0DirtNE", [{ x: 5, y: 42, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const stone0DirtSE = new Tile("stone0DirtSE", [{ x: 5, y: 44, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
@@ -428,14 +428,14 @@ function makeAllTiles() {
     transitionTiles.push(...stone0DirtTrans);
 
     // ## stone0 to stone1
-    const stone0Stone1N = new Tile("stone0Stone1N", [{ x: 1, y: 47, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0Stone1E = new Tile("stone0Stone1E", [{ x: 2, y: 48, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0Stone1S = new Tile("stone0Stone1S", [{ x: 1, y: 49, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0Stone1W = new Tile("stone0Stone1W", [{ x: 0, y: 48, weight: 1 }], RARITY.RARE_4 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0Stone1NW = new Tile("stone0Stone1NW", [{ x: 0, y: 47, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0Stone1NE = new Tile("stone0Stone1NE", [{ x: 2, y: 47, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0Stone1SE = new Tile("stone0Stone1SE", [{ x: 2, y: 49, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
-    const stone0Stone1SW = new Tile("stone0Stone1SW", [{ x: 0, y: 49, weight: 1 }], RARITY.RARE_2 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1N = new Tile("stone0Stone1N", [{ x: 1, y: 47, weight: 1 }], RARITY.RARE_3 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1E = new Tile("stone0Stone1E", [{ x: 2, y: 48, weight: 1 }], RARITY.RARE_3 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1S = new Tile("stone0Stone1S", [{ x: 1, y: 49, weight: 1 }], RARITY.RARE_3 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1W = new Tile("stone0Stone1W", [{ x: 0, y: 48, weight: 1 }], RARITY.RARE_3 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1NW = new Tile("stone0Stone1NW", [{ x: 0, y: 47, weight: 1 }], RARITY.RARE_1 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1NE = new Tile("stone0Stone1NE", [{ x: 2, y: 47, weight: 1 }], RARITY.RARE_1 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1SE = new Tile("stone0Stone1SE", [{ x: 2, y: 49, weight: 1 }], RARITY.RARE_1 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
+    const stone0Stone1SW = new Tile("stone0Stone1SW", [{ x: 0, y: 49, weight: 1 }], RARITY.RARE_1 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const stone0Stone1CurveNW = new Tile("stone0Stone1CurveNW", [{ x: 0, y: 50, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const stone0Stone1CurveNE = new Tile("stone0Stone1CurveNE", [{ x: 1, y: 50, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
     const stone0Stone1CurveSE = new Tile("stone0Stone1CurveSE", [{ x: 1, y: 51, weight: 1 }], RARITY.RARE_0 * STONE_FREQ_MULTI, LAYER.BASE, IS_WALKABLE);
@@ -469,7 +469,7 @@ function makeAllTiles() {
 
     allTiles.push(...baseTiles);
 
-    // # Cliffs (Stone transition tiles) are used as overlays and are deterministic (so no rules needed)
+    // # Cliffs (Stone transition tiles) are used as overlays and are deterministic
     // ## stone0
     const stone0N = new Tile("stone0N", [{ x: 4, y: 8, weight: 1 }], RARITY.RARE_6 * STONE_FREQ_MULTI, LAYER.OVERLAY);
     const stone0E = new Tile("stone0E", [{ x: 5, y: 9, weight: 1 }], RARITY.RARE_6 * STONE_FREQ_MULTI, LAYER.OVERLAY);
@@ -574,13 +574,13 @@ function makeAllTiles() {
         { x: 5, y: 2, weight: 1 }, // flower3
         { x: 2, y: 4, weight: 1 }, // mush
         { x: 1, y: 4, weight: 1 } // moss
-    ], RARITY.RARE_7 * DECO_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
+    ], RARITY.RARE_9 * DECO_FREQ_MULTI, LAYER.DECO, IS_WALKABLE);
     const deco1x1_base1 = new Tile("deco1x1_base1", [
         { x: 6, y: 2, weight: 1 }, // treeStump
         { x: 5, y: 3, weight: 1 }, // rock0
         { x: 5, y: 4, weight: 1 }, // rock1
         { x: 0, y: 3, weight: 1 }, // rock2
-    ], RARITY.RARE_7 * DECO_FREQ_MULTI, LAYER.DECO);
+    ], RARITY.RARE_8 * DECO_FREQ_MULTI, LAYER.DECO);
     deco1x1_base0.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
     deco1x1_base0.addAllowedOverlays([transparentOverlay]);
     deco1x1_base0.addRule(fullTransparentRule);
@@ -612,10 +612,10 @@ function makeAllTiles() {
     allTiles.push(deco1x1_base0, deco1x1_base1, deco1x1_stone, deco1x1_beach);
 
     // ## deco 1x2
-    const treeTrunk_0 = new Tile("treeTrunk_0", [{ x: 5, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
-    const treeTrunk_1 = new Tile("treeTrunk_1", [{ x: 6, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
-    const treeTrunkMossy_0 = new Tile("treeTrunkMossy_0", [{ x: 1, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
-    const treeTrunkMossy_1 = new Tile("treeTrunkMossy_1", [{ x: 2, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const treeTrunk_0 = new Tile("treeTrunk_0", [{ x: 5, y: 1, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
+    const treeTrunk_1 = new Tile("treeTrunk_1", [{ x: 6, y: 1, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
+    const treeTrunkMossy_0 = new Tile("treeTrunkMossy_0", [{ x: 1, y: 1, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI, LAYER.DECO);
+    const treeTrunkMossy_1 = new Tile("treeTrunkMossy_1", [{ x: 2, y: 1, weight: 1 }], RARITY.RARE_1 * DECO_FREQ_MULTI, LAYER.DECO);
     const rock4_0 = new Tile("rock4_0", [{ x: 1, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
     const rock4_1 = new Tile("rock4_1", [{ x: 2, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
 
@@ -731,8 +731,8 @@ function makeAllTiles() {
     allTiles.push(...tallGrass);
 
     // # Water tiles overlay
-    const water0 = new Tile("water0", [{ x: 4, y: 27, weight: 1 }], RARITY.RARE_10 * WATER_FREQ_MULTI, LAYER.OVERLAY);
-    const water1 = new Tile("water1", [{ x: 1, y: 27, weight: 1 }], RARITY.RARE_9 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water0 = new Tile("water0", [{ x: 4, y: 27, weight: 1 }], RARITY.RARE_11 * WATER_FREQ_MULTI, LAYER.OVERLAY);
+    const water1 = new Tile("water1", [{ x: 1, y: 27, weight: 1 }], RARITY.RARE_10 * WATER_FREQ_MULTI, LAYER.OVERLAY);
 
     [water0, water1].forEach(tile => {
         tile.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
@@ -795,167 +795,185 @@ function makeAllTiles() {
     waterLily.addAllowedOverlays([water0, water1]);
     waterLily.addRule(fullTransparentRule);
 
-    decoTiles.push(waterLily);
-    allTiles.push(waterLily);
+    const bigStone1_0 = new Tile("bigStone1_0", [{ x: 6, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
+    const bigStone1_1 = new Tile("bigStone1_1", [{ x: 7, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
+    const bigStone1_2 = new Tile("bigStone1_2", [{ x: 6, y: 4, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
+    const bigStone1_3 = new Tile("bigStone1_3", [{ x: 7, y: 4, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI, LAYER.DECO);
 
-    if (false) {
+    [bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3].forEach(decoTile => {
+        decoTile.addAllowedBases([beach, grass, dirt, grassLight, grassDry, grassDark, mud]);
+        decoTile.addAllowedOverlays([water0, water1]);
+    });
 
-        //deco 2-2
-        const bigStone1_0 = new Tile("bigStone1_0", [{ x: 6, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
-        const bigStone1_1 = new Tile("bigStone1_1", [{ x: 7, y: 3, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
-        const bigStone1_2 = new Tile("bigStone1_2", [{ x: 6, y: 4, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
-        const bigStone1_3 = new Tile("bigStone1_3", [{ x: 7, y: 4, weight: 1 }], RARITY.RARE_2 * DECO_FREQ_MULTI);
+    bigStone1_0.addRule(new Rule(TRANSPARENT, bigStone1_0.name, bigStone1_2.name, TRANSPARENT));
+    bigStone1_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone1_1.name, bigStone1_0.name));
+    bigStone1_2.addRule(new Rule(bigStone1_2.name, bigStone1_3.name, TRANSPARENT, TRANSPARENT));
+    bigStone1_3.addRule(new Rule(bigStone1_1.name, TRANSPARENT, TRANSPARENT, bigStone1_3.name));
 
-        addBasesToAll(waterBase, [bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3])
-        bigStone1_0.addRule(new Rule(TRANSPARENT, bigStone1_0.name, bigStone1_2.name, TRANSPARENT));
-        bigStone1_1.addRule(new Rule(TRANSPARENT, TRANSPARENT, bigStone1_1.name, bigStone1_0.name));
-        bigStone1_2.addRule(new Rule(bigStone1_2.name, bigStone1_3.name, TRANSPARENT, TRANSPARENT));
-        bigStone1_3.addRule(new Rule(bigStone1_1.name, TRANSPARENT, TRANSPARENT, bigStone1_3.name));
-        waterDecoGroup.push(bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3);
+    decoTiles.push(waterLily, bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3);
+    allTiles.push(waterLily, bigStone1_0, bigStone1_1, bigStone1_2, bigStone1_3);
 
-        ///overlappable special - also deco
-        //deco 2-1
-        const grassTuft2_0 = new Tile("grassTuft2_0", [{ x: 3, y: 0, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const grassTuft2_1 = new Tile("grassTuft2_1", [{ x: 3, y: 1, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const grassTuft3_0 = new Tile("grassTuft3_0", [{ x: 4, y: 0, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const grassTuft3_1 = new Tile("grassTuft3_1", [{ x: 4, y: 1, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
-        const fern_0 = new Tile("fern_0", [{ x: 7, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI);
-        const fern_1 = new Tile("fern_1", [{ x: 7, y: 2, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI);
+    // ## special overlappable deco tiles
+    // TODO: find solution how to overlap other deco tiles
+    const grassTuft2_0 = new Tile("grassTuft2_0", [{ x: 3, y: 0, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const grassTuft2_1 = new Tile("grassTuft2_1", [{ x: 3, y: 1, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const grassTuft3_0 = new Tile("grassTuft3_0", [{ x: 4, y: 0, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const grassTuft3_1 = new Tile("grassTuft3_1", [{ x: 4, y: 1, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
+    const fern_0 = new Tile("fern_0", [{ x: 7, y: 1, weight: 1 }], RARITY.RARE_3 * DECO_FREQ_MULTI, LAYER.DECO);
+    const fern_1 = new Tile("fern_1", [{ x: 7, y: 2, weight: 1 }], RARITY.RARE_5 * DECO_FREQ_MULTI, LAYER.DECO);
 
-        addBasesToAll(baseTiles, [grassTuft2_1, grassTuft3_1, fern_1])
-        grassTuft2_1.addRule(new Rule(grassTuft2_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        grassTuft3_1.addRule(new Rule(grassTuft3_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
-        fern_1.addRule(new Rule(fern_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+    grassTuft2_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft2_0.name, TRANSPARENT));
+    grassTuft2_1.addRule(new Rule(grassTuft2_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+    grassTuft3_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft3_0.name, TRANSPARENT));
+    grassTuft3_1.addRule(new Rule(grassTuft3_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
+    fern_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, fern_0.name, TRANSPARENT));
+    fern_1.addRule(new Rule(fern_0.name, TRANSPARENT, TRANSPARENT, TRANSPARENT));
 
-        addBasesToAll(baseTiles, [grassTuft2_0, grassTuft3_0, fern_0])//top end baseGroup
-        addBasesToAll([grassTuft2_1, grassTuft3_1, fern_1], [grassTuft2_0, grassTuft3_0, fern_0]);//repeat
-        addBasesToAll(overlappable, [grassTuft2_0, grassTuft3_0, fern_0])//top end other stuff
-        grassTuft2_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft2_0.name, TRANSPARENT));
-        grassTuft3_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, grassTuft3_0.name, TRANSPARENT));
-        fern_0.addRule(new Rule(TRANSPARENT, TRANSPARENT, fern_0.name, TRANSPARENT));
+    [grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1].forEach(decoTile => {
+        decoTile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+        decoTile.addAllowedOverlays([transparentOverlay]);
+    });
 
-        decoGroup.push(grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1);
+    // top part overlap
+    [grassTuft2_0, grassTuft3_0, fern_0].forEach(decoTile => {
+        decoTile.addAllowedOverlays([water0S, water0SE, water0SW, water1S, water1SE, water1SW, stone0S, stone0SE, stone0SW, stone1S, stone1SE, stone1SW, stone2S, stone2SE, stone2SW]);
+        decoTile.addAllowedBases([stone0, stone1, stone2, ...stone0DirtTrans, ...stone0Stone1Trans]);
+    });
 
-        //bridgeGroup
-        const bridgeGroup = [];
+    decoTiles.push(grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1);
+    allTiles.push(grassTuft2_0, grassTuft2_1, grassTuft3_0, grassTuft3_1, fern_0, fern_1);
 
-        const bridgeSurHor0N = new Tile("bridgeSurHor0N", [{ x: 1, y: 23, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeSurHor1N = new Tile("bridgeSurHor1N", [{ x: 2, y: 23, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeSurHor2N = new Tile("bridgeSurHor2N", [{ x: 3, y: 23, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeSurHor0S = new Tile("bridgeSurHor0S", [{ x: 1, y: 24, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeSurHor1S = new Tile("bridgeSurHor1S", [{ x: 2, y: 24, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeSurHor2S = new Tile("bridgeSurHor2S", [{ x: 3, y: 24, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeSurVerW = new Tile("bridgeSurVerW", [{ x: 6, y: 23, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI);
-        const bridgeSurVerE = new Tile("bridgeSurVerE", [{ x: 7, y: 23, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI);
-        const bridgeEdge0 = new Tile("bridgeEdge0", [{ x: 1, y: 25, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeEdge1 = new Tile("bridgeEdge1", [{ x: 2, y: 25, weight: 1 }], RARITY.RARE_2 * BRIDGE_FREQ_MULTI);
-        const bridgeEdge2 = new Tile("bridgeEdge2", [{ x: 3, y: 25, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI);
-        const bridgeCoastW = new Tile("bridgeCoastW", [{ x: 0, y: 25, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI);
-        const bridgeCoastE = new Tile("bridgeCoastE", [{ x: 5, y: 25, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI);
+    // ## bridge tiles
+    const bridgeSurHor0N = new Tile("bridgeSurHor0N", [{ x: 1, y: 23, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeSurHor1N = new Tile("bridgeSurHor1N", [{ x: 2, y: 23, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeSurHor2N = new Tile("bridgeSurHor2N", [{ x: 3, y: 23, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeSurHor0S = new Tile("bridgeSurHor0S", [{ x: 1, y: 24, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeSurHor1S = new Tile("bridgeSurHor1S", [{ x: 2, y: 24, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeSurHor2S = new Tile("bridgeSurHor2S", [{ x: 3, y: 24, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeSurVerW = new Tile("bridgeSurVerW", [{ x: 6, y: 23, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeSurVerE = new Tile("bridgeSurVerE", [{ x: 7, y: 23, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeEdge0 = new Tile("bridgeEdge0", [{ x: 1, y: 25, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeEdge1 = new Tile("bridgeEdge1", [{ x: 2, y: 25, weight: 1 }], RARITY.RARE_2 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeEdge2 = new Tile("bridgeEdge2", [{ x: 3, y: 25, weight: 1 }], RARITY.RARE_3 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeCoastW = new Tile("bridgeCoastW", [{ x: 0, y: 25, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridgeCoastE = new Tile("bridgeCoastE", [{ x: 5, y: 25, weight: 1 }], RARITY.RARE_1 * BRIDGE_FREQ_MULTI, LAYER.OVERLAY);
+    const bridge_all = [bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE];
 
-        const bridge_all = [bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE];
-        addBasesToAll(baseTiles, bridge_all);
+    bridge_all.forEach(tile => {
+        tile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+    });
 
-        bridgeSurHor1N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor1S.name, bridgeSurHor1N.name));
-        bridgeSurHor1N.addRule(new Rule(water0E.name, TRANSPARENT, bridgeSurHor1S.name, bridgeSurHor1N.name));
-        bridgeSurHor1N.addRule(new Rule(water0W.name, bridgeSurHor1N.name, bridgeSurHor1S.name, TRANSPARENT));
-        bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeEdge1.name, bridgeSurHor0S.name));
-        bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, TRANSPARENT, bridgeCoastE.name, bridgeSurHor0S.name));
-        bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeCoastW.name, TRANSPARENT));
-        bridgeSurHor0N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor0N.name, water0.name));
-        bridgeSurHor0S.addRule(new Rule(bridgeSurHor0N.name, bridgeSurHor0S.name, bridgeEdge0.name, water0.name));
-        bridgeSurHor2N.addRule(new Rule(water0.name, water0.name, bridgeSurHor2N.name, bridgeSurHor1N.name));
-        bridgeSurHor2S.addRule(new Rule(bridgeSurHor2N.name, water0.name, bridgeEdge2.name, bridgeSurHor0S.name));
-        bridgeEdge0.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
-        bridgeEdge0.addRule(new Rule(bridgeEdge0.name, bridgeEdge1.name, water0.name, water0.name));
-        bridgeEdge1.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
-        bridgeEdge2.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
-        bridgeEdge2.addRule(new Rule(bridgeEdge2.name, water0.name, water0.name, bridgeEdge1.name));
-        bridgeCoastW.addRule(new Rule(bridgeCoastW.name, bridgeEdge1.name, water0W.name, TRANSPARENT));
-        bridgeCoastE.addRule(new Rule(bridgeCoastE.name, TRANSPARENT, water0E.name, bridgeEdge1.name));
+    bridgeSurHor1N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor1S.name, bridgeSurHor1N.name));
+    bridgeSurHor1N.addRule(new Rule(water0E.name, TRANSPARENT, bridgeSurHor1S.name, bridgeSurHor1N.name));
+    bridgeSurHor1N.addRule(new Rule(water0W.name, bridgeSurHor1N.name, bridgeSurHor1S.name, TRANSPARENT));
+    bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeEdge1.name, bridgeSurHor0S.name));
+    bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, TRANSPARENT, bridgeCoastE.name, bridgeSurHor0S.name));
+    bridgeSurHor1S.addRule(new Rule(bridgeSurHor1S.name, bridgeSurHor0S.name, bridgeCoastW.name, TRANSPARENT));
+    bridgeSurHor0N.addRule(new Rule(water0.name, bridgeSurHor1N.name, bridgeSurHor0N.name, water0.name));
+    bridgeSurHor0S.addRule(new Rule(bridgeSurHor0N.name, bridgeSurHor0S.name, bridgeEdge0.name, water0.name));
+    bridgeSurHor2N.addRule(new Rule(water0.name, water0.name, bridgeSurHor2N.name, bridgeSurHor1N.name));
+    bridgeSurHor2S.addRule(new Rule(bridgeSurHor2N.name, water0.name, bridgeEdge2.name, bridgeSurHor0S.name));
+    bridgeEdge0.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+    bridgeEdge0.addRule(new Rule(bridgeEdge0.name, bridgeEdge1.name, water0.name, water0.name));
+    bridgeEdge1.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+    bridgeEdge2.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, water0.name, bridgeEdge1.name));
+    bridgeEdge2.addRule(new Rule(bridgeEdge2.name, water0.name, water0.name, bridgeEdge1.name));
+    bridgeCoastW.addRule(new Rule(bridgeCoastW.name, bridgeEdge1.name, water0W.name, TRANSPARENT));
+    bridgeCoastE.addRule(new Rule(bridgeCoastE.name, TRANSPARENT, water0E.name, bridgeEdge1.name));
 
-        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeSurVerW.name, water0.name));
-        bridgeSurVerW.addRule(new Rule(TRANSPARENT, bridgeSurVerW.name, bridgeSurVerW.name, water0N.name));
-        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, TRANSPARENT, water0S.name));
-        bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge0.name, water0.name));
-        bridgeSurVerW.addRule(new Rule(bridgeEdge1.name, bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge1.name));
+    bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeSurVerW.name, water0.name));
+    bridgeSurVerW.addRule(new Rule(TRANSPARENT, bridgeSurVerW.name, bridgeSurVerW.name, water0N.name));
+    bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, TRANSPARENT, water0S.name));
+    bridgeSurVerW.addRule(new Rule(bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge0.name, water0.name));
+    bridgeSurVerW.addRule(new Rule(bridgeEdge1.name, bridgeSurVerW.name, bridgeSurVerW.name, bridgeEdge1.name));
 
-        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeSurVerE.name, bridgeSurVerW.name));
-        bridgeSurVerE.addRule(new Rule(TRANSPARENT, water0N.name, bridgeSurVerE.name, bridgeSurVerW.name));
-        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0S.name, TRANSPARENT, bridgeSurVerW.name));
-        bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeEdge2.name, bridgeSurVerW.name));
-        bridgeSurVerE.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, bridgeSurVerE.name, bridgeSurVerW.name));
+    bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeSurVerE.name, bridgeSurVerW.name));
+    bridgeSurVerE.addRule(new Rule(TRANSPARENT, water0N.name, bridgeSurVerE.name, bridgeSurVerW.name));
+    bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0S.name, TRANSPARENT, bridgeSurVerW.name));
+    bridgeSurVerE.addRule(new Rule(bridgeSurVerE.name, water0.name, bridgeEdge2.name, bridgeSurVerW.name));
+    bridgeSurVerE.addRule(new Rule(bridgeEdge1.name, bridgeEdge1.name, bridgeSurVerE.name, bridgeSurVerW.name));
 
-        bridgeGroup.push(bridgeSurHor0N, bridgeSurHor1N, bridgeSurHor2N, bridgeSurHor0S, bridgeSurHor1S, bridgeSurHor2S, bridgeSurVerW, bridgeSurVerE, bridgeEdge0, bridgeEdge1, bridgeEdge2, bridgeCoastW, bridgeCoastE);
+    overlayTiles.push(...bridge_all);
+    allTiles.push(...bridge_all);
 
-        //treeGroup
-        const treeGroup = [];
-        const tree0_top_left = new Tile("tree0_top_left", [{ x: 1, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_top_right = new Tile("tree0_top_right", [{ x: 2, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_mid_edge_left = new Tile("tree0_mid_edge_left", [{ x: 0, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_mid_left = new Tile("tree0_mid_left", [{ x: 1, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_mid_right = new Tile("tree0_mid_right", [{ x: 2, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_mid_edge_right = new Tile("tree0_mid_edge_right", [{ x: 3, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_bot_left = new Tile("tree0_bot_left", [{ x: 1, y: 38, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_bot_right = new Tile("tree0_bot_right", [{ x: 2, y: 38, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
+    // # tree tiles
+    const tree0_top_left = new Tile("tree0_top_left", [{ x: 1, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_top_right = new Tile("tree0_top_right", [{ x: 2, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_mid_edge_left = new Tile("tree0_mid_edge_left", [{ x: 0, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_mid_left = new Tile("tree0_mid_left", [{ x: 1, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_mid_right = new Tile("tree0_mid_right", [{ x: 2, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_mid_edge_right = new Tile("tree0_mid_edge_right", [{ x: 3, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_bot_left = new Tile("tree0_bot_left", [{ x: 1, y: 38, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_bot_right = new Tile("tree0_bot_right", [{ x: 2, y: 38, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
 
-        const tree0_top_left_repeat_0 = new Tile("tree0_top_left_repeat_0", [{ x: 4, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_top_right_repeat_0 = new Tile("tree0_top_right_repeat_0", [{ x: 5, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_top_left_repeat_1 = new Tile("tree0_top_left_repeat_1", [{ x: 4, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const tree0_top_right_repeat_1 = new Tile("tree0_top_right_repeat_1", [{ x: 5, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
+    const tree0_top_left_repeat_0 = new Tile("tree0_top_left_repeat_0", [{ x: 4, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_top_right_repeat_0 = new Tile("tree0_top_right_repeat_0", [{ x: 5, y: 36, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_top_left_repeat_1 = new Tile("tree0_top_left_repeat_1", [{ x: 4, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const tree0_top_right_repeat_1 = new Tile("tree0_top_right_repeat_1", [{ x: 5, y: 37, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
 
-        const tree0_all = [tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1];
-        addBasesToAll(baseTiles, tree0_all);
+    const tree0_all = [tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1];
 
-        //self overlapping
-        //addBasesToAll([tree0_bot_left, tree0_bot_right], [tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_edge_right]);
+    tree0_top_left.addRule(new Rule(TRANSPARENT, "GLUE_TREE0_T", "GLUE_TREE0_TML", TRANSPARENT));
+    tree0_top_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
+    tree0_mid_edge_left.addRule(new Rule(TRANSPARENT, "GLUE_TREE0_EL", TRANSPARENT, TRANSPARENT));
+    tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_REPEAT"));
+    tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_EL"));
+    tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
+    tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_ER", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
+    tree0_mid_edge_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, "GLUE_TREE0_ER"));
+    tree0_bot_left.addRule(new Rule("GLUE_TREE0_BML", "GLUE_TREE0_B", TRANSPARENT, TRANSPARENT));
+    tree0_bot_right.addRule(new Rule("GLUE_TREE0_BMR", TRANSPARENT, TRANSPARENT, "GLUE_TREE0_B"));
 
-        tree0_top_left.addRule(new Rule(TRANSPARENT, "GLUE_TREE0_T", "GLUE_TREE0_TML", TRANSPARENT));
-        tree0_top_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
-        tree0_mid_edge_left.addRule(new Rule(TRANSPARENT, "GLUE_TREE0_EL", TRANSPARENT, TRANSPARENT));
-        tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_REPEAT"));
-        tree0_mid_left.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_BML", "GLUE_TREE0_EL"));
-        tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
-        tree0_mid_right.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_ER", "GLUE_TREE0_BMR", "GLUE_TREE0_M"));
-        tree0_mid_edge_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, "GLUE_TREE0_ER"));
-        tree0_bot_left.addRule(new Rule("GLUE_TREE0_BML", "GLUE_TREE0_B", TRANSPARENT, TRANSPARENT));
-        tree0_bot_right.addRule(new Rule("GLUE_TREE0_BMR", TRANSPARENT, TRANSPARENT, "GLUE_TREE0_B"));
+    tree0_top_left_repeat_0.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_TR0", "GLUE_TREE0_TML", "GLUE_TREE0_REPEAT"));
+    tree0_top_right_repeat_0.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_TMR", "GLUE_TREE0_TR0"));
 
-        tree0_top_left_repeat_0.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_TR0", "GLUE_TREE0_TML", "GLUE_TREE0_REPEAT"));
-        tree0_top_right_repeat_0.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_REPEAT", "GLUE_TREE0_TMR", "GLUE_TREE0_TR0"));
+    tree0_top_left_repeat_1.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_T", "GLUE_TREE0_TML", "GLUE_TREE0_M"));
+    tree0_top_right_repeat_1.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
 
-        tree0_top_left_repeat_1.addRule(new Rule("GLUE_TREE0_TMR", "GLUE_TREE0_T", "GLUE_TREE0_TML", "GLUE_TREE0_M"));
-        tree0_top_right_repeat_1.addRule(new Rule("GLUE_TREE0_TML", "GLUE_TREE0_M", "GLUE_TREE0_TMR", "GLUE_TREE0_T"));
+    tree0_all.forEach(tile => {
+        tile.addAllowedBases([grass, dirt, grassLight, grassDry, grassDark, mud]);
+        tile.addAllowedOverlays([transparentOverlay]);
+    });
 
-        treeGroup.push(tree0_top_left, tree0_top_right, tree0_mid_edge_left, tree0_mid_left, tree0_mid_right, tree0_mid_edge_right, tree0_bot_left, tree0_bot_right, tree0_top_left_repeat_0, tree0_top_left_repeat_1, tree0_top_right_repeat_0, tree0_top_right_repeat_1);
+    [tree0_top_left, tree0_top_right].forEach(tile => {
+        tile.addAllowedOverlays([water0S, water0SE, water0SW, water1S, water1SE, water1SW, stone0S, stone0SE, stone0SW, stone1S, stone1SE, stone1SW, stone2S, stone2SE, stone2SW]);
+        tile.addAllowedBases([stone0, stone1, stone2, ...stone0DirtTrans, ...stone0Stone1Trans]);
+    });
 
-        //palm
-        const palm_top_left = new Tile("palm_top_left", [{ x: 1, y: 39, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const palm_top_right = new Tile("palm_top_right", [{ x: 2, y: 39, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const palm_mid_edge_left = new Tile("palm_mid_edge_left", [{ x: 0, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const palm_mid_left = new Tile("palm_mid_left", [{ x: 1, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const palm_mid_right = new Tile("palm_mid_right", [{ x: 2, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const palm_mid_edge_right = new Tile("palm_mid_edge_right", [{ x: 3, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const palm_bot_left = new Tile("palm_bot_left", [{ x: 1, y: 41, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
-        const palm_bot_right = new Tile("palm_bot_right", [{ x: 2, y: 41, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI);
+    decoTiles.push(...tree0_all);
+    allTiles.push(...tree0_all);
 
-        const palm_all = [palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right];
-        addBasesToAll([beach], palm_all);
+    // # palm
+    const palm_top_left = new Tile("palm_top_left", [{ x: 1, y: 39, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_top_right = new Tile("palm_top_right", [{ x: 2, y: 39, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_mid_edge_left = new Tile("palm_mid_edge_left", [{ x: 0, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_mid_left = new Tile("palm_mid_left", [{ x: 1, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_mid_right = new Tile("palm_mid_right", [{ x: 2, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_mid_edge_right = new Tile("palm_mid_edge_right", [{ x: 3, y: 40, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_bot_left = new Tile("palm_bot_left", [{ x: 1, y: 41, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_bot_right = new Tile("palm_bot_right", [{ x: 2, y: 41, weight: 1 }], RARITY.RARE_3 * TREE_FREQ_MULTI, LAYER.DECO);
+    const palm_all = [palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right];
 
-        palm_top_left.addRule(new Rule(TRANSPARENT, "GLUE_PALM_T", "GLUE_PALM_TML", TRANSPARENT));
-        palm_top_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, "GLUE_PALM_TMR", "GLUE_PALM_T"));
-        palm_mid_edge_left.addRule(new Rule(TRANSPARENT, "GLUE_PALM_EL", TRANSPARENT, TRANSPARENT));
-        palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_REPEAT"));
-        palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_EL"));
-        palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_REPEAT", "GLUE_PALM_BMR", "GLUE_PALM_M"));
-        palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_ER", "GLUE_PALM_BMR", "GLUE_PALM_M"));
-        palm_mid_edge_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, "GLUE_PALM_ER"));
-        palm_bot_left.addRule(new Rule("GLUE_PALM_BML", "GLUE_PALM_B", TRANSPARENT, TRANSPARENT));
-        palm_bot_right.addRule(new Rule("GLUE_PALM_BMR", TRANSPARENT, TRANSPARENT, "GLUE_PALM_B"));
+    palm_top_left.addRule(new Rule(TRANSPARENT, "GLUE_PALM_T", "GLUE_PALM_TML", TRANSPARENT));
+    palm_top_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, "GLUE_PALM_TMR", "GLUE_PALM_T"));
+    palm_mid_edge_left.addRule(new Rule(TRANSPARENT, "GLUE_PALM_EL", TRANSPARENT, TRANSPARENT));
+    palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_REPEAT"));
+    palm_mid_left.addRule(new Rule("GLUE_PALM_TML", "GLUE_PALM_M", "GLUE_PALM_BML", "GLUE_PALM_EL"));
+    palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_REPEAT", "GLUE_PALM_BMR", "GLUE_PALM_M"));
+    palm_mid_right.addRule(new Rule("GLUE_PALM_TMR", "GLUE_PALM_ER", "GLUE_PALM_BMR", "GLUE_PALM_M"));
+    palm_mid_edge_right.addRule(new Rule(TRANSPARENT, TRANSPARENT, TRANSPARENT, "GLUE_PALM_ER"));
+    palm_bot_left.addRule(new Rule("GLUE_PALM_BML", "GLUE_PALM_B", TRANSPARENT, TRANSPARENT));
+    palm_bot_right.addRule(new Rule("GLUE_PALM_BMR", TRANSPARENT, TRANSPARENT, "GLUE_PALM_B"));
 
-        treeGroup.push(palm_top_left, palm_top_right, palm_mid_edge_left, palm_mid_left, palm_mid_right, palm_mid_edge_right, palm_bot_left, palm_bot_right);
-    }
+    palm_all.forEach(tile => {
+        tile.addAllowedBases([beach]);
+        tile.addAllowedOverlays([transparentOverlay]);
+    });
 
+    decoTiles.push(...palm_all);
+    allTiles.push(...palm_all);
+
+    // # finalize
     transparentOverlay.addAllowedBases(allTiles);
     transparentDeco.addAllowedBases(allTiles);
     transparentDeco.addAllowedOverlays(allTiles);

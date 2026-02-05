@@ -43,8 +43,8 @@ export default class World {
   }
 
   render(ctx, view, camera) {
-    const camX = Math.round(camera.x);
-    const camY = Math.round(camera.y);
+    const camX = Math.floor(camera.x);
+    const camY = Math.floor(camera.y);
     const startX = Math.floor(camX / TILE_SIZE);
     const startY = Math.floor(camY / TILE_SIZE);
     const cols = Math.ceil(view.width / TILE_SIZE) + 2;

@@ -2,6 +2,8 @@ import {
   PLAYER_SPEED,
   PLAYER_START_VECTOR,
   PLAYER_START_AUTO_MOVE,
+  PLAYER_AUTO_DIRECTION_CHANGE_INTERVAL,
+  PLAYER_MAX_DIRECTION_CHANGE_ANGLE,
 } from './config.js';
 
 export default class Player {
@@ -19,6 +21,7 @@ export default class Player {
       south: false,
       west: false
     };
+    this.timeSinceLastDirectionChange = 0;
   }
 
   setSpeed(multiplier) {
@@ -29,23 +32,23 @@ export default class Player {
     const isClick = event.type === 'keyup';
     const isDown = event.type === 'keydown';
 
-    switch (event.key) {
-      case 'ArrowUp':
+    switch (event.key.toLowerCase()) {
+      case 'arrowup':
       case 'w':
         this.keysPressed.north = isDown;
         this.updateDirectionVector();
         break;
-      case 'ArrowDown':
+      case 'arrowdown':
       case 's':
         this.keysPressed.south = isDown;
         this.updateDirectionVector();
         break;
-      case 'ArrowLeft':
+      case 'arrowleft':
       case 'a':
         this.keysPressed.west = isDown;
         this.updateDirectionVector();
         break;
-      case 'ArrowRight':
+      case 'arrowright':
       case 'd':
         this.keysPressed.east = isDown;
         this.updateDirectionVector();
@@ -103,11 +106,37 @@ export default class Player {
       return;
     }
 
+    if (this.isAutoMovement) {
+      this.randomAutoDirectionChange(dt);
+    }
+
     this.x += this.currentDirectionVector.x * this.speed * dt;
     this.y += this.currentDirectionVector.y * this.speed * dt;
-    this.x = Math.round(this.x * 100) / 100;
-    this.y = Math.round(this.y * 100) / 100;
     this.worldX = Math.round(this.x);
     this.worldY = Math.round(this.y);
+  }
+
+  randomAutoDirectionChange(dt) {
+    this.timeSinceLastDirectionChange += dt;
+    if (this.timeSinceLastDirectionChange < PLAYER_AUTO_DIRECTION_CHANGE_INTERVAL) {
+      return;
+    }
+    this.timeSinceLastDirectionChange = 0;
+
+    const angleChange = (Math.random() - 0.5) * 2 * PLAYER_MAX_DIRECTION_CHANGE_ANGLE;
+    const cos = Math.cos(angleChange);
+    const sin = Math.sin(angleChange);
+
+    const dirVector = { x: 0, y: 0 };
+    dirVector.x = this.currentDirectionVector.x * cos - this.currentDirectionVector.y * sin;
+    dirVector.y = this.currentDirectionVector.x * sin + this.currentDirectionVector.y * cos;
+
+    const length = Math.hypot(dirVector.x, dirVector.y);
+    if (length > 0) {
+      dirVector.x /= length;
+      dirVector.y /= length;
+    }
+
+    this.currentDirectionVector = dirVector;
   }
 }
