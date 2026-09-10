@@ -1,19 +1,20 @@
 # wallpaperEngine
 
-Development repo for animated wallpapers published to **Wallpaper Engine (Steam)**. Each wallpaper is an independent, self-contained "web" wallpaper (plain HTML/CSS/JS, Canvas 2D rendering, no build step, no bundler, no npm).
+Development repo for animated wallpapers published to **Wallpaper Engine (Steam)**. Most wallpapers here are self-contained, zero-build "web" wallpapers (plain HTML/CSS/JS, Canvas 2D) — `WorldForge` is the exception: TypeScript + Vite with a real build step (see its own `CLAUDE.md`).
 
 ## Layout
 
 | Folder | Status | What it is |
 |---|---|---|
 | `WorldGenerator/` | Done, foundational | The original, complete project — procedural pixel-art landscape using Wave Function Collapse (WFC). Everything else started from here. See its own `CLAUDE.md`. Its Wallpaper Engine integration patterns are the oldest in the repo — question whether they're still the right approach before copying them into new work. |
-| `InfinityWalker/` | Published, now paused | Iteration on `WorldGenerator`: an infinite scrolling world with a walking character, chunk-based layered WFC. A version of it is live on Steam, but local code was developed further after that publish and is currently ahead of the published Workshop version. Development is paused — a new approach is being tried in a *next* project (not yet in this repo), of which InfinityWalker is considered the previous iteration step. See its own `CLAUDE.md`. |
+| `InfinityWalker/` | Published, now paused | Iteration on `WorldGenerator`: an infinite scrolling world with a walking character, chunk-based layered WFC. A version of it is live on Steam, but local code was developed further after that publish and is currently ahead of the published Workshop version. Development is paused in favor of `WorldForge`. See its own `CLAUDE.md`. |
+| `WorldForge/` | Active — Phase 1 | The current iteration: same chunked/zoomable presentation as InfinityWalker, but TypeScript + Vite and noise+biome terrain generation (Minecraft/Terraria-style) instead of WFC, aimed at eventually adding rivers/lakes and villages/structures. Not yet wired up to Wallpaper Engine (generation quality first). See its own `CLAUDE.md`. |
 | `FirstTestStuff/` | Legacy / scratch | Early canvas experiments, not part of any shipped or active wallpaper. Ignore unless explicitly asked to revive it. |
 | `DesignCorner/` | Assets | Photoshop (`.psd`) source projects, mainly used to rework/redesign the tilesets whose exports land in each wallpaper's `img/` folder. Binary, not code. |
 
 Each wallpaper folder is meant to stand alone — there is no shared code between them (some duplication of concepts like WFC entropy collapse is intentional, not a refactor target, since InfinityWalker is a from-scratch redesign).
 
-The lineage so far: `WorldGenerator` (done) → `InfinityWalker` (paused) → next project (not started yet). When planning new work, assume it's meant to be that next iteration unless said otherwise.
+The lineage so far: `WorldGenerator` (done) → `InfinityWalker` (paused) → `WorldForge` (active). When planning new terrain-generation work, assume it belongs in `WorldForge` unless said otherwise.
 
 ## Wallpaper Engine integration
 
@@ -25,8 +26,8 @@ A wallpaper folder that's meant to be loaded by Wallpaper Engine needs:
 
 ## Dev workflow
 
-- No build step. Open the wallpaper's `.html` file directly in a browser (or serve the folder with any static server) to iterate.
-- **Publishing**: manual, via the Wallpaper Engine desktop editor — add the folder as a "Web" wallpaper project, verify the property panel against `project.json`, then publish to the Steam Workshop from inside the editor. There is no CLI/automated publish step in this repo.
+- No build step for `WorldGenerator`/`InfinityWalker`/`FirstTestStuff` — open the wallpaper's `.html` file directly in a browser (or serve the folder with any static server) to iterate. `WorldForge` is the exception: `npm run dev` for iteration, `npm run build` produces the `dist/` folder that actually gets published.
+- **Publishing**: manual, via the Wallpaper Engine desktop editor — add the folder (or, for `WorldForge`, its `dist/` output) as a "Web" wallpaper project, verify the property panel against `project.json`, then publish to the Steam Workshop from inside the editor. There is no CLI/automated publish step in this repo.
 - `preview.jpg`/`preview.gif` referenced by `project.json` (`"preview": "preview.jpg"`) is the Workshop thumbnail — regenerate it after visually significant changes if you're about to publish.
 
 ## Conventions
