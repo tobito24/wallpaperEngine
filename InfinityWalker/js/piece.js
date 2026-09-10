@@ -336,7 +336,7 @@ export default class WorldPiece {
                 if (!isValid) return;
 
                 isValid = this.possibleBaseTiles.some(baseTile =>
-                    tile.isUndergroundAllowed(baseTile, null)
+                    tile.isUndergroundAllowed(LAYER.OVERLAY,baseTile, null)
                 );
 
                 if (isValid) newPossibleOverlayTiles.push(tile);
@@ -359,7 +359,7 @@ export default class WorldPiece {
 
                 isValid = this.possibleBaseTiles.some(baseTile =>
                     this.possibleOverlayTiles.some(overlayTile =>
-                        tile.isUndergroundAllowed(baseTile, overlayTile)
+                        tile.isUndergroundAllowed(LAYER.DECO, baseTile, overlayTile)
                     )
                 );
 

@@ -14,7 +14,7 @@ export const HEIGHT_NOISE_SCALE = 64; // higher = larger height blobs
 export const HEIGHT_NOISE_OCTAVES = 1; // small number keeps it cheap
 export const HEIGHT_SEED = Math.floor(Math.random() * 1000); // change for a different world layout
 
-export const WFC_ACCURACY = 4; // higher = more accurate but slower.
+export const WFC_ACCURACY = 16; // higher = more accurate but slower.
 export const WFC_TIME_BUDGET_MS = 10; // time budget per frame in ms for WFC processing
 
 export const PLAYER_SPEED = 1.5;
