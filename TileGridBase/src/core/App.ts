@@ -1,18 +1,21 @@
-import { TILE_SIZE_DEFAULT, PAN_SPEED } from '../config/constants';
+import { TILE_SIZE_DEFAULT, PAN_SPEED_TILES_PER_SEC } from '../config/constants';
 import { Camera } from './Camera';
-import { attachZoomControls, InputState } from './input';
+import { attachZoomControls, DebugState, InputState } from './input';
 import { WorldRenderer } from '../render/WorldRenderer';
+import { World } from '../world/World';
 
 export class App {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly camera = new Camera(0, 0, TILE_SIZE_DEFAULT);
   private readonly input = new InputState();
+  private readonly debugState = new DebugState();
+  private readonly world = new World();
   private readonly renderer = new WorldRenderer();
 
   private readonly canvas: HTMLCanvasElement;
   private viewportWidth = 0;
   private viewportHeight = 0;
-  private lastTime = 0;
+  private lastFrameTimeMs = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -26,10 +29,10 @@ export class App {
   }
 
   start(): void {
-    this.lastTime = performance.now();
-    const frame = (time: number) => {
-      const dt = Math.min(0.05, (time - this.lastTime) / 1000);
-      this.lastTime = time;
+    this.lastFrameTimeMs = performance.now();
+    const frame = (timeMs: number) => {
+      const dt = Math.min(0.05, (timeMs - this.lastFrameTimeMs) / 1000);
+      this.lastFrameTimeMs = timeMs;
 
       this.update(dt);
       this.render();
@@ -54,15 +57,15 @@ export class App {
 
   private update(dt: number): void {
     const move = this.input.getMoveVector();
-    this.camera.pan(move.x * PAN_SPEED * dt, move.y * PAN_SPEED * dt);
+    this.camera.pan(move.x * PAN_SPEED_TILES_PER_SEC * dt, move.y * PAN_SPEED_TILES_PER_SEC * dt);
   }
 
-  private render(): void {
+  private renderBackground(): void {
     this.ctx.fillStyle = '#1c1f24';
     this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
+  }
 
-    this.renderer.render(this.ctx, this.camera, this.viewportWidth, this.viewportHeight);
-
+  private renderDebugHud(): void {
     this.ctx.fillStyle = '#cfd3d8';
     this.ctx.font = '12px monospace';
     this.ctx.fillText(`tile size: ${this.camera.tileSize}px (wheel / q,e to zoom)`, 8, 16);
@@ -71,5 +74,23 @@ export class App {
       8,
       32,
     );
+    this.ctx.fillText(`chunks loaded: ${this.world.loadedChunkCount}`, 8, 48);
+    this.ctx.fillText('debug: on (r to toggle)', 8, 64);
+  }
+
+  private render(): void {
+    this.renderBackground();
+
+    this.renderer.render(
+      this.ctx,
+      this.camera,
+      this.world,
+      this.viewportWidth,
+      this.viewportHeight,
+      this.lastFrameTimeMs,
+      this.debugState.enabled,
+    );
+
+    if (this.debugState.enabled) this.renderDebugHud();
   }
 }

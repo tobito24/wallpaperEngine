@@ -1,8 +1,6 @@
 import type { Camera } from './Camera';
-import { ZOOM_STEP } from '../config/constants';
+import { ZOOM_STEP_PX } from '../config/constants';
 
-/** Tracks currently-held keys so movement can be sampled once per frame (dt-scaled),
- * instead of stepping the camera directly from discrete keydown events. */
 export class InputState {
   private readonly keys = new Set<string>();
 
@@ -16,8 +14,6 @@ export class InputState {
     return this.keys.has(key);
   }
 
-  /** Normalized WASD/arrow-key direction vector (zero if nothing held, unit length otherwise
-   * so diagonal movement isn't faster). */
   getMoveVector(): { x: number; y: number } {
     let x = 0;
     let y = 0;
@@ -35,16 +31,25 @@ export class InputState {
   }
 }
 
-/** Wheel/q/e zoom controls (changes Camera.tileSize). Returns a function to remove the listeners. */
+export class DebugState {
+  enabled = false;
+
+  constructor(target: Window = window) {
+    target.addEventListener('keyup', (e) => {
+      if (e.key.toLowerCase() === 'r') this.enabled = !this.enabled;
+    });
+  }
+}
+
 export function attachZoomControls(camera: Camera, target: Window = window): () => void {
   const onWheel = (e: WheelEvent) => {
-    const step = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+    const step = e.deltaY > 0 ? -ZOOM_STEP_PX : ZOOM_STEP_PX;
     camera.zoomBy(step);
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'q') camera.zoomBy(ZOOM_STEP);
-    else if (e.key === 'e') camera.zoomBy(-ZOOM_STEP);
+    if (e.key === 'q') camera.zoomBy(ZOOM_STEP_PX);
+    else if (e.key === 'e') camera.zoomBy(-ZOOM_STEP_PX);
   };
 
   target.addEventListener('wheel', onWheel, { passive: true });

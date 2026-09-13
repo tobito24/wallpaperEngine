@@ -12,7 +12,7 @@ export interface ScreenPoint {
   y: number;
 }
 
-/** World position (in tiles, can be fractional) + zoom (tile size in px). */
+/** Position in world tiles (fractional); zoom is tileSize in px. */
 export class Camera {
   x: number;
   y: number;
@@ -33,7 +33,6 @@ export class Camera {
     this.y += dyWorldTiles;
   }
 
-  /** Visible world-tile bounds for a viewport of the given CSS-pixel size, with a 1-tile margin. */
   getVisibleTileBounds(viewportWidth: number, viewportHeight: number): TileBounds {
     const halfCols = viewportWidth / 2 / this.tileSize;
     const halfRows = viewportHeight / 2 / this.tileSize;
@@ -45,9 +44,7 @@ export class Camera {
     };
   }
 
-  /** Floors to whole CSS pixels — tiles are drawn with smoothing off, so any sub-pixel offset
-   * (e.g. from viewportWidth/2 not being a multiple of tileSize) shows up as visible seams
-   * between adjacent tiles. */
+  /** Floors to whole CSS px — a sub-pixel offset here shows up as visible seams between tiles. */
   worldToScreen(worldX: number, worldY: number, viewportWidth: number, viewportHeight: number): ScreenPoint {
     return {
       x: Math.floor((worldX - this.x) * this.tileSize + viewportWidth / 2),

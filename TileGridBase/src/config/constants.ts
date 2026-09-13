@@ -2,8 +2,8 @@ export const TILE_SIZE_DEFAULT = 32;
 export const MIN_TILE_SIZE = 4;
 export const MAX_TILE_SIZE = 128;
 
-/** Zoom step per wheel tick / q,e press, in on-screen px added to Camera.tileSize. */
-export const ZOOM_STEP = 4;
+export const ZOOM_STEP_PX = 4;
+export const PAN_SPEED_TILES_PER_SEC = 6;
 
-/** Camera pan speed in world tiles per second, independent of zoom level. */
-export const PAN_SPEED = 6;
+export const CHUNK_SIZE = 16;
+export const CHUNK_UNLOAD_DELAY_MS = 5000;

@@ -1,22 +1,41 @@
+import { CHUNK_SIZE } from '../config/constants';
 import type { Camera } from '../core/Camera';
+import type { World } from '../world/World';
 
-const COLOR_EVEN = '#3a3f47';
-const COLOR_ODD = '#2c3036';
-
-/** Placeholder world renderer: an even/odd checkerboard over world tile coordinates. */
 export class WorldRenderer {
-  render(ctx: CanvasRenderingContext2D, camera: Camera, viewportWidth: number, viewportHeight: number): void {
+  render(
+    ctx: CanvasRenderingContext2D,
+    camera: Camera,
+    world: World,
+    viewportWidth: number,
+    viewportHeight: number,
+    nowMs: number,
+    debugEnabled: boolean,
+  ): void {
     const bounds = camera.getVisibleTileBounds(viewportWidth, viewportHeight);
     const size = Math.ceil(camera.tileSize);
+    const chunks = world.syncVisibleChunks(bounds, nowMs);
 
-    for (let ty = bounds.minY; ty <= bounds.maxY; ty++) {
-      for (let tx = bounds.minX; tx <= bounds.maxX; tx++) {
-        const isEven = (tx + ty) % 2 === 0;
-        ctx.fillStyle = isEven ? COLOR_EVEN : COLOR_ODD;
+    for (const chunk of chunks) {
+      for (const tile of chunk.tiles) {
+        if (tile.worldX < bounds.minX || tile.worldX > bounds.maxX) continue;
+        if (tile.worldY < bounds.minY || tile.worldY > bounds.maxY) continue;
 
-        const screen = camera.worldToScreen(tx, ty, viewportWidth, viewportHeight);
-        ctx.fillRect(screen.x, screen.y, size, size);
+        const screen = camera.worldToScreen(tile.worldX, tile.worldY, viewportWidth, viewportHeight);
+        tile.draw(ctx, screen.x, screen.y, size);
       }
+    }
+
+    if (!debugEnabled) return;
+
+    for (const chunk of chunks) {
+      const origin = camera.worldToScreen(
+        chunk.chunkX * CHUNK_SIZE,
+        chunk.chunkY * CHUNK_SIZE,
+        viewportWidth,
+        viewportHeight,
+      );
+      chunk.drawBorder(ctx, origin.x, origin.y, CHUNK_SIZE * size);
     }
   }
 }
