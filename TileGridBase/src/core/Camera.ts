@@ -12,8 +12,7 @@ export interface ScreenPoint {
   y: number;
 }
 
-/** World position (in tiles, can be fractional) + zoom (tile size in px). Same role InfinityWalker's
- * inline camera calc in main.ts played, just reusable and zoom-aware. */
+/** World position (in tiles, can be fractional) + zoom (tile size in px). */
 export class Camera {
   x: number;
   y: number;
@@ -46,8 +45,8 @@ export class Camera {
     };
   }
 
-  /** Floors to whole CSS pixels — tiles are pixel art drawn with smoothing off, so any sub-pixel
-   * offset (e.g. from viewportWidth/2 not being a multiple of tileSize) shows up as visible seams
+  /** Floors to whole CSS pixels — tiles are drawn with smoothing off, so any sub-pixel offset
+   * (e.g. from viewportWidth/2 not being a multiple of tileSize) shows up as visible seams
    * between adjacent tiles. */
   worldToScreen(worldX: number, worldY: number, viewportWidth: number, viewportHeight: number): ScreenPoint {
     return {
