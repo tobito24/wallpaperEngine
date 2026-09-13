@@ -17,6 +17,8 @@ A minimal camera + chunked 2D tile-grid shell and nothing else:
 - **WASD** (+ arrow keys) pans the camera across the world at a constant speed, independent of zoom.
 - **Mouse wheel / q,e** zoom by changing `tileSize` (clamped `MIN_TILE_SIZE`–`MAX_TILE_SIZE`), i.e. tiles get
   visually bigger/smaller rather than more/fewer tiles being loaded.
+- **Mouse drag / touch** (no keyboard needed): left-click drag or one-finger drag pans 1:1 with the
+  cursor/finger; two-finger pinch zooms, same `tileSize` change as wheel/q,e.
 - **Chunked streaming**: the grid is divided into fixed-size chunks (`CHUNK_SIZE`); chunks touching the camera's
   visible bounds are loaded on demand, and a chunk not seen for `CHUNK_UNLOAD_DELAY_MS` gets unloaded. See
   `world/World.ts`.
@@ -55,7 +57,10 @@ Both clone this folder as their starting point; neither is implemented here.
   (which world tiles are on screen), `worldToScreen()` (floors to whole CSS px so pixel-art tiles don't get seams).
 - **`core/input.ts`** — `InputState` tracks currently-held keys and exposes a normalized WASD/arrow-key move
   vector sampled once per frame (dt-scaled, so diagonal movement isn't faster); `attachZoomControls()` wires
-  wheel/q/e straight to `Camera.zoomBy()`.
+  wheel/q/e straight to `Camera.zoomBy()`; `attachMouseDragControls()` and `attachTouchControls()` wire
+  left-click-drag / one-two-finger touch straight to `Camera.pan()`/`zoomBy()` (no per-frame sampling — they
+  react to `mousemove`/`touchmove` directly, since a drag/pinch is already a delta between two events rather than
+  a held state).
 - **`core/App.ts`** — owns the canvas, camera, input, `DebugState`, `World`, and render loop
   (`requestAnimationFrame`, dt-clamped). The HUD only renders while `DebugState.enabled` is true.
 - **`world/Tile.ts`** — one grid cell. Owns its own appearance (`draw(ctx, screenX, screenY, size)`) — currently
@@ -81,6 +86,8 @@ Both clone this folder as their starting point; neither is implemented here.
 ## Controls (dev/debug, not final)
 
 `w`/`a`/`s`/`d` or arrow keys to pan. Wheel or `q`/`e` to zoom. `r` toggles debug mode (HUD + chunk borders).
+Left-click drag or one-finger drag to pan, two-finger pinch to zoom (mouse/touch work standalone, no keyboard
+required).
 
 ## Working here
 

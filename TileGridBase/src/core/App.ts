@@ -1,6 +1,12 @@
 import { TILE_SIZE_DEFAULT, PAN_SPEED_TILES_PER_SEC } from '../config/constants';
 import { Camera } from './Camera';
-import { attachZoomControls, DebugState, InputState } from './input';
+import {
+  attachMouseDragControls,
+  attachTouchControls,
+  attachZoomControls,
+  DebugState,
+  InputState,
+} from './input';
 import { WorldRenderer } from '../render/WorldRenderer';
 import { World } from '../world/World';
 
@@ -24,6 +30,8 @@ export class App {
     this.ctx = ctx;
 
     attachZoomControls(this.camera);
+    attachMouseDragControls(this.camera, this.canvas);
+    attachTouchControls(this.camera, this.canvas);
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }

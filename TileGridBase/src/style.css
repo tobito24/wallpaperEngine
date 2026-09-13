@@ -8,4 +8,6 @@ body {
 
 #scene {
   display: block;
+  touch-action: none;
+  cursor: grab;
 }
