@@ -9,6 +9,7 @@ import {
 } from './input';
 import { WorldRenderer } from '../render/WorldRenderer';
 import { World } from '../world/World';
+import { attachWallpaperPropertyListener } from '../we/propertyListener';
 
 export class App {
   private readonly ctx: CanvasRenderingContext2D;
@@ -29,9 +30,10 @@ export class App {
     if (!ctx) throw new Error('2D canvas context not available');
     this.ctx = ctx;
 
-    attachZoomControls(this.camera);
+    attachZoomControls(this.camera, this.canvas);
     attachMouseDragControls(this.camera, this.canvas);
     attachTouchControls(this.camera, this.canvas);
+    attachWallpaperPropertyListener(this.camera);
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }

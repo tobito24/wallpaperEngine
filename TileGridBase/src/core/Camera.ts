@@ -24,8 +24,28 @@ export class Camera {
     this.tileSize = tileSize;
   }
 
+  setTileSize(tileSize: number): void {
+    this.tileSize = Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, tileSize));
+  }
+
   zoomBy(deltaTileSize: number): void {
-    this.tileSize = Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, this.tileSize + deltaTileSize));
+    this.setTileSize(this.tileSize + deltaTileSize);
+  }
+
+  zoomAtScreenPoint(
+    deltaTileSize: number,
+    screenX: number,
+    screenY: number,
+    viewportWidth: number,
+    viewportHeight: number,
+  ): void {
+    const oldTileSize = this.tileSize;
+    this.zoomBy(deltaTileSize);
+
+    const offsetX = screenX - viewportWidth / 2;
+    const offsetY = screenY - viewportHeight / 2;
+    this.x += offsetX / oldTileSize - offsetX / this.tileSize;
+    this.y += offsetY / oldTileSize - offsetY / this.tileSize;
   }
 
   pan(dxWorldTiles: number, dyWorldTiles: number): void {

@@ -21,8 +21,10 @@ The lineage so far: `WorldGenerator` (done) → `InfinityWalker` (paused) → `T
 A wallpaper folder that's meant to be loaded by Wallpaper Engine needs:
 
 - **`project.json`** — Wallpaper Engine's manifest. Declares `title`, entry `file` (the HTML file), and the **User Properties** panel Wallpaper Engine renders natively (checkboxes/sliders/combos/colors) with their `type`, `order`, `min`/`max`, and default `value`.
-- A **`window.wallpaperPropertyListener.applyUserProperties(properties)`** hook in the JS, wired up in the main script. Wallpaper Engine calls this when the user changes a property in its native panel; the keys match the `project.json` property keys exactly (e.g. `slider_squaresize`, `combo_offset_x`). See `WorldGenerator/js/Main.js` for the full pattern.
-- An optional in-wallpaper GUI (buttons/sliders drawn as HTML overlay) mirroring the same settings, for when the wallpaper is viewed outside Wallpaper Engine (e.g. directly in a browser) — `WorldGenerator` has this, `InfinityWalker` currently does not (keyboard-only controls, not yet wired to `project.json`/property listener since it's pre-release).
+- A **`window.wallpaperPropertyListener.applyUserProperties(properties)`** hook in the JS, wired up in the main script. Wallpaper Engine calls this when the user changes a property in its native panel; the keys match the `project.json` property keys exactly (e.g. `slider_squaresize`, `combo_offset_x`). See `WorldGenerator/js/Main.js` for the original pattern, or `TileGridBase/src/we/propertyListener.ts` for a smaller, typed, single-property example.
+- An optional in-wallpaper GUI (buttons/sliders drawn as HTML overlay) mirroring the same settings, for when the wallpaper is viewed outside Wallpaper Engine (e.g. directly in a browser) — `WorldGenerator` has this, `InfinityWalker` and `TileGridBase` currently don't (keyboard/mouse/touch controls only, not mirrored as an on-screen GUI).
+- `project.json` and the property-listener code are **not derived from each other** — adding/changing a property means editing both by hand, they'll silently drift otherwise (see `WorldGenerator/CLAUDE.md`'s "Working here" for how that bit them before).
+- Official docs: <https://docs.wallpaperengine.io/en/web/overview.html>, specifically the [User Properties page](https://docs.wallpaperengine.io/en/web/customization/properties.html) for the full property-type reference (slider/combo/checkbox/color/text fields, display conditions, localization).
 
 ## Dev workflow
 
@@ -33,5 +35,5 @@ A wallpaper folder that's meant to be loaded by Wallpaper Engine needs:
 ## Conventions
 
 - Tile/pixel art assets live under each project's `img/`; PSD sources live in `DesignCorner/`.
-- German is used freely in code comments, `notes.txt` TODO files, and commit context — don't translate it away.
-- Each project keeps its own running TODO/notes file (`notes.txt`) instead of GitHub issues — check it before starting work in that folder.
+- German is used freely in code comments, notes files, and commit context — don't translate it away.
+- Each project keeps its own running TODO/notes file instead of GitHub issues — check it before starting work in that folder. Older projects (`WorldGenerator`, `InfinityWalker`) use `notes.txt`; `notes.md` is the standard for newer ones (`TileGridBase` on).

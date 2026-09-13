@@ -67,7 +67,11 @@ export function attachTouchControls(camera: Camera, target: HTMLElement): () => 
       const dy = e.touches[0].clientY - lastTouches[0].clientY;
       camera.pan(-dx / camera.tileSize, -dy / camera.tileSize);
     } else if (e.touches.length === 2) {
-      camera.zoomBy(touchDistance(e.touches) - touchDistance(lastTouches));
+      const rect = target.getBoundingClientRect();
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+      const delta = touchDistance(e.touches) - touchDistance(lastTouches);
+      camera.zoomAtScreenPoint(delta, midX, midY, target.clientWidth, target.clientHeight);
     }
 
     lastTouches = e.touches;
@@ -126,10 +130,17 @@ export function attachMouseDragControls(camera: Camera, target: HTMLElement): ()
   };
 }
 
-export function attachZoomControls(camera: Camera, target: Window = window): () => void {
+export function attachZoomControls(camera: Camera, target: HTMLElement): () => void {
   const onWheel = (e: WheelEvent) => {
     const step = e.deltaY > 0 ? -ZOOM_STEP_PX : ZOOM_STEP_PX;
-    camera.zoomBy(step);
+    const rect = target.getBoundingClientRect();
+    camera.zoomAtScreenPoint(
+      step,
+      e.clientX - rect.left,
+      e.clientY - rect.top,
+      target.clientWidth,
+      target.clientHeight,
+    );
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -138,10 +149,10 @@ export function attachZoomControls(camera: Camera, target: Window = window): () 
   };
 
   target.addEventListener('wheel', onWheel, { passive: true });
-  target.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keydown', onKeyDown);
 
   return () => {
     target.removeEventListener('wheel', onWheel);
-    target.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keydown', onKeyDown);
   };
 }
