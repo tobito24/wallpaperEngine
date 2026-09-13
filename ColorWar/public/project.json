@@ -19,12 +19,12 @@
       },
       "slider_tickrate": {
         "fraction": false,
-        "max": 5000,
+        "max": 2000,
         "min": 100,
         "order": 2,
         "text": "Tick rate (ms)",
         "type": "slider",
-        "value": 1000
+        "value": 250
       },
       "combo_preset": {
         "options": [
@@ -37,7 +37,7 @@
         "order": 3,
         "text": "Starting pattern",
         "type": "combo",
-        "value": "empty"
+        "value": "sectors"
       }
     }
   },

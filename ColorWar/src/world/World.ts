@@ -6,7 +6,7 @@ import type { Tile } from './Tile';
 
 export class World {
   private readonly chunks = new Map<string, Chunk>();
-  private preset: WorldPreset = 'empty';
+  private preset: WorldPreset = 'sectors';
 
   get loadedChunkCount(): number {
     return this.chunks.size;
