@@ -8,6 +8,15 @@ step).
 Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`. Open TODOs/ideas live in `notes.md`, not here (this
 file is architecture, not a backlog).
 
+**Confirmed by manually testing `dist/` as an applied desktop wallpaper (2026-09-13, see root `CLAUDE.md`'s
+Wallpaper Engine integration section for the general version of this):** once actually applied — not just
+previewed inside the WE editor — **keyboard input does not reach the page at all**. Only mouse input does.
+`slider_tilesize` (the WE property panel slider) was confirmed working perfectly live, so WE properties are a
+real interaction channel even though keyboard isn't. Practical effect on this project: WASD/q,e/`r` only work
+while developing (`npm run dev` in a browser, or the WE editor's own preview) — mouse drag/wheel and WE
+properties are the only controls that do anything once actually running as a wallpaper. To add the project to
+the WE editor for testing, point it at `dist/index.html` directly (not the folder).
+
 ## What this is
 
 A minimal camera + chunked 2D tile-grid shell and nothing else:
@@ -94,6 +103,10 @@ Both clone this folder as their starting point; neither is implemented here.
 `w`/`a`/`s`/`d` or arrow keys to pan. Wheel (cursor-anchored) or `q`/`e` (center-anchored) to zoom. `r` toggles
 debug mode (HUD + chunk borders). Left-click drag or one-finger drag to pan, two-finger pinch to zoom anchored at
 the finger midpoint (mouse/touch work standalone, no keyboard required).
+
+**Keyboard controls (WASD, q/e, r) only work in a browser or the WE editor's preview — see the confirmed-live-test
+note above.** Mouse drag/wheel and the `slider_tilesize` WE property are the only controls that function once
+actually applied as a wallpaper.
 
 ## Working here
 
