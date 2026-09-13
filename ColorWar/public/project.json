@@ -1,0 +1,37 @@
+{
+  "file": "index.html",
+  "general": {
+    "properties": {
+      "schemecolor": {
+        "order": 0,
+        "text": "ui_browse_properties_scheme_color",
+        "type": "color",
+        "value": "0 0 0"
+      },
+      "slider_tilesize": {
+        "fraction": false,
+        "max": 128,
+        "min": 4,
+        "order": 1,
+        "text": "Tile size",
+        "type": "slider",
+        "value": 32
+      },
+      "slider_tickrate": {
+        "fraction": false,
+        "max": 5000,
+        "min": 100,
+        "order": 2,
+        "text": "Tick rate (ms)",
+        "type": "slider",
+        "value": 1000
+      }
+    }
+  },
+  "preview": "preview.jpg",
+  "snapshotformat": -1,
+  "snapshotoverlay": "",
+  "title": "ColorWar",
+  "type": "web",
+  "version": 0
+}

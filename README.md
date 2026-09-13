@@ -5,6 +5,7 @@ Development of animated wallpapers for **Wallpaper Engine (Steam)**.
 - `WorldGenerator/` — procedural landscape generator (done, published)
 - `InfinityWalker/` — walking-character iteration on WorldGenerator (published, paused)
 - `TileGridBase/` — reusable base for 2D tile-grid projects (camera + zoom + WASD pan), TypeScript + Vite (active, meant to be cloned)
+- `ColorWar/` — red/green/blue cyclic-dominance tile automaton, cloned from TileGridBase (active, new)
 - `FirstTestStuff/` — legacy experiments
 - `DesignCorner/` — Photoshop tileset sources
 

@@ -42,18 +42,19 @@ A minimal camera + chunked 2D tile-grid shell and nothing else:
 
 No terrain generation, no game logic — those are exactly the things a project cloned from here adds on top.
 
-## Planned forks (separate future projects, not phases of this one)
+## Forks (separate projects, not phases of this one)
 
-- **Noise-based world generation** — successor to `InfinityWalker`'s WFC approach, this time with independent
-  elevation/moisture/temperature noise channels + a redistribution curve + a biome lookup table
+- **`ColorWar/`** (in progress, started 2026-09-13) — a red/green/blue cyclic-dominance tile automaton (closer to
+  a Rock-Paper-Scissors CA than actual Conway's Game of Life, despite this fork's original working description).
+  See its own `CLAUDE.md`.
+- **Noise-based world generation** (not started) — successor to `InfinityWalker`'s WFC approach, this time with
+  independent elevation/moisture/temperature noise channels + a redistribution curve + a biome lookup table
   (Minecraft/Terraria-style), replacing `WorldRenderer`'s checkerboard with real generated terrain. This is what
   this project was originally scoped as (under the name `WorldForge`) before the 2026-09-13 reset pulled it back
   to a generic base — see git history before that date for the torn-out implementation if it's useful as a
   reference.
-- **A Game-of-Life-style project** — a cellular automaton over the same tile grid + camera, replacing the
-  checkerboard with live/dead cell rendering and a simulation step.
 
-Both clone this folder as their starting point; neither is implemented here.
+Each one clones this folder as its starting point.
 
 ## Architecture
 
