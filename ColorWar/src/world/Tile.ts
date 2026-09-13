@@ -6,10 +6,10 @@ export class Tile {
   readonly worldY: number;
   color: TileColor;
 
-  constructor(worldX: number, worldY: number) {
+  constructor(worldX: number, worldY: number, color: TileColor = 'none') {
     this.worldX = worldX;
     this.worldY = worldY;
-    this.color = 'none';
+    this.color = color;
   }
 
   draw(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, size: number): void {

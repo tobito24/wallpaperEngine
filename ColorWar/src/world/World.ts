@@ -1,13 +1,22 @@
 import { CHUNK_SIZE, CHUNK_UNLOAD_DELAY_MS } from '../config/constants';
 import type { TileBounds } from '../core/Camera';
+import type { WorldPreset } from '../simulation/presets';
 import { Chunk } from './Chunk';
 import type { Tile } from './Tile';
 
 export class World {
   private readonly chunks = new Map<string, Chunk>();
+  private preset: WorldPreset = 'empty';
 
   get loadedChunkCount(): number {
     return this.chunks.size;
+  }
+
+  setPreset(preset: WorldPreset): void {
+    this.preset = preset;
+    for (const chunk of this.chunks.values()) {
+      chunk.applyPreset(preset);
+    }
   }
 
   getLoadedChunks(): IterableIterator<Chunk> {
@@ -45,7 +54,7 @@ export class World {
     const key = `${cx},${cy}`;
     let chunk = this.chunks.get(key);
     if (!chunk) {
-      chunk = new Chunk(cx, cy, nowMs);
+      chunk = new Chunk(cx, cy, nowMs, this.preset);
       this.chunks.set(key, chunk);
     }
     return chunk;

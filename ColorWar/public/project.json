@@ -25,6 +25,19 @@
         "text": "Tick rate (ms)",
         "type": "slider",
         "value": 1000
+      },
+      "combo_preset": {
+        "options": [
+          { "label": "Empty (click to draw)", "value": "empty" },
+          { "label": "Random speckle", "value": "speckle" },
+          { "label": "Sectors", "value": "sectors" },
+          { "label": "Stripes", "value": "stripes" },
+          { "label": "Rings", "value": "rings" }
+        ],
+        "order": 3,
+        "text": "Starting pattern",
+        "type": "combo",
+        "value": "empty"
       }
     }
   },

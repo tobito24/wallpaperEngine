@@ -1,12 +1,12 @@
 export type TileColor = 'none' | 'red' | 'green' | 'blue';
 
-const CYCLE: readonly TileColor[] = ['red', 'green', 'blue'];
+export const CYCLE: readonly TileColor[] = ['red', 'green', 'blue'];
 
 const COLOR_HEX: Record<TileColor, string> = {
-  none: '#2c3036',
-  red: '#e5484d',
-  green: '#46a758',
-  blue: '#4098e0',
+  none: '#34383f',
+  red: '#d96c75',
+  green: '#6fba82',
+  blue: '#649fd1',
 };
 
 export function colorHex(color: TileColor): string {

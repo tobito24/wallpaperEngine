@@ -37,7 +37,7 @@ export class App {
     attachMouseDragControls(this.camera, this.canvas);
     attachTouchControls(this.camera, this.canvas);
     attachTileClickControls(this.camera, this.canvas, this.world);
-    attachWallpaperPropertyListener(this.camera, this.colorSimulation);
+    attachWallpaperPropertyListener(this.camera, this.colorSimulation, this.world);
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }
