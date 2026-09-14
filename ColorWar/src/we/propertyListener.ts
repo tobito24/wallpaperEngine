@@ -51,6 +51,7 @@ export function attachWallpaperPropertyListener(
       const preset = properties[PRESET_PROPERTY_KEY];
       if (preset && isWorldPreset(preset.value)) {
         world.setPreset(preset.value);
+        camera.resetPosition();
       }
     },
   };

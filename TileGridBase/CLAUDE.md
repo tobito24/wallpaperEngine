@@ -44,9 +44,9 @@ No terrain generation, no game logic — those are exactly the things a project 
 
 ## Forks (separate projects, not phases of this one)
 
-- **`ColorWar/`** (in progress, started 2026-09-13) — a red/green/blue cyclic-dominance tile automaton (closer to
-  a Rock-Paper-Scissors CA than actual Conway's Game of Life, despite this fork's original working description).
-  See its own `CLAUDE.md`.
+- **`ColorWar/`** (done for now, started 2026-09-13, published 2026-09-14) — a 7-color rainbow cyclic-dominance
+  tile automaton (closer to a Rock-Paper-Scissors CA than actual Conway's Game of Life, despite this fork's
+  original working description). See its own `CLAUDE.md`.
 - **Noise-based world generation** (not started) — successor to `InfinityWalker`'s WFC approach, this time with
   independent elevation/moisture/temperature noise channels + a redistribution curve + a biome lookup table
   (Minecraft/Terraria-style), replacing `WorldRenderer`'s checkerboard with real generated terrain. This is what

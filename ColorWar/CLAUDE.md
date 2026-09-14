@@ -1,7 +1,11 @@
 # ColorWar
 
-**Status: Phase 1 implemented (2026-09-13), cloned from `TileGridBase`.** Working title, may change. Unlike
-`TileGridBase`, this one is meant to become an actual wallpaper, not a base for further clones.
+**Status: Published to the Steam Workshop as two separate listings, "ColorWar" (original 3-color version) and
+"ColorWar: Rainbow" (7-color version) — both currently pending Wallpaper Engine's automatic anti-spam check**,
+which hides newly-uploaded web wallpapers until it clears (usually within a few hours, see
+<https://help.wallpaperengine.io/en/interface/exclude.html>; no action needed, just wait). Done for now barring a
+new idea for it. Working title, may change. Unlike `TileGridBase`, this one is meant to become an actual
+wallpaper, not a base for further clones.
 
 Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`. Open TODOs/ideas live in `notes.md`, not here.
 
@@ -29,7 +33,12 @@ of Life, despite the original working name for this fork.
   across reloads instead of reshuffling.
 - **Changing the preset live regenerates every currently loaded chunk immediately** (`World.setPreset()`), not
   just chunks scrolled into view afterward — matches how `slider_tilesize`/`slider_tickrate` already apply
-  instantly.
+  instantly. **Also recenters the camera to world position `(0, 0)`** (`Camera.resetPosition()`, added
+  2026-09-14) — a preset is defined relative to world-origin coordinates (see `presetColorAt()`), so panning away
+  first would make the new pattern look off-center or cut off. Both places that call `world.setPreset()` (the WE
+  `combo_preset` property in `we/propertyListener.ts` and the dev-only number-key shortcut in
+  `tileClickControls.ts`) call `camera.resetPosition()` right after — there's no single shared call site for
+  "change preset" to hook this into instead.
 - **Unloaded neighbors count as `none`/inert** for the update rule — a tile at the edge of the currently-loaded
   region can't be beaten by a color sitting in a not-yet-loaded neighboring chunk. This is a deliberate
   simplification (not asked about explicitly), not perfectly "infinite-grid correct" at chunk edges.

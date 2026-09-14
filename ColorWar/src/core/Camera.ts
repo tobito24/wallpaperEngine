@@ -53,6 +53,11 @@ export class Camera {
     this.y += dyWorldTiles;
   }
 
+  resetPosition(): void {
+    this.x = 0;
+    this.y = 0;
+  }
+
   getVisibleTileBounds(viewportWidth: number, viewportHeight: number): TileBounds {
     const halfCols = viewportWidth / 2 / this.tileSize;
     const halfRows = viewportHeight / 2 / this.tileSize;

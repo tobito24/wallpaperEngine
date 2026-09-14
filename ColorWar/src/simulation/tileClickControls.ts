@@ -48,7 +48,10 @@ export function attachTileClickControls(camera: Camera, target: HTMLElement, wor
 
   const onKeyDown = (e: KeyboardEvent): void => {
     const preset = WORLD_PRESETS[Number(e.key) - 1];
-    if (preset) world.setPreset(preset);
+    if (preset) {
+      world.setPreset(preset);
+      camera.resetPosition();
+    }
   };
 
   target.addEventListener('mousedown', onMouseDown);
