@@ -10,6 +10,7 @@ import {
 import { WorldRenderer } from '../render/WorldRenderer';
 import { World } from '../world/World';
 import { attachWallpaperPropertyListener } from '../we/propertyListener';
+import { Ticker } from './Ticker';
 
 export class App {
   private readonly ctx: CanvasRenderingContext2D;
@@ -18,11 +19,13 @@ export class App {
   private readonly debugState = new DebugState();
   private readonly world = new World();
   private readonly renderer = new WorldRenderer();
+  private readonly ticker = new Ticker();
 
   private readonly canvas: HTMLCanvasElement;
   private viewportWidth = 0;
   private viewportHeight = 0;
   private lastFrameTimeMs = 0;
+  private tickCount = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -33,7 +36,7 @@ export class App {
     attachZoomControls(this.camera, this.canvas);
     attachMouseDragControls(this.camera, this.canvas);
     attachTouchControls(this.camera, this.canvas);
-    attachWallpaperPropertyListener(this.camera);
+    attachWallpaperPropertyListener(this.camera, this.ticker);
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }
@@ -68,6 +71,11 @@ export class App {
   private update(dt: number): void {
     const move = this.input.getMoveVector();
     this.camera.pan(move.x * PAN_SPEED_TILES_PER_SEC * dt, move.y * PAN_SPEED_TILES_PER_SEC * dt);
+    this.ticker.update(dt * 1000, () => {
+      // Generic tick handling logic
+      this.tickCount++;
+      if (this.tickCount > 100) this.tickCount = 0;
+    });
   }
 
   private renderBackground(): void {
@@ -76,6 +84,9 @@ export class App {
   }
 
   private renderDebugHud(): void {
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.fillRect(0, 0, 260, 92);
+
     this.ctx.fillStyle = '#cfd3d8';
     this.ctx.font = '12px monospace';
     this.ctx.fillText(`tile size: ${this.camera.tileSize}px (wheel / q,e to zoom)`, 8, 16);
@@ -85,7 +96,8 @@ export class App {
       32,
     );
     this.ctx.fillText(`chunks loaded: ${this.world.loadedChunkCount}`, 8, 48);
-    this.ctx.fillText('debug: on (r to toggle)', 8, 64);
+    this.ctx.fillText(`ticks: ${this.tickCount} (${this.ticker.tickIntervalMs}ms interval)`, 8, 64);
+    this.ctx.fillText('debug: on (r to toggle)', 8, 80);
   }
 
   private render(): void {

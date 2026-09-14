@@ -1,5 +1,5 @@
 import type { Camera } from './Camera';
-import { ZOOM_STEP_PX } from '../config/constants';
+import { ZOOM_STEP_PX, PAN_SPRINT_MULTIPLIER } from '../config/constants';
 
 export class InputState {
   private readonly keys = new Set<string>();
@@ -27,6 +27,12 @@ export class InputState {
       x /= length;
       y /= length;
     }
+
+    if (this.isDown('shift')) {
+      x *= PAN_SPRINT_MULTIPLIER;
+      y *= PAN_SPRINT_MULTIPLIER;
+    }
+
     return { x, y };
   }
 }

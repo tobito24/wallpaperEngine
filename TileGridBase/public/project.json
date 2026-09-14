@@ -16,6 +16,15 @@
         "text": "Tile size",
         "type": "slider",
         "value": 60
+      },
+      "slider_tickrate": {
+        "fraction": false,
+        "max": 2000,
+        "min": 100,
+        "order": 2,
+        "text": "Tick rate (ms)",
+        "type": "slider",
+        "value": 250
       }
     }
   },

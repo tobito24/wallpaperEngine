@@ -24,7 +24,8 @@ A minimal camera + chunked 2D tile-grid shell and nothing else:
 - A 2D tile grid rendered as an **even/odd checkerboard** — a placeholder standing in for whatever a cloned
   project actually wants to draw per tile.
 - A **camera** with world position (in tiles, fractional) and zoom (`tileSize` in px).
-- **WASD** (+ arrow keys) pans the camera across the world at a constant speed, independent of zoom.
+- **WASD** (+ arrow keys) pans the camera across the world at a constant speed, independent of zoom; holding
+  **shift** sprints at `PAN_SPRINT_MULTIPLIER`x that speed.
 - **Mouse wheel** zooms anchored to the cursor position (the world point under the cursor stays put); **q/e**
   zoom anchored to the viewport center (no cursor position to anchor to). Both change `tileSize` (clamped
   `MIN_TILE_SIZE`–`MAX_TILE_SIZE`) — tiles get visually bigger/smaller rather than more/fewer tiles loading.
@@ -36,9 +37,15 @@ A minimal camera + chunked 2D tile-grid shell and nothing else:
 - **Debug mode** (`r` to toggle, off by default): shows the HUD (tile size, camera position, loaded chunk count)
   and draws each loaded chunk's border, so chunk load/unload behavior is visible instead of just inferred from
   the checkerboard.
-- **One real Wallpaper Engine property** (`slider_tilesize`, see `public/project.json` +
+- **Two real Wallpaper Engine properties** (`slider_tilesize`, `slider_tickrate` — see `public/project.json` +
   `src/we/propertyListener.ts`): a minimal, typed reference for how a clone wires up the rest of its own
   properties — not a complete WE integration (no in-wallpaper GUI overlay, no other properties).
+- A generic **`Ticker`** (`core/Ticker.ts`, added 2026-09-14) giving `App` a fixed-rate tick independent of the
+  variable per-frame `dt` — accumulates `dtMs` and fires an `onTick` callback once it crosses `tickIntervalMs`,
+  live-adjustable via `slider_tickrate`. Not tied to any simulation — `App.update()` currently just increments a
+  debug-only `tickCount` shown in the HUD to prove it's ticking; a clone that needs actual per-tick game logic
+  (e.g. `ColorWar`'s `ColorSimulation`) replaces that callback with its own step function instead of writing its
+  own accumulator.
 
 No terrain generation, no game logic — those are exactly the things a project cloned from here adds on top.
 
@@ -59,20 +66,29 @@ Each one clones this folder as its starting point.
 ## Architecture
 
 - **`config/constants.ts`** — `TILE_SIZE_DEFAULT`/`MIN_TILE_SIZE`/`MAX_TILE_SIZE` (zoom range), `ZOOM_STEP_PX`,
-  `PAN_SPEED_TILES_PER_SEC`, `CHUNK_SIZE` (tiles per chunk edge), `CHUNK_UNLOAD_DELAY_MS`.
+  `PAN_SPEED_TILES_PER_SEC`, `PAN_SPRINT_MULTIPLIER` (shift-held pan speed multiplier), `CHUNK_SIZE` (tiles per
+  chunk edge), `CHUNK_UNLOAD_DELAY_MS`,
+  `TICK_INTERVAL_DEFAULT_MS`/`MIN_TICK_INTERVAL_MS`/`MAX_TICK_INTERVAL_MS` (`Ticker`'s range, mirrors
+  `slider_tickrate` in `public/project.json`).
 - **`core/Camera.ts`** — world position + `tileSize` (zoom level). `pan()`, `setTileSize()`/`zoomBy()` (clamped,
   `zoomBy` is relative to `setTileSize`), `zoomAtScreenPoint()` (zooms while keeping the world point under a given
   screen coordinate fixed — the math both wheel-zoom and pinch-zoom share), `getVisibleTileBounds()` (which world
   tiles are on screen), `worldToScreen()` (floors to whole CSS px so pixel-art tiles don't get seams).
 - **`core/input.ts`** — `InputState` tracks currently-held keys and exposes a normalized WASD/arrow-key move
-  vector sampled once per frame (dt-scaled, so diagonal movement isn't faster); `attachZoomControls()` wires
+  vector sampled once per frame (dt-scaled, so diagonal movement isn't faster), scaled by `PAN_SPRINT_MULTIPLIER`
+  while shift is held; `attachZoomControls()` wires
   wheel to `Camera.zoomAtScreenPoint()` (cursor-anchored) and q/e to `Camera.zoomBy()` (center-anchored, no cursor
   to anchor to); `attachMouseDragControls()` and `attachTouchControls()` wire left-click-drag / one-finger-touch
   straight to `Camera.pan()`, and two-finger pinch to `Camera.zoomAtScreenPoint()` anchored at the finger
   midpoint (no per-frame sampling for any of these — they react to `mousemove`/`touchmove` directly, since a
   drag/pinch is already a delta between two events rather than a held state).
-- **`core/App.ts`** — owns the canvas, camera, input, `DebugState`, `World`, and render loop
+- **`core/App.ts`** — owns the canvas, camera, input, `DebugState`, `World`, `Ticker`, and render loop
   (`requestAnimationFrame`, dt-clamped). The HUD only renders while `DebugState.enabled` is true.
+- **`core/Ticker.ts`** — `tickIntervalMs` (public, like `Camera.tileSize`; set directly or clamped via
+  `setTickIntervalMs()`) plus a private `accumulatedMs`. `update(dtMs, onTick)` is called every frame from
+  `App.update()` and only invokes `onTick` once `dtMs` has accumulated past `tickIntervalMs` — the same
+  accumulator pattern as `ColorWar/src/simulation/ColorSimulation.ts`, pulled out generic (no simulation
+  knowledge) so a clone can pass its own per-tick step function instead of reimplementing the accumulator.
 - **`world/Tile.ts`** — one grid cell. Owns its own appearance (`draw(ctx, screenX, screenY, size)`) — currently
   just the even/odd checkerboard color, computed from its own `worldX`/`worldY`. This is the file a clone
   replaces with real per-tile content; nothing else needs to change to support that; callers only ever call
@@ -90,25 +106,28 @@ Each one clones this folder as its starting point.
   `World.syncVisibleChunks()`, then for each returned chunk's tiles (clipped to `bounds`) computes the screen
   position via `Camera.worldToScreen()` and calls `tile.draw()`. Doesn't know or care how a tile renders itself.
   When `debugEnabled`, also calls each visible chunk's `drawBorder()` after all tiles are drawn.
-- **`we/propertyListener.ts`** — `attachWallpaperPropertyListener(camera)` sets `window.wallpaperPropertyListener`,
-  reading `slider_tilesize` and calling `camera.setTileSize()`. Declares the `Window.wallpaperPropertyListener`
-  type via `declare global` since it's a Wallpaper Engine runtime global, not a standard DOM API. Must be set
-  synchronously at startup (Wallpaper Engine can call `applyUserProperties` immediately on load) — `App`'s
-  constructor does this directly, not inside a promise/timeout. **`slider_tilesize` is a 0-100 position, not a
-  pixel value** (added 2026-09-14) — WE's slider property has no built-in log/exponential curve (confirmed
-  against the official docs), so a linear 0-100 position is mapped onto a log scale between `MIN_TILE_SIZE` and
-  `MAX_TILE_SIZE` by `tileSizeFromSliderPosition()` (rounded to a whole px) before reaching `camera.setTileSize()`
-  — a linear pixel slider gave almost no control at the small-tile end, where zoom differences matter most. The
-  0-100 bounds live as local constants in `propertyListener.ts` itself, not in `config/constants.ts` — they
-  describe the WE slider's own domain, not a camera/rendering value, so they don't belong with the ones that do.
-- **`public/project.json`** — Wallpaper Engine manifest with exactly one real property, `slider_tilesize` (`min`
-  0, `max` 100 — the slider position, not px, see above). **Not derived from `propertyListener.ts`** — add/change
-  a property in one place and you must update the other by hand, same gotcha `WorldGenerator/CLAUDE.md` flags for
-  `Main.js`.
+- **`we/propertyListener.ts`** — `attachWallpaperPropertyListener(camera, ticker)` sets
+  `window.wallpaperPropertyListener`, reading `slider_tilesize` (→ `camera.setTileSize()`) and `slider_tickrate`
+  (→ `ticker.setTickIntervalMs()`, values pass straight through in ms, no curve). Declares the
+  `Window.wallpaperPropertyListener` type via `declare global` since it's a Wallpaper Engine runtime global, not a
+  standard DOM API. Must be set synchronously at startup (Wallpaper Engine can call `applyUserProperties`
+  immediately on load) — `App`'s constructor does this directly, not inside a promise/timeout.
+  **`slider_tilesize` is a 0-100 position, not a pixel value** (added 2026-09-14) — WE's slider property has no
+  built-in log/exponential curve (confirmed against the official docs), so a linear 0-100 position is mapped onto
+  a log scale between `MIN_TILE_SIZE` and `MAX_TILE_SIZE` by `tileSizeFromSliderPosition()` (rounded to a whole
+  px) before reaching `camera.setTileSize()` — a linear pixel slider gave almost no control at the small-tile end,
+  where zoom differences matter most. The 0-100 bounds live as local constants in `propertyListener.ts` itself,
+  not in `config/constants.ts` — they describe the WE slider's own domain, not a camera/rendering value, so they
+  don't belong with the ones that do.
+- **`public/project.json`** — Wallpaper Engine manifest with two real properties, `slider_tilesize` (`min` 0,
+  `max` 100 — the slider position, not px, see above) and `slider_tickrate` (`min` `MIN_TICK_INTERVAL_MS`, `max`
+  `MAX_TICK_INTERVAL_MS`, default `TICK_INTERVAL_DEFAULT_MS`, plain ms). **Not derived from
+  `propertyListener.ts`/`config/constants.ts`** — add/change a property in one place and you must update the
+  others by hand, same gotcha `WorldGenerator/CLAUDE.md` flags for `Main.js`.
 
 ## Controls (dev/debug, not final)
 
-`w`/`a`/`s`/`d` or arrow keys to pan. Wheel (cursor-anchored) or `q`/`e` (center-anchored) to zoom. `r` toggles
+`w`/`a`/`s`/`d` or arrow keys to pan (hold `shift` to sprint). Wheel (cursor-anchored) or `q`/`e` (center-anchored) to zoom. `r` toggles
 debug mode (HUD + chunk borders). Left-click drag or one-finger drag to pan, two-finger pinch to zoom anchored at
 the finger midpoint (mouse/touch work standalone, no keyboard required).
 
