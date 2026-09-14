@@ -94,10 +94,17 @@ Each one clones this folder as its starting point.
   reading `slider_tilesize` and calling `camera.setTileSize()`. Declares the `Window.wallpaperPropertyListener`
   type via `declare global` since it's a Wallpaper Engine runtime global, not a standard DOM API. Must be set
   synchronously at startup (Wallpaper Engine can call `applyUserProperties` immediately on load) — `App`'s
-  constructor does this directly, not inside a promise/timeout.
-- **`public/project.json`** — Wallpaper Engine manifest with exactly one real property, `slider_tilesize` (min/max
-  matching `MIN_TILE_SIZE`/`MAX_TILE_SIZE`). **Not derived from `propertyListener.ts`** — add/change a property in
-  one place and you must update the other by hand, same gotcha `WorldGenerator/CLAUDE.md` flags for `Main.js`.
+  constructor does this directly, not inside a promise/timeout. **`slider_tilesize` is a 0-100 position, not a
+  pixel value** (added 2026-09-14) — WE's slider property has no built-in log/exponential curve (confirmed
+  against the official docs), so a linear 0-100 position is mapped onto a log scale between `MIN_TILE_SIZE` and
+  `MAX_TILE_SIZE` by `tileSizeFromSliderPosition()` (rounded to a whole px) before reaching `camera.setTileSize()`
+  — a linear pixel slider gave almost no control at the small-tile end, where zoom differences matter most. The
+  0-100 bounds live as local constants in `propertyListener.ts` itself, not in `config/constants.ts` — they
+  describe the WE slider's own domain, not a camera/rendering value, so they don't belong with the ones that do.
+- **`public/project.json`** — Wallpaper Engine manifest with exactly one real property, `slider_tilesize` (`min`
+  0, `max` 100 — the slider position, not px, see above). **Not derived from `propertyListener.ts`** — add/change
+  a property in one place and you must update the other by hand, same gotcha `WorldGenerator/CLAUDE.md` flags for
+  `Main.js`.
 
 ## Controls (dev/debug, not final)
 

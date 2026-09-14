@@ -33,7 +33,7 @@ export class ColorSimulation {
             world.getLoadedTile(tile.worldX - 1, tile.worldY)?.color,
           ].filter((color): color is TileColor => color !== undefined && color !== 'none');
 
-          if (neigborColors.length === 0) continue;          
+          if (neigborColors.length === 0) continue;
 
           const randomNeighborColor = neigborColors[Math.floor(Math.random() * neigborColors.length)];
           nextColors.set(tile, randomNeighborColor);

@@ -1,22 +1,6 @@
-export type TileColor =
-  | 'none'
-  | 'red'
-  | 'orange'
-  | 'yellow'
-  | 'green'
-  | 'blue'
-  | 'indigo'
-  | 'violet';
+export type TileColor = 'none' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'indigo' | 'violet';
 
-export const CYCLE: readonly TileColor[] = [
-  'red',
-  'orange',
-  'yellow',
-  'green',
-  'blue',
-  'indigo',
-  'violet',
-];
+export const CYCLE: readonly TileColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
 
 const COLOR_HEX: Record<TileColor, string> = {
   none: '#34383f',

@@ -1,4 +1,3 @@
-// slider_tilesize in public/project.json
 export const TILE_SIZE_DEFAULT = 32;
 export const MIN_TILE_SIZE = 4;
 export const MAX_TILE_SIZE = 128;
