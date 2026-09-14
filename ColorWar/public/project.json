@@ -37,7 +37,7 @@
         "order": 3,
         "text": "Starting pattern",
         "type": "combo",
-        "value": "sectors"
+        "value": "speckle"
       }
     }
   },

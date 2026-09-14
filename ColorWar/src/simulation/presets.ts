@@ -8,7 +8,9 @@ import type { TileColor } from './Color';
 
 export type WorldPreset = 'empty' | 'speckle' | 'sectors' | 'stripes' | 'rings';
 
+// combo_preset in public/project.json
 export const WORLD_PRESETS: readonly WorldPreset[] = ['empty', 'speckle', 'sectors', 'stripes', 'rings'];
+export const DEFAULT_PRESET: WorldPreset = 'speckle';
 
 export function isWorldPreset(value: unknown): value is WorldPreset {
   return typeof value === 'string' && (WORLD_PRESETS as readonly string[]).includes(value);

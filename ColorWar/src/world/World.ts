@@ -1,12 +1,13 @@
 import { CHUNK_SIZE, CHUNK_UNLOAD_DELAY_MS } from '../config/constants';
 import type { TileBounds } from '../core/Camera';
+import { DEFAULT_PRESET } from '../simulation/presets';
 import type { WorldPreset } from '../simulation/presets';
 import { Chunk } from './Chunk';
 import type { Tile } from './Tile';
 
 export class World {
   private readonly chunks = new Map<string, Chunk>();
-  private preset: WorldPreset = 'sectors';
+  private preset: WorldPreset = DEFAULT_PRESET;
 
   get loadedChunkCount(): number {
     return this.chunks.size;
