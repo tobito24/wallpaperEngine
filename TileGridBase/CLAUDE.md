@@ -54,12 +54,13 @@ No terrain generation, no game logic — those are exactly the things a project 
 - **`ColorWar/`** (done for now, started 2026-09-13, published 2026-09-14) — a 7-color rainbow cyclic-dominance
   tile automaton (closer to a Rock-Paper-Scissors CA than actual Conway's Game of Life, despite this fork's
   original working description). See its own `CLAUDE.md`.
-- **Noise-based world generation** (not started) — successor to `InfinityWalker`'s WFC approach, this time with
-  independent elevation/moisture/temperature noise channels + a redistribution curve + a biome lookup table
-  (Minecraft/Terraria-style), replacing `WorldRenderer`'s checkerboard with real generated terrain. This is what
-  this project was originally scoped as (under the name `WorldForge`) before the 2026-09-13 reset pulled it back
-  to a generic base — see git history before that date for the torn-out implementation if it's useful as a
-  reference.
+- **`WorldNoise/`** (just started, 2026-09-14) — the noise-based world generation fork: successor to
+  `InfinityWalker`'s WFC approach, this time with independent elevation/moisture/temperature noise channels + a
+  redistribution curve + a biome lookup table (Minecraft/Terraria-style), replacing `WorldRenderer`'s checkerboard
+  with real generated terrain. This is what this project was originally scoped as (under the working name
+  `WorldForge`) before the 2026-09-13 reset pulled it back to a generic base — see git history before that date
+  for the torn-out implementation if it's useful as a reference. So far only cloned + renamed, no
+  generation code yet — see its own `CLAUDE.md`.
 
 Each one clones this folder as its starting point.
 
