@@ -1,18 +1,18 @@
-const COLOR_EVEN = '#3a3f47';
-const COLOR_ODD = '#2c3036';
+import { colorForElevation } from '../elevation/color';
 
 export class Tile {
   readonly worldX: number;
   readonly worldY: number;
+  readonly elevation: number;
 
-  constructor(worldX: number, worldY: number) {
+  constructor(worldX: number, worldY: number, elevation: number) {
     this.worldX = worldX;
     this.worldY = worldY;
+    this.elevation = elevation;
   }
 
   draw(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, size: number): void {
-    const isEven = (this.worldX + this.worldY) % 2 === 0;
-    ctx.fillStyle = isEven ? COLOR_EVEN : COLOR_ODD;
+    ctx.fillStyle = colorForElevation(this.elevation);
     ctx.fillRect(screenX, screenY, size, size);
   }
 }
