@@ -41,11 +41,10 @@ why chunk borders never show seams.
 Reason for the shape: an endless world has no global view, so every decision must be computable from a small neighbourhood.
 
 - A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon: **5 x 5 chunks per cell** (80 tiles; a chunk is
-  16 tiles). Reason, measured: a town needs room inside its cell. With 5 x 5 chunks at least one position fits a 3 x 3 chunk
-  town in 54 % of the cells and a 2 x 2 chunk town in 92 % (with 4 x 4: 35 % and 76 %, with 3 x 3: 19 % and 54 %; "fits"
-  means at least 97 % land, see Towns sit on land), and two large towns in neighbouring cells leave on average about 32 tiles
-  of road between them (0 to 64, depending on where each town sits in its cell), about the length of a Pokemon route
-  (estimate, not measured). Each cell has one node.
+  16 tiles). Reason: a 3 x 3 chunk town in a 5 x 5 chunk cell always leaves a buffer of one chunk (16 tiles) on every side, so
+  two towns of neighbouring cells are at least 32 tiles apart (more if they are smaller or sit off centre), the 8 tile terrace
+  ring around a town stays inside its cell, and no two plateaus can touch. Longer roads between towns are wanted. Each cell
+  has one node.
 - A node is either a **town candidate** or a plain **waypoint**. The position of a waypoint is jittered by
   `hash(seed, cx, cy)`; the node of a town is the centre of its footprint, and roads aim at the nearest gate of the footprint.
 - Each edge to a neighbour cell exists by `hash(edge id)`, so both cells agree without knowing each other.
@@ -65,9 +64,11 @@ Reason for the shape: an endless world has no global view, so every decision mus
 - **Town sizes** follow the Pokemon cities the user picked, one of our tiles being one tile of the original maps: a small town
   is 2 x 2 chunks (32 x 32 tiles, like Lavender Town of HGSS with about 28 x 32), a large city up to 3 x 3 chunks (48 x 48, like
   Jubilife City of Platinum with about 50 x 38). Houses are 4 tiles wide (small) or 8 (large). A footprint is a set of whole
-  chunks inside its own cell, picked from a small list of shapes (2 x 2, 3 x 3, rectangle, L, T), rotated by hash. A chunk asks
-  the towns of its own cell and of the neighbouring cells whose footprint or ring can reach it (see Open questions). Roads
-  end at a gate on the footprint.
+  chunks inside the inner 3 x 3 chunks of its own cell (one chunk of buffer on every side), picked from a small list of shapes
+  (2 x 2, 3 x 3, rectangle, L, T), rotated by hash. A chunk only asks its own cell. Roads end at a gate on the footprint.
+  Measured (97 % land rule, 3600 cells, one seed): the large 3 x 3 chunk town at the centre fits 18 % of the cells, an L or T
+  shape of 5 chunks (any rotation) inside the 3 x 3 centre block 51 %, and some town (large, L or T, or a 2 x 2 chunk town at
+  one of its 4 positions) 61 %. A cell whose candidates all fail keeps a plain waypoint.
 - **Towns are hand-built templates**, stamped into the footprint (chosen and rotated by hash), not generated. The model is the
   classic Pokemon town: an even area with a loop of roads, buildings in the fields between, trees and cliffs as a frame, and
   gates where the roads leave. During development a real town (Marmoria City) is rebuilt as the first template; own towns
@@ -235,17 +236,6 @@ roads that always lead on and connect towns, and the seed can be changed from th
 - Number of height levels (3 is a first guess) and how strong the speckle countermeasures must be.
 - Town layouts: the Pokewiki city list (https://www.pokewiki.de/St%C3%A4dteverzeichnis) is the inspiration, above all the old
   towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format.
-- **Where a town may sit in its cell.** A footprint is aligned to chunks inside its 5 x 5 chunk cell. If it may touch the cell
-  edge, two towns of neighbouring cells can touch with no gap, their plateau levels can differ by two with no ring between
-  them (no ring rule can fix that), and the ring reaches into the neighbouring cell. Options, with the share of cells where a
-  position fits (measured as above):
-  1. Free placement: 3 x 3 chunk town 54 %, 2 x 2 chunk town 92 %. Needs a rule for touching towns that does not exist yet.
-  2. One chunk of margin to the east and south cell edge only: 4 positions for a 3 x 3 chunk town (35 %), 9 for a 2 x 2 chunk
-     town (76 %). Neighbouring towns are at least 16 tiles apart, so two 8 tile rings never overlap, and the ring of a town
-     reaches only west and north, so a chunk asks its own cell and the east, south and south-east cells.
-  3. One chunk of margin on all sides: 1 position (19 %) and 4 positions (54 %). Neighbours are at least 32 tiles apart, the
-     ring stays inside the cell, a chunk asks its own cell only.
-  Not decided.
 - The list of town shapes beyond 2 x 2, 3 x 3, L and T.
 - Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks). A water animation
   speed property needs its own animation clock; scaling `nowMs` would make the frame jump whenever the value changes.
