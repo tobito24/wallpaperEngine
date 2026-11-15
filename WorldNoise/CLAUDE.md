@@ -85,6 +85,15 @@ nothing restructured.
 touch pan, pinch zoom. **Keyboard only works while developing** — once applied as a real desktop wallpaper, only
 mouse/touch and WE properties reach the page (confirmed via `TileGridBase`, see `docs/wallpaper-engine-integration.md`).
 
+## Agent workflow (temporary, this project only)
+
+While `WorldNoise` is implemented from the plan in `idea.md`, the agent may, without asking each time, run this loop per
+feature: feature branch, commits, `npm run lint` / `build` / `format:check` before each commit, screenshot for visual steps,
+push, PR, review by a read-only subagent (diff and goal, not conclusions), fix real findings, squash merge, next feature.
+This overrides the root rule "never push unless asked" for `WorldNoise/` only; it applies to no other project. The agent stops
+and asks when a step is impossible or a design decision is open, and never implements on guesses. The user ends this section
+when the implementation phase is over; then it is deleted.
+
 ## Working here
 
 Same scripts as `TileGridBase` (this project hasn't diverged yet):
