@@ -1,4 +1,4 @@
-import { biomeAt } from '../biome/biome';
+import { TOWN_BIOME, biomeAt } from '../biome/biome';
 import type { Biome } from '../biome/biome';
 import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
@@ -6,6 +6,7 @@ import { cliffEdgesOf, heightLevelAt } from '../elevation/heightLevel';
 import { moistureNoise } from '../moisture/moistureNoise';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
+import { levelWithTown, townInfoAt } from '../town/townTerrain';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import { groundWithRoad } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
@@ -37,9 +38,12 @@ export class Chunk {
         const worldY = originY + py - 1;
         const index = py * PADDED_SIZE + px;
         elevations[index] = elevationNoise(worldX, worldY);
-        levels[index] = heightLevelAt(worldX, worldY, elevations[index]);
+        const townInfo = townInfoAt(worldX, worldY);
+        levels[index] = levelWithTown(heightLevelAt(worldX, worldY, elevations[index]), townInfo);
         biomes.push(
-          biomeAt(elevations[index], moistureNoise(worldX, worldY), temperatureNoise(worldX, worldY)),
+          townInfo?.inside
+            ? TOWN_BIOME
+            : biomeAt(elevations[index], moistureNoise(worldX, worldY), temperatureNoise(worldX, worldY)),
         );
       }
     }

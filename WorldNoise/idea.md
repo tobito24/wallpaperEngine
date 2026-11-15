@@ -47,7 +47,9 @@ Reason for the shape: an endless world has no global view, so every decision mus
   ring around a town stays inside its cell, and no two plateaus can touch. Longer roads between towns are wanted. Each cell
   has one node.
 - A node is either a **town candidate** or a plain **waypoint**. The position of a waypoint is jittered by
-  `hash(seed, cx, cy)`; the node of a town is the centre of its footprint, and roads aim at the nearest gate of the footprint.
+  `hash(seed, cx, cy)`; the node of a town is the centre of the footprint chunk nearest to the centroid of the footprint
+  (for an L or T this lies inside the town; for an even sized shape it is 8 tiles off the exact centre), and the roads of the
+  neighbours run to that node.
 - Each edge to a neighbour cell exists by `hash(edge id)`, so both cells agree without knowing each other.
 - **Paths never end:** every node needs at least two edges. A node with fewer takes the edges with the lowest hash values, and an
   edge exists if either of its two nodes asks for it. The rule only needs the four edges of a node, so it is local. A global
@@ -77,11 +79,19 @@ Reason for the shape: an endless world has no global view, so every decision mus
   one of its 4 positions) 61 %. A cell whose candidates all fail keeps a plain waypoint.
 - **Two kinds of towns: generated and designed.** The model of both is the classic Pokemon town: an even area with a loop of
   roads, buildings in the fields between, trees and cliffs as a frame, and gates where the roads leave. Which kind a town is
-  follows from a hash of its cell; the designed ones are the rarer (the share is a constant, to be judged by eye).
-  - **Generated towns** get their layout from rules, not from WFC, and as a pure function of the cell hash and the footprint:
-    a road loop (or grid) that follows the footprint shape and ends at the gates, building lots along the roads, houses of
-    the two sizes (4 and 8 tiles wide) picked by hash, one Pokemon Center and one Mart per town (a small town may have only
-    the Center), trees and fences in what is left. These rules are a first proposal and are refined when the step is built.
+  follows from a hash of its cell; 20 % of the towns are designed (decided by the user, a constant).
+  - **Generated towns** get their layout from rules, not from WFC, and as a pure function of the cell hash and the footprint.
+    There are several layout algorithms and a hash picks one per town, so towns differ. The first one is the user's idea:
+    straight roads run from the gates through the town, where they cross lies a road loop with a fountain in the middle,
+    a few side paths branch off, and houses (4 and 8 tiles wide) stand along the roads and around, one Pokemon Center and one
+    Mart per town (a small town may have only the Center), trees and fences in what is left. Later layouts, for example a
+    main street with houses on both sides, a ring road around a park or pond (the O town) or a grid, are added the same way.
+    The rules are refined when the step is built.
+  - The roads of a town are the roads of the graph: the edges to the neighbouring nodes run through the town to its node,
+    kept straight as far as the farthest corner of the footprint from the node (the straight radius of the town, then a fade
+    of `TOWN_STRAIGHT_ROAD_FADE_TILES`) and bent only outside. Where they enter the footprint are the gates, where they meet
+    is the crossing. They enter at the angle of the neighbouring node, not along the axes, and in an L or T a road can cross
+    a notch and leave and enter the footprint again; the layout step decides whether to straighten or reroute them.
   - **Designed towns** are hand-built templates, stamped into the footprint (chosen and rotated by hash). During development
     a real town (Marmoria City) is rebuilt as the first template; the public version gets own designs instead. A template
     carries its footprint shape, its tiles and its gates. The template format is decided when the step is built.
@@ -220,10 +230,11 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges (waypoint nodes only, the bridge is a flat color)
 - [ ] Stairs where a road crosses a level change
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
-- [ ] Town candidates, land check, footprint shapes, gates
+- [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
-- [ ] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1), fences where it is open
+- [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
+- [ ] Fences or trees where the edge of a town is open (no cliff wall)
 - [ ] Rule-based decoration
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)

@@ -53,8 +53,14 @@ nothing restructured.
   `MOISTURE_BAND_THRESHOLDS` / `TEMPERATURE_BAND_THRESHOLDS`, and the road constants `CELL_SIZE_CHUNKS`,
   `ROAD_EDGE_PROBABILITY`, `ROAD_MIN_NODE_DEGREE`, `ROAD_HALF_WIDTH_TILES`, `ROAD_BEND_MAX_TILES`,
   `ROAD_SEGMENT_LENGTH_TILES`, `ROAD_BEND_CONTROL_COUNT` and the two cache limits `SKELETON_CACHE_MAX_ENTRIES` /
-  `ROAD_POLYLINE_CACHE_MAX_ENTRIES` (new — tuning constants live here, same as `ColorWar`'s `PRESET_*` constants, even
-  though the code that consumes them lives in a feature folder).
+  `ROAD_POLYLINE_CACHE_MAX_ENTRIES`, and the town constants `TOWN_CELL_PROBABILITY`, `TOWN_DESIGNED_SHARE`,
+  `TOWN_MIN_LAND_SHARE`, `TOWN_RING_WIDTH_TILES`, `TOWN_SAMPLE_STRIDE_TILES`, `TOWN_STRAIGHT_ROAD_FADE_TILES`,
+  `TOWN_LARGE_WEIGHT`, `TOWN_MEDIUM_WEIGHT`, `TOWN_CACHE_MAX_ENTRIES`, plus `CELL_BUFFER_CHUNKS` (1: the buffer
+  around a town and around a waypoint node inside its cell; the town shapes need a block of 3 x 3 chunks, so
+  `CELL_SIZE_CHUNKS` minus twice the buffer must be 3, and the ring of `TOWN_RING_WIDTH_TILES` must fit into the buffer;
+  both are checked when the modules load) (new — tuning
+  constants live here, same as `ColorWar`'s `PRESET_*` constants, even though the code that consumes them lives in a
+  feature folder).
 - **`core/noise.ts`** (new, generic infra alongside `core/Ticker.ts`) — `createFractalNoise2D(seed, octaves,
   baseFrequency, persistence, lacunarity)`: wraps `simplex-noise`'s `createNoise2D`, seeded via `alea(seed)` (so
   the same seed always regenerates the same world — no world state needs to be stored/persisted). Layers
@@ -180,13 +186,46 @@ nothing restructured.
   order (the nodes are put in the canonical order inside, so the result never depends on the order of the call), a line
   between its two nodes bent sideways by up to `ROAD_BEND_MAX_TILES` (6) with `ROAD_BEND_CONTROL_COUNT` (3) smooth
   control offsets from hashes of the edge (zero at both nodes), cut into segments of about `ROAD_SEGMENT_LENGTH_TILES`
-  (4); cached per edge (`ROAD_POLYLINE_CACHE_MAX_ENTRIES`, 5 000). A road stays inside the two cells of its nodes
+  (4); cached per edge (`ROAD_POLYLINE_CACHE_MAX_ENTRIES`, 5 000). The nodes come from `town/townNodes.ts`, so a road
+  ends at the centre of a town; the bend is faded out within the straight radius of a town node (the distance to the
+  farthest corner of the footprint, `Town.straightRoadRadius`, 34 to 47 tiles) and over `TOWN_STRAIGHT_ROAD_FADE_TILES`
+  (16) after it, so roads run straight through the whole footprint (measured on 32 378 road points inside footprints:
+  largest deviation from the straight line 0.0; in the ring around it at most 1.1 tiles). A road stays inside the two cells of its nodes
   (nodes are at least 16 tiles from the cell edge, the bend is at most 6).
 - **`road/roadMask.ts`** (new) — `roadTilesIn(minX, minY, width, height)`: marks the tiles whose centre is within
   `ROAD_HALF_WIDTH_TILES` (1.5, about 3 tiles wide) of a road, looking at the east and south edge of every cell around
   the rectangle. A pure function of the coordinates: two overlapping rectangles agree on every shared tile (0 of
   57 200 compared tiles differed), so roads have no seams at chunk borders. Roads are 5.2 % of the world, one chunk
   costs about 0.03 ms.
+- **`town/townShapes.ts`** (new) — the footprint shapes as chunk offsets inside the inner 3 x 3 chunks of a cell: `large`
+  (3 x 3), the medium shapes `tall`, `wide` (2 x 3, 3 x 2), `L` and `T` (5 chunks, four rotations each), and the small
+  2 x 2 at its four positions.
+- **`town/townPlacement.ts`** (new) — `townOfCell(cx, cy)`: a pure function of the cell and the base ground, cached. A cell
+  wants a town with probability `TOWN_CELL_PROBABILITY` (0.7); a hash picks the size class (`TOWN_LARGE_WEIGHT` 0.3,
+  `TOWN_MEDIUM_WEIGHT` 0.4, the rest small); the shapes of the class are tried in a hash order, a shape is taken when at
+  least `TOWN_MIN_LAND_SHARE` (97 %) of its sampled tiles (every `TOWN_SAMPLE_STRIDE_TILES`, 2, tile) are land of the base
+  ground; if none fits, the next smaller class is tried, otherwise the cell keeps a plain waypoint. The plateau level is
+  the most common land level of the base ground in the footprint, the node of the town is the centre of the chunk of the
+  footprint nearest to its centroid (so it lies inside an L or T), and a hash makes `TOWN_DESIGNED_SHARE` (20 %) of the
+  towns designed. Measured on 14 400 cells: towns in 41 % (large 542, medium 3 286, small 2 084), designed 20.4 %,
+  plateau levels 1 / 2 / 3 in 799 / 1 336 / 3 777 towns (towns stand inland, where the land is high), 0.56 ms per cell.
+- **`town/townTerrain.ts`** (new) — `townInfoAt(x, y)` (inside the footprint, or in the ring of `TOWN_RING_WIDTH_TILES` (8)
+  around it, looked up in the tile's own cell only) and `levelWithTown(baseLevel, info)`: inside the level is the plateau
+  level, in the ring a land level is limited to the plateau level minus one up to plus one, water stays water. `Chunk`
+  uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`, water in the footprint
+  becomes land). Measured on 858 015 neighbouring land tile pairs around 40 towns: no level jump of two, the footprints of
+  neighbouring cells are at least 32 tiles apart, all footprint chunks lie in the inner 3 x 3 chunks.
+- **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint;
+  `straightRoadRadiusOf`: the straight radius of the town, or null for a waypoint. The road layer reads these; the town
+  does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not built
+  yet. The roads enter a town at the angle of the neighbouring node, so the approaches are straight but not
+  axis-parallel; the layout step can improve that. Known limits the layout step has to deal with: `Chunk` hard-codes the
+  town ground (`TOWN_BIOME` inside a footprint) and `roadTilesIn` paints roads over the whole footprint, so a layout that
+  owns its ground and roads needs a town-layer call that can replace or veto both; `townInfoAt` only says inside or ring
+  (a fence or stairs step also needs the distance to the footprint edge and the base level); `Tile.elevation` stays the
+  base value, so inside a footprint that was water it disagrees with the level and the ground (decoration must use the
+  level and the town info); a ring tile keeps its base biome while its level is limited (the biome of a lowered or raised
+  ring tile is not decided); the 97 % land check samples every second tile, so a one tile wide channel can be filled.
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
   value), a `heightLevel`, its `cliffEdges`, its `biome`, its final `ground` (the biome's ground, or road or bridge)
   and its `autotileIndex` (all set at construction), draws the ground (autotile, else the flat color of road or

@@ -30,6 +30,7 @@ const SNOW_FOREST = biome('snowForest', 'snow', '#a9bfb8');
 
 const STEPPE = biome('steppe', 'dirt', '#b59b5a');
 const MEADOW = biome('meadow', 'grass', '#86b85c');
+export const TOWN_BIOME = MEADOW;
 const FOREST_COLOR = '#3f7a3a';
 const FOREST = biome('forest', 'grass', FOREST_COLOR);
 

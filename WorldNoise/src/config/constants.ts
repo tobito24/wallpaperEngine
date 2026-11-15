@@ -16,6 +16,7 @@ export const CLIFF_WALL_HEIGHT_FRACTION = 0.5;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;
+export const CELL_BUFFER_CHUNKS = 1;
 export const ROAD_EDGE_PROBABILITY = 0.55;
 export const ROAD_MIN_NODE_DEGREE = 2;
 export const ROAD_HALF_WIDTH_TILES = 1.5;
@@ -23,6 +24,16 @@ export const ROAD_BEND_MAX_TILES = 6;
 export const ROAD_SEGMENT_LENGTH_TILES = 4;
 export const ROAD_BEND_CONTROL_COUNT = 3;
 export const SKELETON_CACHE_MAX_ENTRIES = 20000;
+export const TOWN_CACHE_MAX_ENTRIES = 2000;
+
+export const TOWN_CELL_PROBABILITY = 0.7;
+export const TOWN_DESIGNED_SHARE = 0.2;
+export const TOWN_MIN_LAND_SHARE = 0.97;
+export const TOWN_RING_WIDTH_TILES = 8;
+export const TOWN_SAMPLE_STRIDE_TILES = 2;
+export const TOWN_STRAIGHT_ROAD_FADE_TILES = 16;
+export const TOWN_LARGE_WEIGHT = 0.3;
+export const TOWN_MEDIUM_WEIGHT = 0.4;
 export const ROAD_POLYLINE_CACHE_MAX_ENTRIES = 5000;
 export const CHUNK_UNLOAD_DELAY_MS = 5000;
 
