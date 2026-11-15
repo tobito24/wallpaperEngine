@@ -24,6 +24,22 @@ export const HEIGHT_LEVEL_OCTAVES = 2;
 export const HEIGHT_LEVEL_THRESHOLDS: readonly number[] = [0.55, 0.8];
 export const CLIFF_EDGE_SIZE_DIVISOR = 8;
 
+export const MOISTURE_OCTAVES = 4;
+export const MOISTURE_BASE_FREQUENCY = 0.005;
+export const MOISTURE_PERSISTENCE = 0.5;
+export const MOISTURE_LACUNARITY = 2;
+export const MOISTURE_RAW_RANGE_LOW = 0.2;
+export const MOISTURE_RAW_RANGE_HIGH = 0.8;
+export const MOISTURE_CONTRAST = 0.2;
+
+export const TEMPERATURE_OCTAVES = 4;
+export const TEMPERATURE_BASE_FREQUENCY = 0.005;
+export const TEMPERATURE_PERSISTENCE = 0.5;
+export const TEMPERATURE_LACUNARITY = 2;
+export const TEMPERATURE_RAW_RANGE_LOW = 0.2;
+export const TEMPERATURE_RAW_RANGE_HIGH = 0.8;
+export const TEMPERATURE_CONTRAST = 0.2;
+
 // slider_tickrate in public/project.json
 export const TICK_INTERVAL_DEFAULT_MS = 250;
 export const MIN_TICK_INTERVAL_MS = 100;
