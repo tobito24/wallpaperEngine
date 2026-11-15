@@ -18,7 +18,10 @@ export const ELEVATION_LACUNARITY = 2;
 export const ELEVATION_RAW_RANGE_LOW = 0.2;
 export const ELEVATION_RAW_RANGE_HIGH = 0.8;
 export const ELEVATION_CONTRAST = 0.4;
+export const ELEVATION_DEEP_WATER_LEVEL = 0.13;
 export const ELEVATION_SEA_LEVEL = 0.22;
+export const ELEVATION_BEACH_LEVEL = 0.27;
+export const ELEVATION_ROCK_LEVEL = 0.85;
 
 export const HEIGHT_LEVEL_OCTAVES = 2;
 export const HEIGHT_LEVEL_THRESHOLDS: readonly number[] = [0.55, 0.8];
@@ -39,6 +42,11 @@ export const TEMPERATURE_LACUNARITY = 2;
 export const TEMPERATURE_RAW_RANGE_LOW = 0.2;
 export const TEMPERATURE_RAW_RANGE_HIGH = 0.8;
 export const TEMPERATURE_CONTRAST = 0.2;
+export const TEMPERATURE_REFERENCE_ELEVATION = 0.58;
+export const TEMPERATURE_DROP_PER_ELEVATION = 1.2;
+
+export const MOISTURE_BAND_THRESHOLDS: readonly number[] = [1 / 3, 2 / 3];
+export const TEMPERATURE_BAND_THRESHOLDS: readonly number[] = [1 / 3, 2 / 3];
 
 // slider_tickrate in public/project.json
 export const TICK_INTERVAL_DEFAULT_MS = 250;

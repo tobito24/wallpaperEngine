@@ -1,6 +1,9 @@
+import { biomeAt } from '../biome/biome';
 import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { cliffEdgesOf, heightLevelAt } from '../elevation/heightLevel';
+import { moistureNoise } from '../moisture/moistureNoise';
+import { temperatureNoise } from '../temperature/temperatureNoise';
 import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
@@ -43,7 +46,14 @@ export class Chunk {
           levels[index + PADDED_SIZE],
           levels[index - 1],
         );
-        tiles.push(new Tile(originX + lx, originY + ly, elevations[index], level, cliffEdges));
+        const worldX = originX + lx;
+        const worldY = originY + ly;
+        const biome = biomeAt(
+          elevations[index],
+          moistureNoise(worldX, worldY),
+          temperatureNoise(worldX, worldY),
+        );
+        tiles.push(new Tile(worldX, worldY, elevations[index], level, cliffEdges, biome));
       }
     }
     this.tiles = tiles;

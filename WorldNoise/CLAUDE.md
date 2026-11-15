@@ -21,10 +21,8 @@ Replace `TileGridBase`'s placeholder even/odd checkerboard with real procedurall
 - A **biome lookup table** (Minecraft/Terraria-style) mapping `(elevation, moisture, temperature)` → biome →
   tile appearance.
 
-The biome lookup table doesn't exist yet. Elevation (with its redistribution curve and height levels), moisture and
-temperature exist as noise channels, but only elevation is drawn so far, as flat color bands (no biome logic, just "is
-this elevation value water/beach/land/hills/mountain"); moisture and temperature are read by the biome table once it
-exists.
+All three channels (elevation with its redistribution curve and height levels, moisture, temperature) and the biome
+lookup table exist. A tile draws its biome as a flat color; the tileset art, rules and decoration are still to come.
 
 ## Inherited from `TileGridBase` (unchanged)
 
@@ -47,11 +45,13 @@ nothing restructured.
   channel in the project, not just elevation; each channel salts it with its own name, e.g. `` `${SEED}:elevation` ``
   in `elevation/elevationNoise.ts`, so channels don't end up as identical noise fields) and
   **`ELEVATION_OCTAVES`, `ELEVATION_BASE_FREQUENCY`, `ELEVATION_PERSISTENCE`, `ELEVATION_LACUNARITY`,
-  `ELEVATION_RAW_RANGE_LOW`/`_HIGH`, `ELEVATION_CONTRAST`, `ELEVATION_SEA_LEVEL`, `HEIGHT_LEVEL_OCTAVES`,
+  `ELEVATION_RAW_RANGE_LOW`/`_HIGH`, `ELEVATION_CONTRAST`, the elevation limits `ELEVATION_DEEP_WATER_LEVEL`,
+  `ELEVATION_SEA_LEVEL`, `ELEVATION_BEACH_LEVEL`, `ELEVATION_ROCK_LEVEL`, `HEIGHT_LEVEL_OCTAVES`,
   `HEIGHT_LEVEL_THRESHOLDS`, `CLIFF_EDGE_SIZE_DIVISOR`** and the seven noise constants of the elevation channel again
   for each of `MOISTURE_*` and `TEMPERATURE_*` (octaves, base frequency, persistence, lacunarity, raw range low/high,
-  contrast) (new — tuning constants live here, same as `ColorWar`'s `PRESET_*` constants, even though the code that
-  consumes them lives in a feature folder).
+  contrast), plus `TEMPERATURE_REFERENCE_ELEVATION`, `TEMPERATURE_DROP_PER_ELEVATION` and the band thresholds
+  `MOISTURE_BAND_THRESHOLDS` / `TEMPERATURE_BAND_THRESHOLDS` (new — tuning constants live here, same as `ColorWar`'s
+  `PRESET_*` constants, even though the code that consumes them lives in a feature folder).
 - **`core/noise.ts`** (new, generic infra alongside `core/Ticker.ts`) — `createFractalNoise2D(seed, octaves,
   baseFrequency, persistence, lacunarity)`: wraps `simplex-noise`'s `createNoise2D`, seeded via `alea(seed)` (so
   the same seed always regenerates the same world — no world state needs to be stored/persisted). Layers
@@ -72,16 +72,35 @@ nothing restructured.
   instead of producing NaN. The result is symmetric around 0.5. Every noise channel makes its own redistribution
   from its own constants.
 - **`elevation/redistribute.ts`** (new) — `redistributeElevation`, the redistribution made from the `ELEVATION_*`
-  constants. Retuning those moves the color thresholds in `elevation/color.ts`, which are measured against the
-  redistributed values.
+  constants. Retuning those moves the elevation limits (`ELEVATION_*_LEVEL`) used by the biome table, which are measured
+  against the redistributed values.
 - **`moisture/moistureNoise.ts`, `temperature/temperatureNoise.ts`** (new) — `moistureNoise` and `temperatureNoise`,
   built like `elevationNoise` (own seed salt `${SEED}:moisture` / `${SEED}:temperature`, fractal noise, own
   redistribution), one folder per channel. Base frequency is 0.005, a quarter of the elevation's 0.02, so a biome patch
   is about 80 to 100 tiles wide and larger than hills and lakes. Contrast is 0.2, which makes each channel close to
   evenly spread over 0..1 (5 10 12 12 11 11 12 12 10 5 percent per tenth), so every (moisture, temperature) cell of a
   biome table is about equally likely. Measured on 250 000 tiles: correlation between any two of elevation, moisture
-  and temperature is below 0.01. Temperature is plain noise, not tied to a latitude or to the elevation (the world is
-  endless and has no latitude); letting high ground be colder is left to the biome table.
+  and temperature is below 0.01. Temperature is plain noise, not tied to a latitude (the world is endless and has no
+  latitude); how it falls with height is `temperature/temperatureAtElevation.ts`.
+- **`temperature/temperatureAtElevation.ts`** (new) — `temperatureAtElevation(temperature, elevation)`: the air gets
+  colder with height, `TEMPERATURE_DROP_PER_ELEVATION` (1.2) per unit of elevation above
+  `TEMPERATURE_REFERENCE_ELEVATION` (0.58, the measured mean elevation of the land, so cold and hot land stay about
+  equally common: 32 % each of the land below the rock limit). The biome table uses this value for the temperature
+  band. Result: a cold region has snow down to the lowland; where the base temperature is in the hot third, the highest
+  tiles above the rock limit are snow peak for 27 % of them and rock for the rest, and lower down such a region stays
+  steppe, savanna or desert. Only the base temperature noise is called hot or cold here; the band of a tile uses
+  the temperature after the drop.
+- **`biome/biome.ts`** (new) — `biomeAt(elevation, moisture, temperature)` returns a `Biome` (`id`, `ground`, flat
+  `color`). Water, beach and mountain follow the elevation (`ELEVATION_DEEP_WATER_LEVEL`, `_SEA_LEVEL`, `_BEACH_LEVEL`,
+  `_ROCK_LEVEL`), land is a 3 x 3 table by temperature band (cold, mild, hot, from `temperatureAtElevation`) and moisture
+  band (dry, normal, wet), both cut at one third and two thirds: snow field, tundra, snow forest / steppe, meadow,
+  forest / desert, savanna, jungle. Above the rock limit the tile is snow peak if its temperature band is cold, else
+  mountain. `jungle` is a stand-in with the forest's color until jungle art exists; steppe and savanna are `dirt`.
+  `Ground` (deep water, shallow water, sand, grass, dirt, rock, snow) is the type the autotile step will key on; forest
+  and meadow only differ by decoration later. Measured on 1 440 000 tiles: the nine land biomes are 5.4 to 7.8 % each,
+  deep and shallow water 12.5 and 11.4 %, beach 5.8 %, snow peak 11.6 %, mountain 3.4 %. Mountain tiles together are
+  15 % of the world (above the rock limit 0.85); with the first limit 0.72 they were 31 % and mostly snow, the
+  `InfinityWalker` mountain problem again.
 - **`elevation/heightLevel.ts`** (new) — `heightLevelAt(x, y, elevation)`: level 0 is water (elevation at or below
   `ELEVATION_SEA_LEVEL`), land gets level 1..N from a *smoothed* elevation, i.e. the same seed with only
   `HEIGHT_LEVEL_OCTAVES` (2) octaves, redistributed like the full elevation and cut at `HEIGHT_LEVEL_THRESHOLDS`.
@@ -94,21 +113,16 @@ nothing restructured.
   plateau (under 16 tiles) inside the land per 22 000 tiles; the other tiny ones (62 per 360 000 tiles) sit on shores.
   Land is about 76 % of the tiles, split 38 / 28 / 34 % over levels 1 to 3, and about 12 % of the land tiles carry a
   cliff edge.
-- **`elevation/color.ts`** (new) — `colorForElevation(elevation)`, mapping a 0-1 elevation value to a color via a
-  small hardcoded stop table (`ELEVATION_COLOR_STOPS`) — deep water / shallow water / beach / lowland / hills /
-  mountain. It also holds the temporary flat-band look of the height levels (`shadeForHeightLevel`, the cliff edge
-  color), which the cliff art replaces. **This is a placeholder for the eventual biome lookup**, not the real biome system — no
-  moisture/temperature input yet, so e.g. there's no way to distinguish desert from tundra at the same elevation.
-  Same role `simulation/Color.ts`'s `colorHex()` plays in `ColorWar`.
-- **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Now holds an `elevation: number` (0-1), a `heightLevel`
-  and its `cliffEdges` (all set at construction), draws the ground color, the level shade and the cliff edges via
-  `elevation/color.ts` — this is exactly the extension
-  point `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` calls `colorHex()`
-  from `simulation/Color.ts`.
+- **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`, the cliff
+  edge color), which the cliff art replaces. The ground color comes from the biome.
+- **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
+  value), a `heightLevel`, its `cliffEdges` and its `biome` (all set at construction), draws the biome color, the level
+  shade and the cliff edges — this is exactly the extension point `TileGridBase/CLAUDE.md` describes this file as,
+  and mirrors how `ColorWar`'s `Tile.ts` draws from its own simulation color.
 - **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
-  `elevationNoise` directly (not constructor-injected) and evaluates elevation and height level on a grid padded by
+  the noise channels directly (not constructor-injected), evaluates elevation and height level on a grid padded by
   one tile on every side, so the cliff edges of the border tiles come from the same pure functions of the
-  coordinates, never from a neighbouring chunk (no seams). Noise-based generation is cheap enough that eager
+  coordinates, never from a neighbouring chunk (no seams), and asks `biomeAt` for the biome of each tile. Noise-based generation is cheap enough that eager
   per-chunk generation should still be fine here (unlike WFC, which needed more careful chunk-boundary handling in
   `InfinityWalker`).
 - **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile.
