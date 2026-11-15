@@ -16,7 +16,7 @@ export const CHUNK_SIZE = 16;
 export const CHUNK_UNLOAD_DELAY_MS = 5000;
 
 export const ELEVATION_OCTAVES = 4;
-export const ELEVATION_BASE_FREQUENCY = 0.02;
+export const ELEVATION_BASE_FREQUENCY = 0.01;
 export const ELEVATION_PERSISTENCE = 0.5;
 export const ELEVATION_LACUNARITY = 2;
 export const ELEVATION_RAW_RANGE_LOW = 0.2;
