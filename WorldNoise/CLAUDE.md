@@ -76,9 +76,9 @@ nothing restructured.
   against the redistributed values.
 - **`moisture/moistureNoise.ts`, `temperature/temperatureNoise.ts`** (new) — `moistureNoise` and `temperatureNoise`,
   built like `elevationNoise` (own seed salt `${SEED}:moisture` / `${SEED}:temperature`, fractal noise, own
-  redistribution), one folder per channel. Base frequency is 0.005, half of the elevation's 0.01 (a quarter of it
-  before the terrain was enlarged), so a biome patch is about 80 to 200 tiles wide and larger than hills and lakes.
-  Contrast is 0.2, which makes each channel close to
+  redistribution), one folder per channel. Base frequency is 0.005, half of the elevation's 0.01; a biome patch is about
+  80 to 100 tiles wide (looked at in the biome map at this frequency), the terrain features about 100, so patches are
+  about as large as the terrain features or larger. Contrast is 0.2, which makes each channel close to
   evenly spread over 0..1 (5 10 12 12 11 11 12 12 10 5 percent per tenth), so every (moisture, temperature) cell of a
   biome table is about equally likely. Measured on 250 000 tiles: correlation between any two of elevation, moisture
   and temperature is below 0.01. Temperature is plain noise, not tied to a latitude (the world is endless and has no
@@ -111,12 +111,11 @@ nothing restructured.
   tiles with the thresholds 0.55 and 0.8; with all 4 octaves a few jumps of two appeared). Why smoothed and not a
   filter: a 5 x 5 majority filter on the levels was measured and made it worse (tiny interior plateaus 16 to 198 in
   600 x 600 tiles at the old terrain scale), because it breaks the narrow middle band into pieces. Both noises use
-  `ELEVATION_BASE_FREQUENCY`, 0.01 since the terrain was enlarged (it was 0.02) so that a town of 2 x 2 to 3 x 3 chunks
-  fits into a landmass. Measured on 1 000 000 tiles at 0.01: water 24 % of the tiles, land split 36 / 28 / 36 % over
-  levels 1 to 3, cliff edges on 6 % of the land tiles (12 % at 0.02), 227 plateaus, 22 tiny ones (under 16 tiles) of
-  which 3 inside the land and the rest at the shore, no level jump of two. A footprint of 3 x 3 chunks is at least 97 %
-  land at 18 % of the positions, one of 2 x 2 chunks at 33 %, and almost none lies on a single level, which is why a
-  town makes its own plateau.
+  `ELEVATION_BASE_FREQUENCY` (0.01, features of about 100 tiles; the reason is in `idea.md`, Paths and towns). Measured
+  on one seed and one area of 1 000 000 tiles (about 10 x 10 base features, so read the numbers as an order of
+  magnitude): water 24 % of the tiles, land split 36 / 28 / 36 % over levels 1 to 3, cliff edges on 6 % of the land
+  tiles, 227 plateaus, 22 tiny ones (under 16 tiles) of which 3 inside the land and the rest at the shore, no level jump
+  of two.
 - **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`, the cliff
   edge color), which the cliff art replaces. The ground color comes from the biome.
 - **`tileset/autotile.ts`** (new) — the RPG Maker XP / Pokemon Essentials autotile rules, copied from the Essentials

@@ -20,12 +20,15 @@ and a tileset with autotile rules makes the surface look hand-made, in the style
 Every tile is the result of the same ordered steps. Each step is a pure function of `(seed, x, y)` and may read the steps before
 it, never the steps after it. A step can be switched off on its own for testing.
 
-1. **Ground:** elevation, moisture and temperature noise, redistributed, looked up in the biome table. Result: ground type and
-   height level (the continuous elevation stays available as its own value).
-2. **Path:** is the tile on a road? Road on water becomes a bridge.
-3. **Town:** is the tile inside a town footprint? Result: the tile of the town template stamped there.
-4. **Decoration:** rule-based scatter (trees, rocks, flowers), never on water, path or town.
-5. **Rendering:** which sprite fits the tile and its neighbours (autotiling).
+1. **Ground:** elevation, moisture and temperature noise, redistributed, looked up in the biome table. Result: base ground type
+   and height level (the continuous elevation stays available as its own value).
+2. **Skeleton:** the cell grid with its nodes and edges (see Paths and towns); a pure function of the seed, it reads no tile.
+3. **Town:** is the tile inside a town footprint? Result: the tile of the town template stamped there, and the plateau: the
+   town overrides ground and height level inside its footprint (and the ramp margin around it).
+4. **Path:** is the tile on a road? Roads end at the gates of the towns and read the final level, so stairs appear where it
+   changes. Road on water becomes a bridge.
+5. **Decoration:** rule-based scatter (trees, rocks, flowers), never on water, path or town.
+6. **Rendering:** which sprite fits the tile and its neighbours (autotiling).
 
 A chunk never reads another chunk. Whenever a step needs a neighbour tile, it evaluates the layers for that coordinate. That is
 why chunk borders never show seams.
@@ -35,9 +38,9 @@ why chunk borders never show seams.
 Reason for the shape: an endless world has no global view, so every decision must be computable from a small neighbourhood.
 
 - A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon (size open: 3 x 3 or 4 x 4 chunks, see Open
-  questions; a chunk is 16 tiles). Each cell has one node whose position is jittered by `hash(seed, cx, cy)`; in the
-  Mystery Dungeon grid a room is smaller than its cell, so the cell must be larger than the largest town.
-- A node is either a **town candidate** or a plain **waypoint**.
+  questions; a chunk is 16 tiles). Each cell has one node.
+- A node is either a **town candidate** or a plain **waypoint**. The position of a waypoint is jittered by
+  `hash(seed, cx, cy)`; the node of a town is the centre of its footprint, and roads aim at the nearest gate of the footprint.
 - Each edge to a neighbour cell exists by `hash(edge id)`, so both cells agree without knowing each other.
 - **Paths never end:** every node needs at least two edges. A node with fewer takes the edges with the lowest hash values, and an
   edge exists if either of its two nodes asks for it. The rule only needs the four edges of a node, so it is local. A global
@@ -48,7 +51,10 @@ Reason for the shape: an endless world has no global view, so every decision mus
 - **Towns** sit on land. A candidate checks its footprint against the base ground (before any town override); if too much of it
   is water, the node becomes a plain waypoint (first rule: at least 97 % land; at the terrain scale of 0.01 that holds for 33 %
   of the 2 x 2 chunk positions and 18 % of the 3 x 3 chunk positions, a candidate can try more than one position in its cell).
-  The graph and the degree rule do not change.
+  The graph and the degree rule do not change. Water inside an accepted footprint (at most 3 %) becomes land: the town
+  covers small ponds, its plateau is one flat land level (first rule: the most common land level of the base ground inside
+  the footprint). The percentages count positions of the footprint, not towns, and come from one seed and one area of
+  4800 x 4800 tiles; the number of towns per area is measured when the town step is built.
 - **Town sizes** follow the Pokemon cities the user picked, one of our tiles being one tile of the original maps: a small town
   is 2 x 2 chunks (32 x 32 tiles, like Lavender Town of HGSS with about 28 x 32), a large city up to 3 x 3 chunks (48 x 48, like
   Jubilife City of Platinum with about 50 x 38). Houses are 4 tiles wide (small) or 8 (large). A footprint is a set of whole
@@ -62,9 +68,12 @@ Reason for the shape: an endless world has no global view, so every decision mus
 - **A town sits on a plateau** (like Jubilife City or Marmoria City). It overrides the height level inside its footprint with one
   flat level and gets a cliff ring and a ramp margin where that level meets the surrounding terrain. Reason, measured: at
   the old terrain scale a footprint of town size almost never lies on one level (0.1 % of the positions for 28 x 32, 0 % for
-  50 x 38), so a town that waits for a flat spot would never appear. The footprint is decided from the *base* ground (before
-  any override), and the final ground is the base ground changed by the town. A town does not read its own override, so no
-  layer reads a later one. Later, a mountain can stand next to a town so that it lies in a valley.
+  50 x 38), and at the enlarged scale it is still rare (at least 90 % of the tiles on one land level at 2.8 % of the 2 x 2
+  chunk positions and 0.4 % of the 3 x 3 chunk positions), so a town that waits for a flat spot would hardly ever appear. The
+  footprint is decided from the *base* ground (before any override), and the final ground is the base ground changed by the
+  town. The town reads only layers before it (base ground and skeleton); the path layer reads the town, never the other way
+  round. How the ramp margin keeps neighbouring levels within one step where the plateau meets terrain two levels away is
+  open. Later, a mountain can stand next to a town so that it lies in a valley.
 
 ### Height levels and cliffs
 
@@ -82,8 +91,8 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
 - Roads cross a level change on stairs. A town footprint is flattened by the plateau override (see Paths and towns).
   Decoration is never placed on a wall.
 - **Terrain scale:** the elevation and the level field use base frequency 0.01, features of about 100 tiles, so that a
-  town of 2 x 2 to 3 x 3 chunks fits inside a landmass. Measured at 0.01: cliff edges on 6 % of the land tiles (12 % at
-  0.02), 227 plateaus in 1 000 000 tiles, 3 tiny plateaus inside the land, no level jump of two.
+  town of 2 x 2 to 3 x 3 chunks fits inside a landmass (at 0.02 hardly any footprint is mostly land). The measured values
+  are in `CLAUDE.md`.
 - Biome and level stay independent: the level is only the shape, the biome table decides the ground (higher elevation still gives
   more rock and snow).
 
