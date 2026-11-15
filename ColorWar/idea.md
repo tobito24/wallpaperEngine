@@ -9,7 +9,7 @@ automaton. The player clicks tiles to seed colors and watches the colors fight f
 
 - Not Conway's Game of Life, despite the original working name.
 - No score, no goal, no game over: it is a wallpaper to look at and poke.
-- No keyboard control: only mouse/touch and Wallpaper Engine properties reach an applied wallpaper.
+- No feature that needs the keyboard: only mouse/touch and Wallpaper Engine properties reach an applied wallpaper.
 
 ## Plan
 

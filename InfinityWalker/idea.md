@@ -17,7 +17,7 @@ generation than `WorldGenerator`: chunked, layered WFC with a time budget per fr
 - [x] Walking player with auto-wander
 - [x] Publish a first version
 - [ ] Solve the mountain-heavy landscapes from the height levels
-- [ ] Wallpaper Engine property panel (`project.json` and listener are missing)
+- [ ] Wallpaper Engine property panel (`project.json` has no user properties yet, the listener is missing)
 - [ ] Re-implement all tiles
 
 ## Done when

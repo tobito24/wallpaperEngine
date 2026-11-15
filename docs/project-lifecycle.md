@@ -23,13 +23,14 @@ loose ideas); `idea.md` is the intent. A step that is done is ticked in `idea.md
 
 ## Status
 
-One of: **active**, **paused**, **done for now**, **published**, **legacy**. The status is stated in the project's `CLAUDE.md` and in
-the table of the root `CLAUDE.md`; both change together.
+One of **active**, **paused**, **done**, **done for now**, **legacy** or **assets** (a folder without code), optionally with
+**published** and a role (`base/template`, `foundational`). The status is stated in the project's `CLAUDE.md`, in the table of the
+root `CLAUDE.md` and in `README.md`; all change together.
 
 ## Starting a project
 
 Run `/new-project`. For a tile-grid idea it clones `TileGridBase` (without `node_modules` and `dist`), renames the package and
-`project.json`, creates `idea.md`, `notes.md` and `publishing.md`, and adds the project to the root table and to the fork list of
+`project.json`, creates `idea.md`, `notes.md` and `publishing.md`, and adds the project to the root table, to `README.md` and to the fork list of
 `TileGridBase/CLAUDE.md`. The plan in `idea.md` is worked out with the user before anything else.
 
 A base like `TileGridBase` is developed only for what every clone needs; idea-specific code goes into the clone.

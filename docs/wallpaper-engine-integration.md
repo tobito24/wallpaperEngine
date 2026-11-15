@@ -10,7 +10,7 @@ How a web wallpaper is wired to Wallpaper Engine (WE), and the traps found so fa
   renders natively (checkbox, slider, combo, color, text), each with `type`, `order`, `min`/`max` and default `value`. In the Vite
   projects it lives in `public/` and ends up in `dist/` verbatim.
 - **`window.wallpaperPropertyListener.applyUserProperties(properties)`** in the JS. WE calls it when the user changes a property;
-  the keys match the `project.json` keys exactly (`slider_tilesize`, `combo_preset`). References: `TileGridBase/src/we/propertyListener.ts`
+  the keys match the `project.json` keys exactly (`slider_tilesize`, or `combo_preset` in `ColorWar`). References: `TileGridBase/src/we/propertyListener.ts`
   (small, typed) and `WorldGenerator/js/Main.js` (the oldest pattern, question it before copying).
 - An optional in-wallpaper GUI that mirrors the settings, for viewing outside WE. Only `WorldGenerator` has one.
 

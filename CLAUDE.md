@@ -48,7 +48,7 @@ projects use `notes.txt`) and `publishing.md` (Workshop texts) as far as it appl
 - **One idea per project.** A project follows one idea. A project starts with a plan in its `idea.md`, before the first code
   ([project-lifecycle.md](docs/project-lifecycle.md)). An idea that outgrows its scope becomes a new project.
 - **Branches.** `main` is the only long-lived branch. Small changes may go straight to `main`; a bigger feature (new mechanic, larger
-  rework, new fork) gets a feature branch and a PR so it can be reviewed ([development-workflow.md](docs/development-workflow.md)).
+  rework, new fork, a change to the docs or skills) gets a feature branch and a PR so it can be reviewed ([development-workflow.md](docs/development-workflow.md)).
 - **Never push to GitHub** unless the user explicitly asks for it in the current task. Commit locally, then tell the user which
   branch is ready.
 - **Agents never publish.** Publishing to the Workshop is done by the user in the Wallpaper Engine editor.
@@ -62,7 +62,7 @@ projects use `notes.txt`) and `publishing.md` (Workshop texts) as far as it appl
   ([code-conventions.md](docs/code-conventions.md)).
 - **Language:** answer the user in German; code, commits, docs, `idea.md` and `publishing.md` are written in English. `notes.md`
   is the user's scratch space and may stay German.
-- Run lint, build and (where it exists) typecheck before every commit of a Vite project.
+- Run `npm run lint`, `npm run build` (includes `tsc`) and `npm run format:check` before every commit of a Vite project.
 
 ## Commands
 
