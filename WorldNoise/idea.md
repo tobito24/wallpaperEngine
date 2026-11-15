@@ -77,11 +77,17 @@ Reason for the shape: an endless world has no global view, so every decision mus
   one of its 4 positions) 61 %. A cell whose candidates all fail keeps a plain waypoint.
 - **Two kinds of towns: generated and designed.** The model of both is the classic Pokemon town: an even area with a loop of
   roads, buildings in the fields between, trees and cliffs as a frame, and gates where the roads leave. Which kind a town is
-  follows from a hash of its cell; the designed ones are the rarer (the share is a constant, to be judged by eye).
-  - **Generated towns** get their layout from rules, not from WFC, and as a pure function of the cell hash and the footprint:
-    a road loop (or grid) that follows the footprint shape and ends at the gates, building lots along the roads, houses of
-    the two sizes (4 and 8 tiles wide) picked by hash, one Pokemon Center and one Mart per town (a small town may have only
-    the Center), trees and fences in what is left. These rules are a first proposal and are refined when the step is built.
+  follows from a hash of its cell; 20 % of the towns are designed (decided by the user, a constant).
+  - **Generated towns** get their layout from rules, not from WFC, and as a pure function of the cell hash and the footprint.
+    There are several layout algorithms and a hash picks one per town, so towns differ. The first one is the user's idea:
+    straight roads run from the gates through the town, where they cross lies a road loop with a fountain in the middle,
+    a few side paths branch off, and houses (4 and 8 tiles wide) stand along the roads and around, one Pokemon Center and one
+    Mart per town (a small town may have only the Center), trees and fences in what is left. Later layouts, for example a
+    main street with houses on both sides, a ring road around a park or pond (the O town) or a grid, are added the same way.
+    The rules are refined when the step is built.
+  - The roads of a town are the roads of the graph: the node of a town is the centre of its footprint, so the edges to the
+    neighbouring nodes run through the town to its centre, kept straight inside the town (`TOWN_STRAIGHT_ROAD_RADIUS_TILES`)
+    and bent only outside. Where they enter the footprint are the gates, where they meet is the crossing.
   - **Designed towns** are hand-built templates, stamped into the footprint (chosen and rotated by hash). During development
     a real town (Marmoria City) is rebuilt as the first template; the public version gets own designs instead. A template
     carries its footprint shape, its tiles and its gates. The template format is decided when the step is built.
@@ -220,10 +226,11 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges (waypoint nodes only, the bridge is a flat color)
 - [ ] Stairs where a road crosses a level change
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
-- [ ] Town candidates, land check, footprint shapes, gates
+- [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
-- [ ] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1), fences where it is open
+- [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
+- [ ] Fences or trees where the edge of a town is open (no cliff wall)
 - [ ] Rule-based decoration
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)
