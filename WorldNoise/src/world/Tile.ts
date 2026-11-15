@@ -1,7 +1,6 @@
+import { CLIFF_EDGE_SIZE_DIVISOR } from '../config/constants';
 import { CLIFF_EDGE_COLOR, colorForElevation, shadeForHeightLevel } from '../elevation/color';
 import type { CliffEdges } from '../elevation/heightLevel';
-
-const CLIFF_EDGE_SIZE_DIVISOR = 8;
 
 export class Tile {
   readonly worldX: number;

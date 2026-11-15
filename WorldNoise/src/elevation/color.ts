@@ -1,4 +1,4 @@
-import { ELEVATION_SEA_LEVEL } from '../config/constants';
+import { ELEVATION_SEA_LEVEL, HEIGHT_LEVEL_THRESHOLDS } from '../config/constants';
 
 const DEEP_WATER_COLOR = '#1f4e79';
 const SHALLOW_WATER_COLOR = '#2f6fa7';
@@ -15,6 +15,10 @@ const SHADE_BY_HEIGHT_LEVEL: ReadonlyArray<string | null> = [
   null,
   'rgba(255, 255, 255, 0.14)',
 ];
+
+if (SHADE_BY_HEIGHT_LEVEL.length !== HEIGHT_LEVEL_THRESHOLDS.length + 2) {
+  throw new RangeError('SHADE_BY_HEIGHT_LEVEL needs one entry for water and one per land level');
+}
 
 const ELEVATION_COLOR_STOPS: ReadonlyArray<{ readonly upTo: number; readonly color: string }> = [
   { upTo: 0.13, color: DEEP_WATER_COLOR },
