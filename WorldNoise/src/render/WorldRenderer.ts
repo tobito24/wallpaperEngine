@@ -1,4 +1,4 @@
-import { CHUNK_SIZE } from '../config/constants';
+import { ANIMATED_AUTOTILE_FRAME_DURATION_MS, CHUNK_SIZE } from '../config/constants';
 import type { Camera } from '../core/Camera';
 import type { World } from '../world/World';
 
@@ -16,6 +16,7 @@ export class WorldRenderer {
     const bounds = camera.getVisibleTileBounds(viewportWidth, viewportHeight);
     const size = Math.ceil(camera.tileSize);
     const chunks = world.syncVisibleChunks(bounds, nowMs);
+    const animationFrame = Math.floor(nowMs / ANIMATED_AUTOTILE_FRAME_DURATION_MS);
 
     for (const chunk of chunks) {
       for (const tile of chunk.tiles) {
@@ -23,7 +24,7 @@ export class WorldRenderer {
         if (tile.worldY < bounds.minY || tile.worldY > bounds.maxY) continue;
 
         const screen = camera.worldToScreen(tile.worldX, tile.worldY, viewportWidth, viewportHeight);
-        tile.draw(ctx, screen.x, screen.y, size);
+        tile.draw(ctx, screen.x, screen.y, size, animationFrame);
       }
     }
 

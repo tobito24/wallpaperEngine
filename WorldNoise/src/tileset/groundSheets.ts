@@ -3,6 +3,7 @@ import { AUTOTILE_QUARTER_COLUMNS, AUTOTILE_QUARTER_SIZE_PX } from '../config/co
 import { AUTOTILE_QUARTER_IDS } from './autotile';
 
 const SHEET_DIRECTORY = '../../dev-assets/autotiles/';
+const FRAME_WIDTH_PX = AUTOTILE_QUARTER_COLUMNS * AUTOTILE_QUARTER_SIZE_PX;
 
 const SHEET_FILE_BY_GROUND: Readonly<Record<Ground, string>> = {
   deepWater: 'sea-deep.png',
@@ -38,12 +39,16 @@ export function drawGroundAutotile(
   ctx: CanvasRenderingContext2D,
   ground: Ground,
   autotileIndex: number,
+  animationFrame: number,
   screenX: number,
   screenY: number,
   size: number,
 ): boolean {
   const sheet = sheetByGround.get(ground);
   if (!sheet || !sheet.complete || sheet.naturalWidth === 0) return false;
+
+  const frameCount = Math.max(1, Math.floor(sheet.naturalWidth / FRAME_WIDTH_PX));
+  const frameOffsetPx = (animationFrame % frameCount) * FRAME_WIDTH_PX;
 
   const firstHalf = Math.floor(size / 2);
   const secondHalf = size - firstHalf;
@@ -54,7 +59,7 @@ export function drawGroundAutotile(
     const isBottom = quarter >= 2;
     ctx.drawImage(
       sheet,
-      (position % AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
+      frameOffsetPx + (position % AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
       Math.floor(position / AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
       AUTOTILE_QUARTER_SIZE_PX,
       AUTOTILE_QUARTER_SIZE_PX,

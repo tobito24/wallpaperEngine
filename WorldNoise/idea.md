@@ -158,7 +158,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Ground rank order and the XP autotile calculation (48-entry index table), first with placeholder pieces, then with the
       Essentials autotiles (the placeholder stage was skipped: the Essentials autotiles were at hand and the table was
       checked against their source)
-- [ ] Animated water (frames side by side, one global frame index)
+- [x] Animated water (frames side by side, one global frame index)
 - [ ] Cliff walls where two levels meet, placeholder first, then the cliff blocks of the sheet
 - [ ] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks
 - [ ] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges, stairs on level changes

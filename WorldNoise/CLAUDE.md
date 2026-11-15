@@ -135,7 +135,13 @@ nothing restructured.
   them still builds and runs with flat colors. Mapping: deepWater `Sea deep`, shallowWater `Sea without shore`, sand
   `Sand`, grass `Light grass`, dirt `Dirt`, rock `Gravel`, snow `White path`. The Essentials rims are painted for grass
   as the base, so a transition against water or snow shows a grass-green rim; the replacement art is converted to the
-  same layout. Only frame 0 of a sheet is used; animated water is its own step.
+  same layout. Animation follows Essentials (`002_CustomTilemap.rb`): the frame count of a sheet is its width divided by
+  96, the frames lie side by side, and the frame is `floor(now / ANIMATED_AUTOTILE_FRAME_DURATION_MS) % frameCount`
+  with 250 ms (`5 * 60 / 20` game frames at 60 per second), the same frame for every tile, so the water moves as one.
+  `WorldRenderer` computes the frame from `nowMs` and hands it to `Tile.draw`; sheets that are 96 px wide have one
+  frame and never change. With the local sheets both water sheets have 8 frames (a cycle of 2 s); measured on the
+  canvas over 4.6 s: 8 distinct images, a change about every 250 ms, 76 % of the screen's pixels (the land) never
+  change.
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
   value), a `heightLevel`, its `cliffEdges`, its `biome` and its `autotileIndex` (all set at construction), draws the
   ground (autotile, else the biome color), the level shade and the cliff edges — this is exactly the extension point
