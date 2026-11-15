@@ -167,4 +167,7 @@ Same scripts as `TileGridBase` (this project hasn't diverged yet):
 - Development assets: copy `sea-deep`, `sea-without-shore`, `sand`, `light-grass`, `dirt`, `gravel` and `white-path`
   (all `.png`; from the Essentials v19.1 `Graphics/Autotiles/`: `Sea deep`, `Sea without shore`, `Sand`, `Light grass`,
   `Dirt`, `Gravel`, `White path`) into `WorldNoise/dev-assets/autotiles/`. The folder is git-ignored on purpose: these
-  graphics come from Nintendo games and are not cleared for publishing, so they are replaced before any publish.
+  graphics come from Nintendo games and are not cleared for publishing, so they are replaced before any publish. A
+  build made while the folder exists carries them in `dist/` (Vite inlines files under 4 KB into the JS bundle as data
+  URIs, larger ones are copied), and `dist/` is what Wallpaper Engine loads: publish only a build made without the
+  folder.

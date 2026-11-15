@@ -166,7 +166,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Town cut into the mountains: height override inside the footprint, cliff ring, ramp margin
 - [ ] Rule-based decoration
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
-- [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets
+- [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)
 - [ ] Wallpaper Engine properties (at least the seed)
 - [ ] Preview, `publishing.md` text, publish
 
