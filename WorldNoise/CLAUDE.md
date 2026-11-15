@@ -86,8 +86,10 @@ nothing restructured.
   colder with height, `TEMPERATURE_DROP_PER_ELEVATION` (1.2) per unit of elevation above
   `TEMPERATURE_REFERENCE_ELEVATION` (0.58, the measured mean elevation of the land, so cold and hot land stay about
   equally common: 32 % each of the land below the rock limit). The biome table uses this value for the temperature
-  band. Result: a desert mountain has snow only on its highest part (27 % of the hot mountain tiles), a cold region has
-  snow down to the lowland.
+  band. Result: a cold region has snow down to the lowland; where the base temperature is in the hot third, the highest
+  tiles above the rock limit are snow peak for 27 % of them and rock for the rest, and lower down such a region stays
+  steppe, savanna or desert. Only the base temperature noise is called hot or cold here; the band of a tile uses
+  the temperature after the drop.
 - **`biome/biome.ts`** (new) — `biomeAt(elevation, moisture, temperature)` returns a `Biome` (`id`, `ground`, flat
   `color`). Water, beach and mountain follow the elevation (`ELEVATION_DEEP_WATER_LEVEL`, `_SEA_LEVEL`, `_BEACH_LEVEL`,
   `_ROCK_LEVEL`), land is a 3 x 3 table by temperature band (cold, mild, hot, from `temperatureAtElevation`) and moisture

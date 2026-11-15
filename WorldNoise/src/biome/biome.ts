@@ -48,6 +48,15 @@ const LAND_BIOMES_BY_TEMPERATURE_THEN_MOISTURE: ReadonlyArray<readonly Biome[]> 
   [DESERT, SAVANNA, JUNGLE],
 ];
 
+if (
+  LAND_BIOMES_BY_TEMPERATURE_THEN_MOISTURE.length !== TEMPERATURE_BAND_THRESHOLDS.length + 1 ||
+  LAND_BIOMES_BY_TEMPERATURE_THEN_MOISTURE.some((row) => row.length !== MOISTURE_BAND_THRESHOLDS.length + 1)
+) {
+  throw new RangeError(
+    'The land biome table needs one row per temperature band and one column per moisture band',
+  );
+}
+
 function bandOf(value: number, thresholds: readonly number[]): number {
   let band = 0;
   for (const threshold of thresholds) {
