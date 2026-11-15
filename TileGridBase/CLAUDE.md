@@ -5,11 +5,11 @@
 camera/grid/input plumbing from scratch again. TypeScript + Vite (the first project in this repo with a build
 step).
 
-Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`. Open TODOs/ideas live in `notes.md`, not here (this
+Idea and plan: `idea.md`. Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`. Open TODOs/ideas live in `notes.md`, not here (this
 file is architecture, not a backlog).
 
-**Confirmed by manually testing `dist/` as an applied desktop wallpaper (2026-09-13, see root `CLAUDE.md`'s
-Wallpaper Engine integration section for the general version of this):** once actually applied — not just
+**Confirmed by manually testing `dist/` as an applied desktop wallpaper (2026-09-13, see `docs/wallpaper-engine-integration.md`
+for the general version of this):** once actually applied — not just
 previewed inside the WE editor — **keyboard input does not reach the page at all**. Only mouse input does.
 `slider_tilesize` (the WE property panel slider) was confirmed working perfectly live, so WE properties are a
 real interaction channel even though keyboard isn't. Practical effect on this project: WASD/q,e/`r` only work

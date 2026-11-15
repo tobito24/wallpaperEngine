@@ -30,6 +30,6 @@ Generation leans heavily on height levels (`config.js`: `HEIGHT_LEVELS`/`HEIGHT_
 
 ## Known gaps / in-progress
 
-- `js/notes.txt` is the authoritative TODO list for this project — check it before starting work here. It currently lists: re-implementing all tiles, general balancing, zoom-adjusts-tile-size polish, and biome-subset WFC performance work.
+- `notes.txt` is the authoritative TODO list for this project — check it before starting work here. It currently lists: re-implementing all tiles, general balancing, zoom-adjusts-tile-size polish, and biome-subset WFC performance work.
 - The notes describe a **prefab-stamping system** (for placing large multi-tile decorations deterministically via a world-coordinate seed) as a designed feature, and a commit (`dbc73d1`) once added it — but there is currently no `prefab`/`stamp` code in `js/`. If picking this up, check `git log` around that commit rather than assuming it's still present; it looks like it was removed or never finished during the later refactors.
 - No Wallpaper Engine property panel integration yet (see `main.js` note above) — needed before this can ship like `WorldGenerator` did.

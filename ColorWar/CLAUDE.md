@@ -7,7 +7,7 @@ which hides newly-uploaded web wallpapers until it clears (usually within a few 
 new idea for it. Working title, may change. Unlike `TileGridBase`, this one is meant to become an actual
 wallpaper, not a base for further clones.
 
-Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`. Open TODOs/ideas live in `notes.md`, not here.
+Idea and plan: `idea.md`. Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`. Open TODOs/ideas live in `notes.md`, not here.
 
 ## Concept
 

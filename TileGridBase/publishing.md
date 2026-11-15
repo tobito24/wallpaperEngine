@@ -1,12 +1,10 @@
 # TileGridBase - Publishing
 
-Metadaten für den "Publish to Workshop"-Dialog im WE-Editor (siehe root `CLAUDE.md` → Dev workflow), damit das
-manuelle Ausfüllen nicht jedes Mal neu überlegt werden muss. Titel/Beschreibung bewusst kurz halten - lange Texte
-liest im Workshop niemand.
+Fields for the "Publish to Workshop" dialog of the WE editor (rules: `docs/publishing.md`), pre-drafted so filling
+it in is not done from scratch each time.
 
-**Achtung, Basisprojekt:** TileGridBase ist kein echtes Endprodukt (siehe eigene `CLAUDE.md`). Falls dieses Projekt
-selbst je veröffentlicht wird, ist es eher ein Workflow-Test als ein "richtiges" Release. Ein Klon sollte diese
-Datei mit eigenem Titel/Beschreibung/Genre ersetzen, nicht diese hier weiterverwenden.
+**Note, base project:** TileGridBase is not a real end product (see its own `CLAUDE.md`). If it is ever published, that
+is a workflow test rather than a real release. A clone replaces this file with its own title, description and genre.
 
 ## Title
 
@@ -23,12 +21,12 @@ the wallpaper settings.
 
 ## Age rating
 
-G - All Ages (Standard für dieses Repo, siehe root `CLAUDE.md`)
+G - All Ages (repo default, see `docs/publishing.md`)
 
 ## Visibility
 
-Public (Standard für dieses Repo, siehe root `CLAUDE.md`)
+Public (repo default, see `docs/publishing.md`)
 
 ## Preview image
 
-Manuell im Editor über "Capture preview" aufnehmen, kein `preview.jpg` im Repo nötig.
+Take it in the editor with "Capture preview", no `preview.jpg` needed in the repo.

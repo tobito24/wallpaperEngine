@@ -1,44 +1,81 @@
-# wallpaperEngine
+# wallpaperEngine – Agent Guide
 
-Development repo for animated wallpapers published to **Wallpaper Engine (Steam)**. Most wallpapers here are self-contained, zero-build "web" wallpapers (plain HTML/CSS/JS, Canvas 2D) — `TileGridBase` (and anything cloned from it) is the exception: TypeScript + Vite with a real build step (see its own `CLAUDE.md`).
+A collection of animated wallpapers for **Wallpaper Engine (Steam)**, each one a visually worked-out idea. Most are
+self-contained, zero-build web wallpapers (HTML/CSS/JS, Canvas 2D); `TileGridBase` and its forks are TypeScript + Vite.
+This file is loaded in every session: the rules that always apply, the project overview and the map to `docs/`.
 
-## Layout
+## Which docs to read
+
+The docs hold what the code does not show: rules, decisions and their reasons. Read by task and only what the task needs.
+A task that is not listed needs no doc. **A typo or a purely technical fix needs none.**
+
+| Task | Always | If |
+|---|---|---|
+| Start a new project or idea | [project-lifecycle](docs/project-lifecycle.md), [wallpaper-engine-integration](docs/wallpaper-engine-integration.md) | [TileGridBase/CLAUDE.md](TileGridBase/CLAUDE.md) when it is a tile-grid idea |
+| Work inside an existing project | that project's `idea.md`, `CLAUDE.md` and `notes.md` | [code-conventions](docs/code-conventions.md) |
+| Add or change a Wallpaper Engine property, `project.json`, the property listener, controls | [wallpaper-engine-integration](docs/wallpaper-engine-integration.md) | |
+| Prepare a publish, write Workshop texts | [publishing](docs/publishing.md) | [wallpaper-engine-integration](docs/wallpaper-engine-integration.md) |
+| Commit, branch, open a PR, build, test or look at a wallpaper | [development-workflow](docs/development-workflow.md) | [code-conventions](docs/code-conventions.md) |
+| Change the docs, the skills or this file | [project-lifecycle](docs/project-lifecycle.md) | |
+
+Keep the docs up to date in the same change that makes them outdated. A doc states a rule and its reason, not what the code
+shows. A rule lives in one doc, the others link to it. New topics get their own file and a place in the table above. The
+skills (`/new-project`, `/publish-prep`, `/docs-maintenance`) describe themselves in their `SKILL.md`.
+[README.md](README.md) is the entry for the maintainer.
+
+## Projects
+
+Each folder is one idea and stands alone; there is no shared code between them (duplicated concepts are intentional).
+`TileGridBase` is the exception: it is meant to be cloned.
 
 | Folder | Status | What it is |
 |---|---|---|
-| `WorldGenerator/` | Done, foundational | The original, complete project — procedural pixel-art landscape using Wave Function Collapse (WFC). Everything else started from here. See its own `CLAUDE.md`. Its Wallpaper Engine integration patterns are the oldest in the repo — question whether they're still the right approach before copying them into new work. |
-| `InfinityWalker/` | Published, now paused | Iteration on `WorldGenerator`: an infinite scrolling world with a walking character, chunk-based layered WFC. A version of it is live on Steam, but local code was developed further after that publish and is currently ahead of the published Workshop version. Development is paused. See its own `CLAUDE.md`. |
-| `TileGridBase/` | Active — base/template, not a wallpaper itself | A reusable base for any 2D tile-grid project: camera (pan + zoom, tile size in px) over a tile grid, TypeScript + Vite. Meant to be **cloned** as the starting point for new projects rather than developed into a wallpaper directly. See its own `CLAUDE.md` for its forks (done for now: `ColorWar`; in progress: `WorldNoise`). |
-| `ColorWar/` | Done for now (2026-09-14), published | Cloned from `TileGridBase`. A 7-color rainbow cyclic-dominance tile automaton (Rock-Paper-Scissors-style, not actually Conway's Game of Life despite the working name it started from) — click/tap a tile to advance its color, pick a starting pattern preset. Published to the Workshop as two listings, "ColorWar" (original 3-color) and "ColorWar: Rainbow" (7-color); both currently pending Wallpaper Engine's automatic anti-spam check (see its own `CLAUDE.md`). |
-| `WorldNoise/` | Just started (2026-09-14) | Cloned from `TileGridBase`. The noise/biome terrain-generation fork — independent elevation/moisture/temperature noise channels + redistribution curve + biome lookup table, replacing `WorldRenderer`'s checkerboard with real generated terrain (Minecraft/Terraria-style). This is the project's original scope under the working name `WorldForge` before `TileGridBase`'s 2026-09-13 reset; renamed to `WorldNoise` on start. Built step by step: clone/rename done, first elevation noise layer (flat color bands, no biomes yet) done — see its own `CLAUDE.md`. |
-| `FirstTestStuff/` | Legacy / scratch | Early canvas experiments, not part of any shipped or active wallpaper. Ignore unless explicitly asked to revive it. |
-| `DesignCorner/` | Assets | Photoshop (`.psd`) source projects, mainly used to rework/redesign the tilesets whose exports land in each wallpaper's `img/` folder. Binary, not code. |
+| `WorldGenerator/` | Done, foundational | Procedural pixel-art landscape with Wave Function Collapse (WFC). Its Wallpaper Engine patterns are the oldest in the repo: question them before copying. |
+| `InfinityWalker/` | Published, paused | Infinite scrolling world with a walking character, chunk-based layered WFC. Local code is ahead of the Workshop version. |
+| `TileGridBase/` | Active, base/template | Camera (pan + zoom) over a chunked tile grid, TypeScript + Vite. Cloned as the start of every tile-grid idea. |
+| `ColorWar/` | Done for now, published | Fork of `TileGridBase`: a 7-color cyclic-dominance tile automaton. Two Workshop listings, "ColorWar" and "ColorWar: Rainbow". |
+| `WorldNoise/` | Active | Fork of `TileGridBase`: noise/biome terrain generation (elevation, moisture, temperature, biome table). |
+| `FirstTestStuff/` | Legacy | Early canvas experiments. Ignore unless asked. |
+| `DesignCorner/` | Assets | Photoshop sources for the tilesets. Binary, not code. |
 
-Each wallpaper folder is meant to stand alone — there is no shared code between them (some duplication of concepts like WFC entropy collapse is intentional, not a refactor target, since InfinityWalker is a from-scratch redesign). `TileGridBase` is the one exception to "stand alone": it's explicitly meant to be duplicated, so its camera/grid/input code is expected to show up again, cloned, in whatever gets built from it.
+Lineage: `WorldGenerator` → `InfinityWalker` → `TileGridBase` → `ColorWar`, `WorldNoise`.
 
-The lineage so far: `WorldGenerator` (done) → `InfinityWalker` (paused) → `TileGridBase` (active, base/template) → `ColorWar` (done for now, its first fork) and `WorldNoise` (just started, its second fork — noise-based terrain generation). When planning new tile-grid work, that most likely means cloning `TileGridBase` into a new project, not building directly inside `TileGridBase` itself — see its `CLAUDE.md` for fork status.
+Every project folder holds `idea.md` (the one idea and its plan), `CLAUDE.md` (architecture), `notes.md` (running log; the older
+projects use `notes.txt`) and `publishing.md` (Workshop texts) as far as it applies.
 
-## Wallpaper Engine integration
+## Rules that always apply
 
-A wallpaper folder that's meant to be loaded by Wallpaper Engine needs:
+- **One idea per project.** A project follows one idea. A project starts with a plan in its `idea.md`, before the first code
+  ([project-lifecycle.md](docs/project-lifecycle.md)). An idea that outgrows its scope becomes a new project.
+- **Branches.** `main` is the only long-lived branch. Small changes may go straight to `main`; a bigger feature (new mechanic, larger
+  rework, new fork, a change to the docs or skills) gets a feature branch and a PR so it can be reviewed ([development-workflow.md](docs/development-workflow.md)).
+- **Never push to GitHub** unless the user explicitly asks for it in the current task. Commit locally, then tell the user which
+  branch is ready.
+- **Agents never publish.** Publishing to the Workshop is done by the user in the Wallpaper Engine editor.
+- **Never commit what the user has not finished.** Uncommitted changes in the working tree belong to the user; stage only the files
+  of your own task, by path.
+- **Keyboard input does not reach an applied wallpaper, only mouse input and properties do.** Design interactivity around
+  mouse/touch and `project.json` properties; keyboard is a development convenience only
+  ([wallpaper-engine-integration.md](docs/wallpaper-engine-integration.md)).
+- **`project.json` and the property listener are not derived from each other.** Change both by hand in the same change.
+- **Code style:** no comments where better naming works, 2-space indentation, ESM, TypeScript strict in the Vite projects
+  ([code-conventions.md](docs/code-conventions.md)).
+- **Language:** answer the user in German; code, commits, docs, `idea.md` and `publishing.md` are written in English. `notes.md`
+  is the user's scratch space and may stay German.
+- Run `npm run lint`, `npm run build` (includes `tsc`) and `npm run format:check` before every commit of a Vite project.
 
-- **`project.json`** — Wallpaper Engine's manifest. Declares `title`, entry `file` (the HTML file), and the **User Properties** panel Wallpaper Engine renders natively (checkboxes/sliders/combos/colors) with their `type`, `order`, `min`/`max`, and default `value`.
-- A **`window.wallpaperPropertyListener.applyUserProperties(properties)`** hook in the JS, wired up in the main script. Wallpaper Engine calls this when the user changes a property in its native panel; the keys match the `project.json` property keys exactly (e.g. `slider_squaresize`, `combo_offset_x`). See `WorldGenerator/js/Main.js` for the original pattern, or `TileGridBase/src/we/propertyListener.ts` for a smaller, typed, single-property example.
-- An optional in-wallpaper GUI (buttons/sliders drawn as HTML overlay) mirroring the same settings, for when the wallpaper is viewed outside Wallpaper Engine (e.g. directly in a browser) — `WorldGenerator` has this, `InfinityWalker` and `TileGridBase` currently don't (keyboard/mouse/touch controls only, not mirrored as an on-screen GUI).
-- `project.json` and the property-listener code are **not derived from each other** — adding/changing a property means editing both by hand, they'll silently drift otherwise (see `WorldGenerator/CLAUDE.md`'s "Working here" for how that bit them before).
-- Official docs: <https://docs.wallpaperengine.io/en/web/overview.html>, specifically the [User Properties page](https://docs.wallpaperengine.io/en/web/customization/properties.html) for the full property-type reference (slider/combo/checkbox/color/text fields, display conditions, localization).
-- **Keyboard input does not reach an applied desktop wallpaper — only mouse input does** (confirmed 2026-09-13 by manually applying `TileGridBase/dist` as a real wallpaper, not just previewing it in the WE editor; the `slider_tilesize` WE property worked perfectly in that same test). Keyboard-driven controls only work while developing (a plain browser, or the WE editor's own preview) — design real interactivity around mouse/touch input and/or `project.json` properties, not hotkeys. This is almost certainly why `InfinityWalker`'s `Player` auto-wanders by default (`PLAYER_START_AUTO_MOVE`) — its WASD-only control scheme wouldn't do anything once actually applied as a wallpaper.
+## Commands
 
-## Dev workflow
+The Vite projects (`TileGridBase`, `ColorWar`, `WorldNoise` and every new fork) share the same scripts, run inside the project
+folder:
 
-- No build step for `WorldGenerator`/`InfinityWalker`/`FirstTestStuff` — open the wallpaper's `.html` file directly in a browser (or serve the folder with any static server) to iterate. `TileGridBase` (and its clones) is the exception: `npm run dev` for iteration, `npm run build` produces the `dist/` folder that actually gets published.
-- **Publishing**: manual, via the Wallpaper Engine desktop editor — add a wallpaper by pointing the editor at its `index.html` directly (for `TileGridBase`-derived projects, that's `dist/index.html`, not the folder), verify the property panel against `project.json`, then publish to the Steam Workshop from inside the editor. There is no CLI/automated publish step in this repo.
-- The editor's **"Publish to Workshop" dialog** asks for Workshop-listing metadata that lives nowhere in the repo (not `project.json`, which only covers the property panel + app-level title): Title, Genre (dropdown, e.g. Pixel art/Retro/Landscape/Fantasy/...), Description, Age rating, Visibility (Public/Friends/Private), and a required Preview image (either "Capture preview" — a live screenshot taken on the spot — or "Import file", so a hand-authored `preview.jpg` isn't actually required beforehand). **Title and Description are what an end user sees in the Workshop listing** — write real, considered copy here before publishing, not a placeholder; this is separate from and in addition to getting `project.json` right. Every project keeps this metadata pre-drafted in its own **`publishing.md`** (see Conventions below) so filling the dialog in isn't done from scratch each time.
-- `preview.jpg`/`preview.gif` referenced by `project.json` (`"preview": "preview.jpg"`) is the Workshop thumbnail — regenerate it after visually significant changes if you're about to publish.
+```bash
+npm install            # first time only, node_modules is not cloned
+npm run dev            # Vite dev server with hot reload
+npm run build          # tsc, then dist/ (what the Wallpaper Engine editor points at: dist/index.html)
+npm run lint           # eslint
+npm run format:check   # prettier
+```
 
-## Conventions
-
-- Tile/pixel art assets live under each project's `img/`; PSD sources live in `DesignCorner/`.
-- German is used freely in code comments, notes files, and commit context — don't translate it away.
-- Each project keeps its own running TODO/notes file instead of GitHub issues — check it before starting work in that folder. Older projects (`WorldGenerator`, `InfinityWalker`) use `notes.txt`; `notes.md` is the standard for newer ones (`TileGridBase` on).
-- Each project also keeps its own **`publishing.md`** — the "Publish to Workshop" dialog's fields (Title, Genre, Description, Age rating, Visibility, Preview image notes), pre-drafted so publishing is copy-paste, not a from-scratch decision every time. Two fields are near-universal defaults across this repo's wallpapers unless a project has a specific reason to deviate: **Age rating "G - All Ages"** and **Visibility "Public"**. Title/Description/Genre are always project-specific — keep Description especially short, it won't get read otherwise. Unlike the rest of the repo (see "German is used freely" above), `publishing.md` content is **English only**, since it's what an end user reads in the Workshop listing — this is a deliberate exception, not an oversight. Titles may riff on pop-culture film/video-game titles. Description must not use dashes (`-`/`–`) as punctuation, and should read as a mix of marketing pitch and factual product description, not pure ad copy or a dry feature list.
+The no-build projects (`WorldGenerator`, `InfinityWalker`, `FirstTestStuff`) open their `.html` file in a browser or through any
+static server. Looking at a result as an agent: [development-workflow.md](docs/development-workflow.md#looking-at-a-wallpaper).

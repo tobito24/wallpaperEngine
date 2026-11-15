@@ -1,12 +1,11 @@
 # ColorWar - Publishing
 
-Metadaten für den "Publish to Workshop"-Dialog im WE-Editor (siehe root `CLAUDE.md` → Dev workflow), damit das
-manuelle Ausfüllen nicht jedes Mal neu überlegt werden muss. Titel/Beschreibung bewusst kurz halten - lange Texte
-liest im Workshop niemand.
+Fields for the "Publish to Workshop" dialog of the WE editor (rules: `docs/publishing.md`), pre-drafted so filling
+it in is not done from scratch each time.
 
-**Neuer Workshop-Eintrag, kein Update des alten**: Die ursprüngliche 3-Farben-Version (rot/grün/blau) ist noch
-live im Workshop. Der 7-Farben-Regenbogen-`CYCLE` (siehe `simulation/Color.ts`) ist ein eigenständiger Nachfolger
-und wird als neuer Eintrag veröffentlicht, nicht als Update des bestehenden.
+**New Workshop listing, not an update of the old one**: the original 3-color version (red/green/blue) is still live
+in the Workshop. The 7-color rainbow `CYCLE` (see `simulation/Color.ts`) is a standalone successor and is published as
+a new listing, not as an update of the existing one.
 
 ## Title
 
@@ -24,14 +23,14 @@ sweep across your desktop forever.
 
 ## Age rating
 
-G - All Ages (Standard für dieses Repo, siehe root `CLAUDE.md`)
+G - All Ages (repo default, see `docs/publishing.md`)
 
 ## Visibility
 
-Public (Standard für dieses Repo, siehe root `CLAUDE.md`)
+Public (repo default, see `docs/publishing.md`)
 
 ## Preview image
 
-Manuell im Editor über "Capture preview" aufnehmen, kein `preview.jpg` im Repo nötig. Default-Preset ist
-`speckle` (siehe `simulation/presets.ts` → `DEFAULT_PRESET`), passt gut zum Regenbogen-Thema und zeigt alle 7
-Farben gleichzeitig; mitten in der Ausbreitung einfangen, nicht direkt beim Start.
+Take it in the editor with "Capture preview", no `preview.jpg` needed in the repo. The default preset is `speckle`
+(see `simulation/presets.ts` → `DEFAULT_PRESET`); it fits the rainbow theme and shows all 7 colors at once. Capture it
+in the middle of the spread, not right at the start.
