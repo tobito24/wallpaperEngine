@@ -13,7 +13,7 @@ import { nodePosition, straightRoadRadiusOf } from '../town/townNodes';
 
 interface RoadEnd {
   readonly position: Point;
-  readonly straightRadius: number;
+  readonly straightRadius: number | null;
 }
 
 const polylineCache = new Map<string, readonly Point[]>();
@@ -37,8 +37,8 @@ function bendAt(offsets: readonly number[], t: number): number {
   return smoothBetween(offsets[index], offsets[index + 1], scaled - index);
 }
 
-function straightness(distanceFromEnd: number, straightRadius: number): number {
-  if (straightRadius === 0) return 1;
+function straightness(distanceFromEnd: number, straightRadius: number | null): number {
+  if (straightRadius === null) return 1;
   return Math.min(1, Math.max(0, (distanceFromEnd - straightRadius) / TOWN_STRAIGHT_ROAD_FADE_TILES));
 }
 

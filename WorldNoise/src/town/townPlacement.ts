@@ -1,4 +1,5 @@
 import {
+  CELL_BUFFER_CHUNKS,
   CELL_SIZE_CHUNKS,
   CHUNK_SIZE,
   TOWN_CACHE_MAX_ENTRIES,
@@ -7,6 +8,7 @@ import {
   TOWN_LARGE_WEIGHT,
   TOWN_MEDIUM_WEIGHT,
   TOWN_MIN_LAND_SHARE,
+  TOWN_RING_WIDTH_TILES,
   TOWN_SAMPLE_STRIDE_TILES,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
@@ -23,11 +25,15 @@ export interface Town {
   readonly shape: TownShape;
   readonly chunks: readonly ChunkOffset[];
   readonly center: Point;
+  readonly straightRoadRadius: number;
   readonly plateauLevel: number;
   readonly designed: boolean;
 }
 
-const INNER_BLOCK_OFFSET_CHUNKS = 1;
+if (TOWN_RING_WIDTH_TILES > CELL_BUFFER_CHUNKS * CHUNK_SIZE) {
+  throw new RangeError('The terrace ring of a town must stay inside the buffer of its cell');
+}
+
 const SIZE_CLASSES_FROM: Readonly<Record<TownSizeClass, readonly TownSizeClass[]>> = {
   large: ['large', 'medium', 'small'],
   medium: ['medium', 'small'],
@@ -44,8 +50,8 @@ function sizeClassOf(cx: number, cy: number): TownSizeClass {
 }
 
 function absoluteChunks(cx: number, cy: number, shape: TownShape): ChunkOffset[] {
-  const originX = cx * CELL_SIZE_CHUNKS + INNER_BLOCK_OFFSET_CHUNKS;
-  const originY = cy * CELL_SIZE_CHUNKS + INNER_BLOCK_OFFSET_CHUNKS;
+  const originX = cx * CELL_SIZE_CHUNKS + CELL_BUFFER_CHUNKS;
+  const originY = cy * CELL_SIZE_CHUNKS + CELL_BUFFER_CHUNKS;
   return shape.chunks.map(([x, y]): ChunkOffset => [originX + x, originY + y]);
 }
 
@@ -98,6 +104,18 @@ function anchorCenter(chunks: readonly ChunkOffset[]): Point {
   return { x: best[0] * CHUNK_SIZE + CHUNK_SIZE / 2, y: best[1] * CHUNK_SIZE + CHUNK_SIZE / 2 };
 }
 
+function farthestCornerDistance(center: Point, chunks: readonly ChunkOffset[]): number {
+  let farthest = 0;
+  for (const [chunkX, chunkY] of chunks) {
+    for (const cornerX of [chunkX * CHUNK_SIZE, (chunkX + 1) * CHUNK_SIZE]) {
+      for (const cornerY of [chunkY * CHUNK_SIZE, (chunkY + 1) * CHUNK_SIZE]) {
+        farthest = Math.max(farthest, Math.hypot(cornerX - center.x, cornerY - center.y));
+      }
+    }
+  }
+  return farthest;
+}
+
 function findTown(cx: number, cy: number): Town | null {
   if (randomValue(`town:${cx}:${cy}:wants`) >= TOWN_CELL_PROBABILITY) return null;
 
@@ -110,12 +128,14 @@ function findTown(cx: number, cy: number): Town | null {
       const chunks = absoluteChunks(cx, cy, shape);
       const sample = sampleFootprint(chunks);
       if (sample.landShare < TOWN_MIN_LAND_SHARE) continue;
+      const center = anchorCenter(chunks);
       return {
         cx,
         cy,
         shape,
         chunks,
-        center: anchorCenter(chunks),
+        center,
+        straightRoadRadius: farthestCornerDistance(center, chunks),
         plateauLevel: sample.commonLandLevel,
         designed: randomValue(`town:${cx}:${cy}:designed`) < TOWN_DESIGNED_SHARE,
       };

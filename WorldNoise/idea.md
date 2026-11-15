@@ -47,7 +47,9 @@ Reason for the shape: an endless world has no global view, so every decision mus
   ring around a town stays inside its cell, and no two plateaus can touch. Longer roads between towns are wanted. Each cell
   has one node.
 - A node is either a **town candidate** or a plain **waypoint**. The position of a waypoint is jittered by
-  `hash(seed, cx, cy)`; the node of a town is the centre of its footprint, and roads aim at the nearest gate of the footprint.
+  `hash(seed, cx, cy)`; the node of a town is the centre of the footprint chunk nearest to the centroid of the footprint
+  (for an L or T this lies inside the town; for an even sized shape it is 8 tiles off the exact centre), and the roads of the
+  neighbours run to that node.
 - Each edge to a neighbour cell exists by `hash(edge id)`, so both cells agree without knowing each other.
 - **Paths never end:** every node needs at least two edges. A node with fewer takes the edges with the lowest hash values, and an
   edge exists if either of its two nodes asks for it. The rule only needs the four edges of a node, so it is local. A global
@@ -85,9 +87,11 @@ Reason for the shape: an endless world has no global view, so every decision mus
     Mart per town (a small town may have only the Center), trees and fences in what is left. Later layouts, for example a
     main street with houses on both sides, a ring road around a park or pond (the O town) or a grid, are added the same way.
     The rules are refined when the step is built.
-  - The roads of a town are the roads of the graph: the node of a town is the centre of its footprint, so the edges to the
-    neighbouring nodes run through the town to its centre, kept straight inside the town (`TOWN_STRAIGHT_ROAD_RADIUS_TILES`)
-    and bent only outside. Where they enter the footprint are the gates, where they meet is the crossing.
+  - The roads of a town are the roads of the graph: the edges to the neighbouring nodes run through the town to its node,
+    kept straight as far as the farthest corner of the footprint from the node (the straight radius of the town, then a fade
+    of `TOWN_STRAIGHT_ROAD_FADE_TILES`) and bent only outside. Where they enter the footprint are the gates, where they meet
+    is the crossing. They enter at the angle of the neighbouring node, not along the axes, and in an L or T a road can cross
+    a notch and leave and enter the footprint again; the layout step decides whether to straighten or reroute them.
   - **Designed towns** are hand-built templates, stamped into the footprint (chosen and rotated by hash). During development
     a real town (Marmoria City) is rebuilt as the first template; the public version gets own designs instead. A template
     carries its footprint shape, its tiles and its gates. The template format is decided when the step is built.

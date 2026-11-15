@@ -1,3 +1,5 @@
+import { CELL_BUFFER_CHUNKS, CELL_SIZE_CHUNKS } from '../config/constants';
+
 export type ChunkOffset = readonly [number, number];
 
 export type TownSizeClass = 'large' | 'medium' | 'small';
@@ -8,7 +10,11 @@ export interface TownShape {
   readonly chunks: readonly ChunkOffset[];
 }
 
-const INNER_BLOCK_SIZE_CHUNKS = 3;
+export const TOWN_BLOCK_CHUNKS = CELL_SIZE_CHUNKS - 2 * CELL_BUFFER_CHUNKS;
+
+if (TOWN_BLOCK_CHUNKS !== 3) {
+  throw new RangeError('The town shapes are made for a block of 3 x 3 chunks inside the buffer of a cell');
+}
 
 function rectangle(x0: number, y0: number, width: number, height: number): ChunkOffset[] {
   const chunks: ChunkOffset[] = [];
@@ -19,7 +25,7 @@ function rectangle(x0: number, y0: number, width: number, height: number): Chunk
 }
 
 function rotated(chunks: readonly ChunkOffset[]): ChunkOffset[] {
-  return chunks.map(([x, y]): ChunkOffset => [INNER_BLOCK_SIZE_CHUNKS - 1 - y, x]);
+  return chunks.map(([x, y]): ChunkOffset => [TOWN_BLOCK_CHUNKS - 1 - y, x]);
 }
 
 function rotations(name: string, sizeClass: TownSizeClass, chunks: readonly ChunkOffset[]): TownShape[] {
