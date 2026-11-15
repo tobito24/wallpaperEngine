@@ -34,7 +34,7 @@ byte-identical to `TileGridBase`'s. See `TileGridBase/CLAUDE.md` for the full wr
 
 ## Architecture (additions on top of TileGridBase)
 
-Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`.
+Idea and plan: `idea.md`. Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`.
 
 Following the same split `ColorWar` uses: new, fork-specific logic lives in its own top-level folder (here
 `src/elevation/`, one folder per noise channel expected as moisture/temperature get added) rather than growing
@@ -76,14 +76,14 @@ nothing restructured.
 - **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile.
   Unchanged from `TileGridBase`.
 - **`we/propertyListener.ts`** / **`public/project.json`** — two WE properties so far, `slider_tilesize` and
-  `slider_tickrate`. Edited by hand in both places, not derived from each other (see root `CLAUDE.md`). Unchanged
+  `slider_tickrate`. Edited by hand in both places, not derived from each other (see `docs/wallpaper-engine-integration.md`). Unchanged
   from `TileGridBase` — no noise-related WE property yet (e.g. a seed picker).
 
 ## Controls (dev/debug, unchanged from TileGridBase for now)
 
 `w`/`a`/`s`/`d`/arrows pan (shift sprints), wheel/`q`/`e` zoom, `r` toggles debug HUD + chunk borders, mouse-drag/
 touch pan, pinch zoom. **Keyboard only works while developing** — once applied as a real desktop wallpaper, only
-mouse/touch and WE properties reach the page (confirmed via `TileGridBase`, see root `CLAUDE.md`).
+mouse/touch and WE properties reach the page (confirmed via `TileGridBase`, see `docs/wallpaper-engine-integration.md`).
 
 ## Working here
 
