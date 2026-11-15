@@ -66,6 +66,11 @@ Reason for the shape: an endless world has no global view, so every decision mus
   Jubilife City of Platinum with about 50 x 38). Houses are 4 tiles wide (small) or 8 (large). A footprint is a set of whole
   chunks inside the inner 3 x 3 chunks of its own cell (one chunk of buffer on every side), picked from a small list of shapes
   (2 x 2, 3 x 3, rectangle, L, T), rotated by hash. A chunk only asks its own cell. Roads end at a gate on the footprint.
+  An **O town** is a layout of the 3 x 3 footprint, not a footprint of its own: the town lies in a ring around a free centre
+  chunk, and the template puts something into the centre (a pond, a park, a rock). Measured: as a footprint with the centre
+  left to the terrain an O would fit 16 % of the cells, but only 0.1 % of the cells where the full 3 x 3 does not, because
+  the terrain hardly ever has a lake of that size in the middle of a landmass; so as a template it adds variety and costs no
+  extra fit.
   Measured (97 % land rule, 3600 cells, one seed): the large 3 x 3 chunk town at the centre fits 18 % of the cells, an L or T
   shape of 5 chunks (any rotation) inside the 3 x 3 centre block 51 %, and some town (large, L or T, or a 2 x 2 chunk town at
   one of its 4 positions) 61 %. A cell whose candidates all fail keeps a plain waypoint.
@@ -204,8 +209,9 @@ Each step is built and looked at before the next one starts. The plan is final b
       checked against their source)
 - [x] Animated water (frames side by side, one global frame index)
 - [ ] Cliff walls where two levels meet, placeholder first, then the cliff blocks of the sheet
-- [ ] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks
-- [ ] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges, stairs on level changes
+- [x] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks (16 tiles per chunk, 5 x 5 chunks per cell)
+- [x] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges (waypoint nodes only, the bridge is a flat color)
+- [ ] Stairs where a road crosses a level change
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [ ] Town candidates, land check, footprint shapes, gates
 - [ ] Town templates: format, stamping with rotation, Marmoria City rebuilt as the first (dev) template

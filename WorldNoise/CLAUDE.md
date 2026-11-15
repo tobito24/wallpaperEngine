@@ -50,8 +50,11 @@ nothing restructured.
   `HEIGHT_LEVEL_THRESHOLDS`, `CLIFF_EDGE_SIZE_DIVISOR`** and the seven noise constants of the elevation channel again
   for each of `MOISTURE_*` and `TEMPERATURE_*` (octaves, base frequency, persistence, lacunarity, raw range low/high,
   contrast), plus `TEMPERATURE_REFERENCE_ELEVATION`, `TEMPERATURE_DROP_PER_ELEVATION` and the band thresholds
-  `MOISTURE_BAND_THRESHOLDS` / `TEMPERATURE_BAND_THRESHOLDS` (new — tuning constants live here, same as `ColorWar`'s
-  `PRESET_*` constants, even though the code that consumes them lives in a feature folder).
+  `MOISTURE_BAND_THRESHOLDS` / `TEMPERATURE_BAND_THRESHOLDS`, and the road constants `CELL_SIZE_CHUNKS`,
+  `ROAD_EDGE_PROBABILITY`, `ROAD_MIN_NODE_DEGREE`, `ROAD_HALF_WIDTH_TILES`, `ROAD_BEND_MAX_TILES`,
+  `ROAD_SEGMENT_LENGTH_TILES`, `ROAD_BEND_CONTROL_COUNT` and the two cache limits `SKELETON_CACHE_MAX_ENTRIES` /
+  `ROAD_POLYLINE_CACHE_MAX_ENTRIES` (new — tuning constants live here, same as `ColorWar`'s `PRESET_*` constants, even
+  though the code that consumes them lives in a feature folder).
 - **`core/noise.ts`** (new, generic infra alongside `core/Ticker.ts`) — `createFractalNoise2D(seed, octaves,
   baseFrequency, persistence, lacunarity)`: wraps `simplex-noise`'s `createNoise2D`, seeded via `alea(seed)` (so
   the same seed always regenerates the same world — no world state needs to be stored/persisted). Layers
@@ -126,17 +129,22 @@ nothing restructured.
   `autotileIndexFor(mask)` maps the 8-neighbour mask (N 1, NE 2, E 4, SE 8, S 16, SW 32, W 64, NW 128; a bit is set
   when the neighbour continues the ground) to the tile index. A diagonal that matters only when both adjacent edges
   are set is already folded into the table.
+- **`tileset/ground.ts`** (new) — `Ground`: the ground a tile is drawn with, the seven `BiomeGround`s of the biome table
+  plus the two `OverlayGround`s `road` and `bridge` (a road on water). `groundWithRoad(biomeGround, isRoad)` makes the
+  final ground; `fallbackColorOf(ground, biome)` is the flat color for a clone without sheets (the biome's color, or the
+  fixed color of road and bridge).
 - **`tileset/groundRank.ts`** (new) — the fixed rank of the grounds, deep water 0, shallow water 1, sand 2, grass 3,
-  dirt 4, rock 5, snow 6, and `continuesInto(ground, neighbour)`: a neighbour counts as set when its rank is the same
-  or higher. A ground therefore draws its own rim against lower grounds and a lower ground shows plain fill next to a
-  higher one, so there is never a rim on both sides.
+  dirt 4, rock 5, snow 6, road 7, bridge 8, and `continuesInto(ground, neighbour)`: a neighbour counts as set when its
+  rank is the same or higher. A ground therefore draws its own rim against lower grounds and a lower ground shows plain
+  fill next to a higher one, so there is never a rim on both sides; a road has a rim on every ground it crosses.
 - **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → autotile file) and
   `drawGroundAutotile(ctx, ground, autotileIndex, x, y, size)`, which draws the four 16 px quarters of the tile from
   the ground's sheet (the two halves are `floor(size / 2)` and the rest, so an odd tile size leaves no gap) and returns
   false when there is no sheet, so the tile falls back to the biome's flat color. The sheets are the development-only
   Essentials autotiles in `dev-assets/autotiles/` (see Working here), found by `import.meta.glob`, so a clone without
   them still builds and runs with flat colors. Mapping: deepWater `Sea deep`, shallowWater `Sea without shore`, sand
-  `Sand`, grass `Light grass`, dirt `Dirt`, rock `Gravel`, snow `White path`. The Essentials rims are painted for grass
+  `Sand`, grass `Light grass`, dirt `Dirt`, rock `Gravel`, snow `White path`, road `Brick path`; the bridge has no sheet
+  yet and is a flat brown tile. The Essentials rims are painted for grass
   as the base, so a transition against water or snow shows a grass-green rim; the replacement art is converted to the
   same layout. Animation follows Essentials (`002_CustomTilemap.rb`): the frame count of a sheet is its width divided by
   96, the frames lie side by side, and the frame is `floor(now / ANIMATED_AUTOTILE_FRAME_DURATION_MS) % frameCount`
@@ -145,15 +153,39 @@ nothing restructured.
   frame and never change. With the local sheets both water sheets have 8 frames (a cycle of 2 s); measured on the
   canvas over 4.6 s: 8 distinct images, a change about every 250 ms, 76 % of the screen's pixels (the land) never
   change.
+- **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (5) chunks, one
+  waypoint node per cell inside the inner 3 x 3 chunks (a buffer of one chunk), jittered by a hash of the seed and the
+  cell (`core/keyedRandom.ts`: `randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only;
+  results are cached by `core/boundedCache.ts`, which clears a cache at `SKELETON_CACHE_MAX_ENTRIES` (20 000) entries
+  and so cannot change a result). An edge between two neighbouring cells exists when its hash value is below
+  `ROAD_EDGE_PROBABILITY`, or when one of its two nodes needs it: a node with fewer than `ROAD_MIN_NODE_DEGREE` such
+  edges also takes the edges with the lowest hash values until it has two. Only hashes of the edge's own cell and of
+  its neighbours are needed, so it is local. Topology only: the position of a town node and its gates will come from
+  the town layer. Measured on 57 600 cells: no node has fewer than two edges (46 % have 2, 39 % 3, 15 % 4), every
+  edge is seen identically from both ends. Degree two does not make one connected network: islands of linked cells and
+  closed loops can exist, and a path between two given towns is not guaranteed.
+- **`road/roadCurve.ts`** (new) — `edgePolyline(ax, ay, bx, by)`: the road of an edge, given by the two cells in either
+  order (the nodes are put in the canonical order inside, so the result never depends on the order of the call), a line
+  between its two nodes bent sideways by up to `ROAD_BEND_MAX_TILES` (6) with `ROAD_BEND_CONTROL_COUNT` (3) smooth
+  control offsets from hashes of the edge (zero at both nodes), cut into segments of about `ROAD_SEGMENT_LENGTH_TILES`
+  (4); cached per edge (`ROAD_POLYLINE_CACHE_MAX_ENTRIES`, 5 000). A road stays inside the two cells of its nodes
+  (nodes are at least 16 tiles from the cell edge, the bend is at most 6).
+- **`road/roadMask.ts`** (new) — `roadTilesIn(minX, minY, width, height)`: marks the tiles whose centre is within
+  `ROAD_HALF_WIDTH_TILES` (1.5, about 3 tiles wide) of a road, looking at the east and south edge of every cell around
+  the rectangle. A pure function of the coordinates: two overlapping rectangles agree on every shared tile (0 of
+  57 200 compared tiles differed), so roads have no seams at chunk borders. Roads are 5.2 % of the world, one chunk
+  costs about 0.03 ms.
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
-  value), a `heightLevel`, its `cliffEdges`, its `biome` and its `autotileIndex` (all set at construction), draws the
-  ground (autotile, else the biome color), the level shade and the cliff edges — this is exactly the extension point
+  value), a `heightLevel`, its `cliffEdges`, its `biome`, its final `ground` (the biome's ground, or road or bridge)
+  and its `autotileIndex` (all set at construction), draws the ground (autotile, else the flat color of road or
+  bridge, else the biome color), the level shade and the cliff edges — this is exactly the extension point
   `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
   simulation color.
 - **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
-  the noise channels directly (not constructor-injected) and evaluates elevation, height level and biome on a grid
-  padded by one tile on every side, so the cliff edges and the autotile neighbour mask of the border tiles come from the
-  same pure functions of the coordinates, never from a neighbouring chunk (no seams). Noise-based generation is cheap
+  the noise channels directly (not constructor-injected) and evaluates elevation, height level, biome and road on a
+  grid padded by one tile on every side, so the cliff edges and the autotile neighbour mask (computed from the final
+  grounds, road and bridge included) of the border tiles come from the same pure functions of the coordinates, never
+  from a neighbouring chunk (no seams). Noise-based generation is cheap
   enough that eager per-chunk generation should still be fine here (unlike WFC, which needed more careful
   chunk-boundary handling in `InfinityWalker`).
 - **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile.
@@ -186,9 +218,9 @@ Same scripts as `TileGridBase` (this project hasn't diverged yet):
 - `npm run dev` — Vite dev server with HMR.
 - `npm run build` — type-checks (`tsc`) then produces `dist/`.
 - `npm run lint` / `npm run format` — ESLint / Prettier, same configs as `TileGridBase`.
-- Development assets: copy `sea-deep`, `sea-without-shore`, `sand`, `light-grass`, `dirt`, `gravel` and `white-path`
-  (all `.png`; from the Essentials v19.1 `Graphics/Autotiles/`: `Sea deep`, `Sea without shore`, `Sand`, `Light grass`,
-  `Dirt`, `Gravel`, `White path`) into `WorldNoise/dev-assets/autotiles/`. The folder is git-ignored on purpose: these
+- Development assets: copy `sea-deep`, `sea-without-shore`, `sand`, `light-grass`, `dirt`, `gravel`, `white-path` and
+  `brick-path` (all `.png`; from the Essentials v19.1 `Graphics/Autotiles/`: `Sea deep`, `Sea without shore`, `Sand`,
+  `Light grass`, `Dirt`, `Gravel`, `White path`, `Brick path`) into `WorldNoise/dev-assets/autotiles/`. The folder is git-ignored on purpose: these
   graphics come from Nintendo games and are not cleared for publishing, so they are replaced before any publish. A
   build made while the folder exists carries them in `dist/` (Vite inlines files under 4 KB into the JS bundle as data
   URIs, larger ones are copied), and `dist/` is what Wallpaper Engine loads: publish only a build made without the
