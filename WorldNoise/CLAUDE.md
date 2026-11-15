@@ -47,8 +47,7 @@ nothing restructured.
   **`ELEVATION_OCTAVES`, `ELEVATION_BASE_FREQUENCY`, `ELEVATION_PERSISTENCE`, `ELEVATION_LACUNARITY`,
   `ELEVATION_RAW_RANGE_LOW`/`_HIGH`, `ELEVATION_CONTRAST`, the elevation limits `ELEVATION_DEEP_WATER_LEVEL`,
   `ELEVATION_SEA_LEVEL`, `ELEVATION_BEACH_LEVEL`, `ELEVATION_ROCK_LEVEL`, `HEIGHT_LEVEL_OCTAVES`,
-  `HEIGHT_LEVEL_THRESHOLDS`, `CLIFF_EDGE_SIZE_DIVISOR`, `CLIFF_WALL_HEIGHT_FRACTION`,
-  `CLIFF_NORTH_RIM_HEIGHT_FRACTION`, `TILESET_TILE_SIZE_PX`** and the seven noise constants of the elevation channel again
+  `HEIGHT_LEVEL_THRESHOLDS`, `CLIFF_SHEET_TILE_SIZE_PX`** and the seven noise constants of the elevation channel again
   for each of `MOISTURE_*` and `TEMPERATURE_*` (octaves, base frequency, persistence, lacunarity, raw range low/high,
   contrast), plus `TEMPERATURE_REFERENCE_ELEVATION`, `TEMPERATURE_DROP_PER_ELEVATION` and the band thresholds
   `MOISTURE_BAND_THRESHOLDS` / `TEMPERATURE_BAND_THRESHOLDS`, and the road constants `CELL_SIZE_CHUNKS`,
@@ -116,18 +115,20 @@ nothing restructured.
   `ELEVATION_SEA_LEVEL`), land gets level 1..N from a *smoothed* elevation, i.e. the same seed with only
   `HEIGHT_LEVEL_OCTAVES` (2) octaves, redistributed like the full elevation and cut at `HEIGHT_LEVEL_THRESHOLDS`.
   Same seed means the smoothed field is the low-frequency part of the full one, so levels and ground stay
-  correlated. `cliffEdgesOf(...)` marks the sides of a land tile whose neighbour is a lower *land* level; water is never
-  a cliff, a shore is a ground transition. Neighbouring land levels differ by at most one step (checked on 1 000 000
+  correlated. `cliffTypeOf(level, neighbours)` gives the cliff piece of a land tile that has a *higher* neighbour (InfinityWalker's
+  `getCliffType`: the piece lies on the lower tile; two orthogonal higher neighbours at a right angle make an inner
+  corner, otherwise the first higher side makes an edge named by the side it goes down to, only a diagonal one makes an outer corner; null without a
+  higher neighbour). Water is never a cliff, a shore is a ground transition. Neighbouring land levels differ by at most one step (checked on 1 000 000
   tiles with the thresholds 0.55 and 0.8; with all 4 octaves a few jumps of two appeared). Why smoothed and not a
   filter: a 5 x 5 majority filter on the levels was measured and made it worse (tiny interior plateaus 16 to 198 in
   600 x 600 tiles at the old terrain scale), because it breaks the narrow middle band into pieces. Both noises use
   `ELEVATION_BASE_FREQUENCY` (0.01, features of about 100 tiles; the reason is in `idea.md`, Paths and towns). Measured
   on one seed and one area of 1 000 000 tiles (about 10 x 10 base features, so read the numbers as an order of
-  magnitude): water 24 % of the tiles, land split 36 / 28 / 36 % over levels 1 to 3, cliff edges on 6 % of the land
+  magnitude): water 24 % of the tiles, land split 36 / 28 / 36 % over levels 1 to 3, cliff edges (old four-side rule) on 6 % of the land
   tiles, 227 plateaus, 22 tiny ones (under 16 tiles) of which 3 inside the land and the rest at the shore, no level jump
   of two.
-- **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`, the cliff
-  edge color), which the cliff art replaces. The ground color comes from the biome.
+- **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`), which the
+  cliff art replaces. The ground color comes from the biome.
 - **`tileset/autotile.ts`** (new) — the RPG Maker XP / Pokemon Essentials autotile rules, copied from the Essentials
   v19.1 script `Data/Scripts/006_Map renderer/003_TileDrawingHelper.rb` (`Autotiles`, `NeighborsToTiles`,
   `tableNeighbors`) and compared with it by a script (48 quarter entries and 256 mask entries identical; the mask
@@ -160,23 +161,15 @@ nothing restructured.
   frame and never change. With the local sheets both water sheets have 8 frames (a cycle of 2 s); measured on the
   canvas over 4.6 s: 8 distinct images, a change about every 250 ms, 76 % of the screen's pixels (the land) never
   change.
-- **`tileset/outsideTileset.ts`** (new) — draws a region of a block of the Essentials `Outside` tileset (256 x 16 064 px,
-  32 px tiles, 8 per row; v19.1 and v21.1 are byte-identical): `drawOutsideRegion(ctx, region, x, y, w, h)` with a
-  `TileRegion` (tile column and row plus a rectangle inside the tile). This is the general way to draw non-autotile
-  tileset art (cliffs now, later buildings, trees, decoration). The sheet is `dev-assets/tilesets/outside.png`, found by
-  `import.meta.glob`; without it the function returns false and the caller falls back.
-- **`tileset/cliffTiles.ts`** (new) — the cliff pieces of a land tile that has a lower land neighbour on one side, from
-  the rock kit of `Outside` (rows 98 to 117; the pieces are transparent where the ground shows through, so they lay over
-  each other): south wall = lower half of tile 1.100 (dark rock face, `CLIFF_WALL_HEIGHT_FRACTION` of the tile);
-  west rim = tile 3.102 (rock on the left half), east rim = tile 5.102 (rock on the right half), both from the
-  U-shaped rock frame of the sheet (3.101 to 5.103); north rim = the thin top line of tile 0.107, the line of a ledge
-  (`CLIFF_NORTH_RIM_HEIGHT_FRACTION`). A corner is a tile with two lower neighbours, so its two pieces overlay; the
-  bottom corner pieces 3.103 and 5.103 of the frame, the slanted variants 2.102 and 6.102 and the same kit in grey
-  (rows 108 to 117) are not used yet. Roles were read from the opacity of the tiles. Without the sheet the dark lines
-  are drawn as before. Not done: inner corners (only a diagonal neighbour is lower) and stairs. The rest of the kit are
-  rounded boulders and ledge strips of sand, dirt and grass (rows 104 to 106). Pieces are drawn before the level shade, so
-  they are shaded like the ground above. The sheet is loaded once at startup and is large (about 16 MB decoded);
-  acceptable for development.
+- **`tileset/cliffTiles.ts`** (new) — `drawCliff(ctx, cliffType, heightLevel, x, y, size)` draws one of the 12 cliff pieces
+  (4 edges, 4 outer and 4 inner corners) from the stone sets of `InfinityWalker/img/tileset.png` (256 x 1 920 px, 32 px
+  tiles, 8 per row), copied to `dev-assets/tilesets/infinitywalker.png` and found by `import.meta.glob`; without it the
+  function returns false and the tile has no cliff. Each of the three stone sets is a 3 x 3 frame at columns 3 to 5 (rows
+  8, 14, 20) plus the inner corners at columns 6 and 7; the set follows the level of the lower tile (1 brown, 2 grey,
+  3 dark brown). The inner corners of the grey set lie mirrored in the sheet, which `tiles.js` of InfinityWalker already
+  accounts for (`GREY_STONE_INNER_OFFSETS`). Pieces are drawn before the level shade. Earlier tried and dropped: pieces
+  cut from the Essentials `Outside` rock kit, which did not fit together (no corners). Not done: stairs where a road
+  crosses a cliff; a tile with higher neighbours on three sides or on two opposite sides takes the first matching edge.
 - **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (5) chunks, one
   waypoint node per cell inside the inner 3 x 3 chunks (a buffer of one chunk), jittered by a hash of the seed and the
   cell (`core/keyedRandom.ts`: `randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only;
@@ -233,15 +226,15 @@ nothing restructured.
   level and the town info); a ring tile keeps its base biome while its level is limited (the biome of a lowered or raised
   ring tile is not decided); the 97 % land check samples every second tile, so a one tile wide channel can be filled.
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
-  value), a `heightLevel`, its `cliffEdges`, its `biome`, its final `ground` (the biome's ground, or road or bridge)
+  value), a `heightLevel`, its `cliffType`, its `biome`, its final `ground` (the biome's ground, or road or bridge)
   and its `autotileIndex` (all set at construction), draws the ground (autotile, else the flat color of road or
-  bridge, else the biome color), the cliff pieces (a dark line per side where a piece cannot be drawn) and the level
+  bridge, else the biome color), the cliff piece and the level
   shade — this is exactly the extension point
   `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
   simulation color.
-- **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
+- **`world/Chunk.ts`** — `CHUNK_SIZE �— CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
   the noise channels directly (not constructor-injected) and evaluates elevation, height level, biome and road on a
-  grid padded by one tile on every side, so the cliff edges and the autotile neighbour mask (computed from the final
+  grid padded by one tile on every side, so the cliff pieces (which read the eight neighbours) and the autotile neighbour mask (computed from the final
   grounds, road and bridge included) of the border tiles come from the same pure functions of the coordinates, never
   from a neighbouring chunk (no seams). Noise-based generation is cheap
   enough that eager per-chunk generation should still be fine here (unlike WFC, which needed more careful
@@ -278,8 +271,8 @@ Same scripts as `TileGridBase` (this project hasn't diverged yet):
 - `npm run lint` / `npm run format` — ESLint / Prettier, same configs as `TileGridBase`.
 - Development assets: copy `sea-deep`, `sea-without-shore`, `sand`, `light-grass`, `dirt`, `gravel`, `white-path` and
   `brick-path` (all `.png`; from the Essentials v19.1 `Graphics/Autotiles/`: `Sea deep`, `Sea without shore`, `Sand`,
-  `Light grass`, `Dirt`, `Gravel`, `White path`, `Brick path`) into `WorldNoise/dev-assets/autotiles/`, and the tileset
-  `Graphics/Tilesets/Outside.png` as `WorldNoise/dev-assets/tilesets/outside.png`. The folder is git-ignored on purpose: these
+  `Light grass`, `Dirt`, `Gravel`, `White path`, `Brick path`) into `WorldNoise/dev-assets/autotiles/`, and
+  `InfinityWalker/img/tileset.png` as `WorldNoise/dev-assets/tilesets/infinitywalker.png`. The folder is git-ignored on purpose: these
   graphics come from Nintendo games and are not cleared for publishing, so they are replaced before any publish. A
   build made while the folder exists carries them in `dist/` (Vite inlines files under 4 KB into the JS bundle as data
   URIs, larger ones are copied), and `dist/` is what Wallpaper Engine loads: publish only a build made without the

@@ -11,9 +11,7 @@ export const PAN_SPRINT_MULTIPLIER = 2;
 export const AUTOTILE_QUARTER_SIZE_PX = 16;
 export const AUTOTILE_QUARTER_COLUMNS = 6;
 export const ANIMATED_AUTOTILE_FRAME_DURATION_MS = 250;
-export const TILESET_TILE_SIZE_PX = 32;
-export const CLIFF_WALL_HEIGHT_FRACTION = 0.5;
-export const CLIFF_NORTH_RIM_HEIGHT_FRACTION = 0.25;
+export const CLIFF_SHEET_TILE_SIZE_PX = 32;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;
@@ -52,7 +50,6 @@ export const ELEVATION_ROCK_LEVEL = 0.85;
 
 export const HEIGHT_LEVEL_OCTAVES = 2;
 export const HEIGHT_LEVEL_THRESHOLDS: readonly number[] = [0.55, 0.8];
-export const CLIFF_EDGE_SIZE_DIVISOR = 8;
 
 export const MOISTURE_OCTAVES = 4;
 export const MOISTURE_BASE_FREQUENCY = 0.005;
