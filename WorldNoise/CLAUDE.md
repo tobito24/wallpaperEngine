@@ -232,7 +232,7 @@ nothing restructured.
   shade — this is exactly the extension point
   `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
   simulation color.
-- **`world/Chunk.ts`** — `CHUNK_SIZE �— CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
+- **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
   the noise channels directly (not constructor-injected) and evaluates elevation, height level, biome and road on a
   grid padded by one tile on every side, so the cliff pieces (which read the eight neighbours) and the autotile neighbour mask (computed from the final
   grounds, road and bridge included) of the border tiles come from the same pure functions of the coordinates, never
