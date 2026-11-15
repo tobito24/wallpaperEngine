@@ -150,7 +150,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Elevation noise as flat color bands (water, beach, land, hills, mountain)
 - [x] Redistribution curve on elevation, so there is less mid-value mush
 - [x] Height levels as flat bands, with the speckle countermeasures; judged by eye before any cliff art
-- [ ] Moisture and temperature channels, each in its own folder like `elevation/`
+- [x] Moisture and temperature channels, each in its own folder like `elevation/`
 - [ ] Biome lookup table with flat colors (7 to 10 biomes), borders judged by eye
 - [x] Confirm the autotile layout of the Alienor sheet (quarter tiles, 128 x 96 px per ground)
 - [x] Inventory of the grounds on the sheet, first grounds picked (see Design)
