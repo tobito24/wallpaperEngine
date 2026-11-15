@@ -15,6 +15,9 @@ export const ELEVATION_OCTAVES = 4;
 export const ELEVATION_BASE_FREQUENCY = 0.02;
 export const ELEVATION_PERSISTENCE = 0.5;
 export const ELEVATION_LACUNARITY = 2;
+export const ELEVATION_RAW_RANGE_LOW = 0.2;
+export const ELEVATION_RAW_RANGE_HIGH = 0.8;
+export const ELEVATION_CONTRAST = 0.7;
 
 // slider_tickrate in public/project.json
 export const TICK_INTERVAL_DEFAULT_MS = 250;
