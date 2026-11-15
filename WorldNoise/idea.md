@@ -193,4 +193,5 @@ roads that always lead on and connect towns, and the seed can be changed from th
   towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format, and how the ramp margin
   of a mountain town keeps neighbouring levels within one step.
 - Cell size (4 x 4 chunks is a first guess) and the list of town shapes.
-- Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks).
+- Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks). A water animation
+  speed property needs its own animation clock; scaling `nowMs` would make the frame jump whenever the value changes.
