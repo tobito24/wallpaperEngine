@@ -1,9 +1,12 @@
 import { biomeAt } from '../biome/biome';
+import type { Biome } from '../biome/biome';
 import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { cliffEdgesOf, heightLevelAt } from '../elevation/heightLevel';
 import { moistureNoise } from '../moisture/moistureNoise';
 import { temperatureNoise } from '../temperature/temperatureNoise';
+import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
+import { continuesInto } from '../tileset/groundRank';
 import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
@@ -24,6 +27,7 @@ export class Chunk {
     const originY = chunkY * CHUNK_SIZE;
     const elevations = new Float64Array(PADDED_SIZE * PADDED_SIZE);
     const levels = new Uint8Array(PADDED_SIZE * PADDED_SIZE);
+    const biomes: Biome[] = [];
     for (let py = 0; py < PADDED_SIZE; py++) {
       for (let px = 0; px < PADDED_SIZE; px++) {
         const worldX = originX + px - 1;
@@ -31,6 +35,9 @@ export class Chunk {
         const index = py * PADDED_SIZE + px;
         elevations[index] = elevationNoise(worldX, worldY);
         levels[index] = heightLevelAt(worldX, worldY, elevations[index]);
+        biomes.push(
+          biomeAt(elevations[index], moistureNoise(worldX, worldY), temperatureNoise(worldX, worldY)),
+        );
       }
     }
 
@@ -46,14 +53,24 @@ export class Chunk {
           levels[index + PADDED_SIZE],
           levels[index - 1],
         );
-        const worldX = originX + lx;
-        const worldY = originY + ly;
-        const biome = biomeAt(
-          elevations[index],
-          moistureNoise(worldX, worldY),
-          temperatureNoise(worldX, worldY),
+
+        const biome = biomes[index];
+        let neighbourMask = 0;
+        for (const { dx, dy, bit } of NEIGHBOUR_OFFSETS) {
+          if (continuesInto(biome.ground, biomes[index + dy * PADDED_SIZE + dx].ground)) neighbourMask |= bit;
+        }
+
+        tiles.push(
+          new Tile(
+            originX + lx,
+            originY + ly,
+            elevations[index],
+            level,
+            cliffEdges,
+            biome,
+            autotileIndexFor(neighbourMask),
+          ),
         );
-        tiles.push(new Tile(worldX, worldY, elevations[index], level, cliffEdges, biome));
       }
     }
     this.tiles = tiles;

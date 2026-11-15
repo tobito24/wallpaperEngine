@@ -1,5 +1,6 @@
 import type { Ground } from '../biome/biome';
-import { AUTOTILE_FILL_TILE_COLUMN, AUTOTILE_FILL_TILE_ROW, TILESET_TILE_SIZE_PX } from '../config/constants';
+import { AUTOTILE_QUARTER_COLUMNS, AUTOTILE_QUARTER_SIZE_PX } from '../config/constants';
+import { AUTOTILE_QUARTER_IDS } from './autotile';
 
 const SHEET_DIRECTORY = '../../dev-assets/autotiles/';
 
@@ -33,9 +34,10 @@ for (const [ground, file] of Object.entries(SHEET_FILE_BY_GROUND) as [Ground, st
   if (sheet) sheetByGround.set(ground, sheet);
 }
 
-export function drawGroundFill(
+export function drawGroundAutotile(
   ctx: CanvasRenderingContext2D,
   ground: Ground,
+  autotileIndex: number,
   screenX: number,
   screenY: number,
   size: number,
@@ -43,16 +45,24 @@ export function drawGroundFill(
   const sheet = sheetByGround.get(ground);
   if (!sheet || !sheet.complete || sheet.naturalWidth === 0) return false;
 
-  ctx.drawImage(
-    sheet,
-    AUTOTILE_FILL_TILE_COLUMN * TILESET_TILE_SIZE_PX,
-    AUTOTILE_FILL_TILE_ROW * TILESET_TILE_SIZE_PX,
-    TILESET_TILE_SIZE_PX,
-    TILESET_TILE_SIZE_PX,
-    screenX,
-    screenY,
-    size,
-    size,
-  );
+  const firstHalf = Math.floor(size / 2);
+  const secondHalf = size - firstHalf;
+  const quarterIds = AUTOTILE_QUARTER_IDS[autotileIndex];
+  for (let quarter = 0; quarter < quarterIds.length; quarter++) {
+    const position = quarterIds[quarter] - 1;
+    const isRight = quarter % 2 === 1;
+    const isBottom = quarter >= 2;
+    ctx.drawImage(
+      sheet,
+      (position % AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
+      Math.floor(position / AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
+      AUTOTILE_QUARTER_SIZE_PX,
+      AUTOTILE_QUARTER_SIZE_PX,
+      screenX + (isRight ? firstHalf : 0),
+      screenY + (isBottom ? firstHalf : 0),
+      isRight ? secondHalf : firstHalf,
+      isBottom ? secondHalf : firstHalf,
+    );
+  }
   return true;
 }

@@ -2,7 +2,7 @@ import type { Biome } from '../biome/biome';
 import { CLIFF_EDGE_SIZE_DIVISOR } from '../config/constants';
 import { CLIFF_EDGE_COLOR, shadeForHeightLevel } from '../elevation/color';
 import type { CliffEdges } from '../elevation/heightLevel';
-import { drawGroundFill } from '../tileset/groundSheets';
+import { drawGroundAutotile } from '../tileset/groundSheets';
 
 export class Tile {
   readonly worldX: number;
@@ -11,6 +11,7 @@ export class Tile {
   readonly heightLevel: number;
   readonly cliffEdges: CliffEdges;
   readonly biome: Biome;
+  readonly autotileIndex: number;
 
   constructor(
     worldX: number,
@@ -19,6 +20,7 @@ export class Tile {
     heightLevel: number,
     cliffEdges: CliffEdges,
     biome: Biome,
+    autotileIndex: number,
   ) {
     this.worldX = worldX;
     this.worldY = worldY;
@@ -26,10 +28,11 @@ export class Tile {
     this.heightLevel = heightLevel;
     this.cliffEdges = cliffEdges;
     this.biome = biome;
+    this.autotileIndex = autotileIndex;
   }
 
   draw(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, size: number): void {
-    if (!drawGroundFill(ctx, this.biome.ground, screenX, screenY, size)) {
+    if (!drawGroundAutotile(ctx, this.biome.ground, this.autotileIndex, screenX, screenY, size)) {
       ctx.fillStyle = this.biome.color;
       ctx.fillRect(screenX, screenY, size, size);
     }

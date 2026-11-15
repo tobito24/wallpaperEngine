@@ -155,8 +155,9 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Confirm the autotile layout of the Alienor sheet (quarter tiles, 128 x 96 px per ground)
 - [x] Inventory of the grounds on the sheet, first grounds picked (see Design)
 - [x] Dev assets: git-ignored asset folder in `WorldNoise/`, a few Essentials autotiles copied in, data table of grounds
-- [ ] Ground rank order and the XP autotile calculation (48-entry index table), first with placeholder pieces, then with the
-      Essentials autotiles
+- [x] Ground rank order and the XP autotile calculation (48-entry index table), first with placeholder pieces, then with the
+      Essentials autotiles (the placeholder stage was skipped: the Essentials autotiles were at hand and the table was
+      checked against their source)
 - [ ] Animated water (frames side by side, one global frame index)
 - [ ] Cliff walls where two levels meet, placeholder first, then the cliff blocks of the sheet
 - [ ] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks
@@ -186,7 +187,6 @@ roads that always lead on and connect towns, and the seed can be changed from th
   credit text wanted are still to be copied from the page into `publishing.md`. Other Pokemon-style fan tilesets may be used if
   their credit rules are followed.
 - The tile size of `tileset-biome.png` is not measured. It may be 16 px and would then need scaling or redrawing to 32 px.
-- The rank order of the grounds is a first guess and is fixed when the autotile calculation is built.
 - Desert decoration, swamp, jungle and lava need assets that are not on the sheet yet.
 - Number of height levels (3 is a first guess) and how strong the speckle countermeasures must be.
 - Town layouts: the Pokewiki city list (https://www.pokewiki.de/St%C3%A4dteverzeichnis) is the inspiration, above all the old
