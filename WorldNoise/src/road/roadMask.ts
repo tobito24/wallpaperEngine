@@ -1,7 +1,9 @@
 import { ROAD_HALF_WIDTH_TILES } from '../config/constants';
-import { cellIndexOf, edgeExists, waypointPosition } from '../skeleton/cellGrid';
+import { cellIndexOf, edgeExists } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
 import { edgePolyline } from './roadCurve';
+
+export const ROAD_TILE_MARK = 1;
 
 const EDGE_DIRECTIONS: readonly (readonly [number, number])[] = [
   [1, 0],
@@ -38,7 +40,7 @@ function markPolyline(
     for (let y = firstY; y <= lastY; y++) {
       for (let x = firstX; x <= lastX; x++) {
         if (distanceToSegment(x + 0.5, y + 0.5, from, to) <= ROAD_HALF_WIDTH_TILES) {
-          mask[(y - minY) * width + (x - minX)] = 1;
+          mask[(y - minY) * width + (x - minX)] = ROAD_TILE_MARK;
         }
       }
     }
@@ -58,8 +60,7 @@ export function roadTilesIn(minX: number, minY: number, width: number, height: n
         const nx = cx + dx;
         const ny = cy + dy;
         if (!edgeExists(cx, cy, nx, ny)) continue;
-        const polyline = edgePolyline(cx, cy, nx, ny, waypointPosition(cx, cy), waypointPosition(nx, ny));
-        markPolyline(mask, polyline, minX, minY, width, height);
+        markPolyline(mask, edgePolyline(cx, cy, nx, ny), minX, minY, width, height);
       }
     }
   }

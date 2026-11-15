@@ -19,6 +19,9 @@ export const ROAD_MIN_NODE_DEGREE = 2;
 export const ROAD_HALF_WIDTH_TILES = 1.5;
 export const ROAD_BEND_MAX_TILES = 6;
 export const ROAD_SEGMENT_LENGTH_TILES = 4;
+export const ROAD_BEND_CONTROL_COUNT = 3;
+export const SKELETON_CACHE_MAX_ENTRIES = 20000;
+export const ROAD_POLYLINE_CACHE_MAX_ENTRIES = 5000;
 export const CHUNK_UNLOAD_DELAY_MS = 5000;
 
 export const ELEVATION_OCTAVES = 4;

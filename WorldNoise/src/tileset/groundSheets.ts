@@ -1,11 +1,12 @@
+import type { BiomeGround } from '../biome/biome';
 import { AUTOTILE_QUARTER_COLUMNS, AUTOTILE_QUARTER_SIZE_PX } from '../config/constants';
 import { AUTOTILE_QUARTER_IDS } from './autotile';
-import type { Ground } from './ground';
+import type { Ground, OverlayGround } from './ground';
 
 const SHEET_DIRECTORY = '../../dev-assets/autotiles/';
 const FRAME_WIDTH_PX = AUTOTILE_QUARTER_COLUMNS * AUTOTILE_QUARTER_SIZE_PX;
 
-const SHEET_FILE_BY_GROUND: Readonly<Partial<Record<Ground, string>>> = {
+const SHEET_FILE_BY_BIOME_GROUND: Readonly<Record<BiomeGround, string>> = {
   deepWater: 'sea-deep.png',
   shallowWater: 'sea-without-shore.png',
   sand: 'sand.png',
@@ -13,7 +14,15 @@ const SHEET_FILE_BY_GROUND: Readonly<Partial<Record<Ground, string>>> = {
   dirt: 'dirt.png',
   rock: 'gravel.png',
   snow: 'white-path.png',
+};
+
+const SHEET_FILE_BY_OVERLAY_GROUND: Readonly<Partial<Record<OverlayGround, string>>> = {
   road: 'brick-path.png',
+};
+
+const SHEET_FILE_BY_GROUND: Readonly<Partial<Record<Ground, string>>> = {
+  ...SHEET_FILE_BY_BIOME_GROUND,
+  ...SHEET_FILE_BY_OVERLAY_GROUND,
 };
 
 const sheetUrls = import.meta.glob<string>('../../dev-assets/autotiles/*.png', {

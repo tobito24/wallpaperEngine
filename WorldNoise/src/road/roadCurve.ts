@@ -1,9 +1,13 @@
-import { ROAD_BEND_MAX_TILES, ROAD_SEGMENT_LENGTH_TILES } from '../config/constants';
-import { edgeKey, randomValue } from '../skeleton/cellGrid';
+import {
+  ROAD_BEND_CONTROL_COUNT,
+  ROAD_BEND_MAX_TILES,
+  ROAD_POLYLINE_CACHE_MAX_ENTRIES,
+  ROAD_SEGMENT_LENGTH_TILES,
+} from '../config/constants';
+import { remember } from '../core/boundedCache';
+import { randomValue } from '../core/keyedRandom';
+import { edgeKey, isEdgeOrdered, waypointPosition } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
-
-const BEND_CONTROL_COUNT = 3;
-const MAX_CACHED_POLYLINES = 5000;
 
 const polylineCache = new Map<string, readonly Point[]>();
 
@@ -14,7 +18,7 @@ function smoothBetween(from: number, to: number, t: number): number {
 
 function bendOffsets(key: string): number[] {
   const interior = Array.from(
-    { length: BEND_CONTROL_COUNT },
+    { length: ROAD_BEND_CONTROL_COUNT },
     (_, index) => (randomValue(`bend:${key}:${index}`) * 2 - 1) * ROAD_BEND_MAX_TILES,
   );
   return [0, ...interior, 0];
@@ -26,19 +30,7 @@ function bendAt(offsets: readonly number[], t: number): number {
   return smoothBetween(offsets[index], offsets[index + 1], scaled - index);
 }
 
-export function edgePolyline(
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number,
-  start: Point,
-  end: Point,
-): readonly Point[] {
-  const key = edgeKey(ax, ay, bx, by);
-  const known = polylineCache.get(key);
-  if (known) return known;
-  if (polylineCache.size >= MAX_CACHED_POLYLINES) polylineCache.clear();
-
+function buildPolyline(key: string, start: Point, end: Point): readonly Point[] {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const length = Math.hypot(dx, dy);
@@ -52,6 +44,15 @@ export function edgePolyline(
     const bend = bendAt(offsets, t);
     points.push({ x: start.x + dx * t + normal.x * bend, y: start.y + dy * t + normal.y * bend });
   }
-  polylineCache.set(key, points);
   return points;
+}
+
+export function edgePolyline(ax: number, ay: number, bx: number, by: number): readonly Point[] {
+  const key = edgeKey(ax, ay, bx, by);
+  return remember(polylineCache, ROAD_POLYLINE_CACHE_MAX_ENTRIES, key, () => {
+    const ordered = isEdgeOrdered(ax, ay, bx, by);
+    const start = ordered ? waypointPosition(ax, ay) : waypointPosition(bx, by);
+    const end = ordered ? waypointPosition(bx, by) : waypointPosition(ax, ay);
+    return buildPolyline(key, start, end);
+  });
 }

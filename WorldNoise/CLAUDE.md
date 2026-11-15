@@ -52,7 +52,8 @@ nothing restructured.
   contrast), plus `TEMPERATURE_REFERENCE_ELEVATION`, `TEMPERATURE_DROP_PER_ELEVATION` and the band thresholds
   `MOISTURE_BAND_THRESHOLDS` / `TEMPERATURE_BAND_THRESHOLDS`, and the road constants `CELL_SIZE_CHUNKS`,
   `ROAD_EDGE_PROBABILITY`, `ROAD_MIN_NODE_DEGREE`, `ROAD_HALF_WIDTH_TILES`, `ROAD_BEND_MAX_TILES`,
-  `ROAD_SEGMENT_LENGTH_TILES` (new — tuning constants live here, same as `ColorWar`'s `PRESET_*` constants, even
+  `ROAD_SEGMENT_LENGTH_TILES`, `ROAD_BEND_CONTROL_COUNT` and the two cache limits `SKELETON_CACHE_MAX_ENTRIES` /
+  `ROAD_POLYLINE_CACHE_MAX_ENTRIES` (new — tuning constants live here, same as `ColorWar`'s `PRESET_*` constants, even
   though the code that consumes them lives in a feature folder).
 - **`core/noise.ts`** (new, generic infra alongside `core/Ticker.ts`) — `createFractalNoise2D(seed, octaves,
   baseFrequency, persistence, lacunarity)`: wraps `simplex-noise`'s `createNoise2D`, seeded via `alea(seed)` (so
@@ -129,8 +130,9 @@ nothing restructured.
   when the neighbour continues the ground) to the tile index. A diagonal that matters only when both adjacent edges
   are set is already folded into the table.
 - **`tileset/ground.ts`** (new) — `Ground`: the ground a tile is drawn with, the seven `BiomeGround`s of the biome table
-  plus `road` and `bridge` (a road on water). `groundWithRoad(biomeGround, isRoad)` makes the final ground;
-  `ROAD_FALLBACK_COLOR_BY_GROUND` holds the flat colors of road and bridge for a clone without sheets.
+  plus the two `OverlayGround`s `road` and `bridge` (a road on water). `groundWithRoad(biomeGround, isRoad)` makes the
+  final ground; `fallbackColorOf(ground, biome)` is the flat color for a clone without sheets (the biome's color, or the
+  fixed color of road and bridge).
 - **`tileset/groundRank.ts`** (new) — the fixed rank of the grounds, deep water 0, shallow water 1, sand 2, grass 3,
   dirt 4, rock 5, snow 6, road 7, bridge 8, and `continuesInto(ground, neighbour)`: a neighbour counts as set when its
   rank is the same or higher. A ground therefore draws its own rim against lower grounds and a lower ground shows plain
@@ -153,16 +155,20 @@ nothing restructured.
   change.
 - **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (5) chunks, one
   waypoint node per cell inside the inner 3 x 3 chunks (a buffer of one chunk), jittered by a hash of the seed and the
-  cell (`randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only; results are cached and
-  the caches are cleared at 20 000 entries). An edge between two neighbouring cells exists when its hash value is below
+  cell (`core/keyedRandom.ts`: `randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only;
+  results are cached by `core/boundedCache.ts`, which clears a cache at `SKELETON_CACHE_MAX_ENTRIES` (20 000) entries
+  and so cannot change a result). An edge between two neighbouring cells exists when its hash value is below
   `ROAD_EDGE_PROBABILITY`, or when one of its two nodes needs it: a node with fewer than `ROAD_MIN_NODE_DEGREE` such
   edges also takes the edges with the lowest hash values until it has two. Only hashes of the edge's own cell and of
   its neighbours are needed, so it is local. Topology only: the position of a town node and its gates will come from
   the town layer. Measured on 57 600 cells: no node has fewer than two edges (46 % have 2, 39 % 3, 15 % 4), every
-  edge is seen identically from both ends.
-- **`road/roadCurve.ts`** (new) — `edgePolyline`: the road of an edge, a line between its two nodes bent sideways by up
-  to `ROAD_BEND_MAX_TILES` (6) with three smooth control offsets from hashes of the edge (zero at both nodes), cut into
-  segments of about `ROAD_SEGMENT_LENGTH_TILES` (4); cached per edge. A road stays inside the two cells of its nodes
+  edge is seen identically from both ends. Degree two does not make one connected network: islands of linked cells and
+  closed loops can exist, and a path between two given towns is not guaranteed.
+- **`road/roadCurve.ts`** (new) — `edgePolyline(ax, ay, bx, by)`: the road of an edge, given by the two cells in either
+  order (the nodes are put in the canonical order inside, so the result never depends on the order of the call), a line
+  between its two nodes bent sideways by up to `ROAD_BEND_MAX_TILES` (6) with `ROAD_BEND_CONTROL_COUNT` (3) smooth
+  control offsets from hashes of the edge (zero at both nodes), cut into segments of about `ROAD_SEGMENT_LENGTH_TILES`
+  (4); cached per edge (`ROAD_POLYLINE_CACHE_MAX_ENTRIES`, 5 000). A road stays inside the two cells of its nodes
   (nodes are at least 16 tiles from the cell edge, the bend is at most 6).
 - **`road/roadMask.ts`** (new) — `roadTilesIn(minX, minY, width, height)`: marks the tiles whose centre is within
   `ROAD_HALF_WIDTH_TILES` (1.5, about 3 tiles wide) of a road, looking at the east and south edge of every cell around

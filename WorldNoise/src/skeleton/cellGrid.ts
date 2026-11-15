@@ -1,11 +1,12 @@
-import Alea from 'alea';
 import {
   CELL_SIZE_CHUNKS,
   CHUNK_SIZE,
   ROAD_EDGE_PROBABILITY,
   ROAD_MIN_NODE_DEGREE,
-  SEED,
+  SKELETON_CACHE_MAX_ENTRIES,
 } from '../config/constants';
+import { remember } from '../core/boundedCache';
+import { randomValue } from '../core/keyedRandom';
 
 export interface Point {
   readonly x: number;
@@ -16,7 +17,6 @@ export const CELL_SIZE_TILES = CELL_SIZE_CHUNKS * CHUNK_SIZE;
 
 const NODE_AREA_MARGIN_TILES = CHUNK_SIZE;
 const NODE_AREA_SIZE_TILES = CELL_SIZE_TILES - 2 * NODE_AREA_MARGIN_TILES;
-const MAX_CACHED_ENTRIES = 20000;
 const NEIGHBOUR_STEPS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -27,25 +27,12 @@ const NEIGHBOUR_STEPS: readonly (readonly [number, number])[] = [
 const waypointCache = new Map<string, Point>();
 const edgeValueCache = new Map<string, number>();
 
-export function randomValue(key: string): number {
-  return Alea(`${SEED}:${key}`)();
-}
-
-function remember<T>(cache: Map<string, T>, key: string, compute: () => T): T {
-  const known = cache.get(key);
-  if (known !== undefined) return known;
-  if (cache.size >= MAX_CACHED_ENTRIES) cache.clear();
-  const value = compute();
-  cache.set(key, value);
-  return value;
-}
-
 export function cellIndexOf(tile: number): number {
   return Math.floor(tile / CELL_SIZE_TILES);
 }
 
 export function waypointPosition(cx: number, cy: number): Point {
-  return remember(waypointCache, `${cx},${cy}`, () => ({
+  return remember(waypointCache, SKELETON_CACHE_MAX_ENTRIES, `${cx},${cy}`, () => ({
     x:
       cx * CELL_SIZE_TILES +
       NODE_AREA_MARGIN_TILES +
@@ -57,14 +44,17 @@ export function waypointPosition(cx: number, cy: number): Point {
   }));
 }
 
+export function isEdgeOrdered(ax: number, ay: number, bx: number, by: number): boolean {
+  return ax < bx || (ax === bx && ay <= by);
+}
+
 export function edgeKey(ax: number, ay: number, bx: number, by: number): string {
-  const swap = ax > bx || (ax === bx && ay > by);
-  return swap ? `${bx},${by}-${ax},${ay}` : `${ax},${ay}-${bx},${by}`;
+  return isEdgeOrdered(ax, ay, bx, by) ? `${ax},${ay}-${bx},${by}` : `${bx},${by}-${ax},${ay}`;
 }
 
 function edgeValue(ax: number, ay: number, bx: number, by: number): number {
   const key = edgeKey(ax, ay, bx, by);
-  return remember(edgeValueCache, key, () => randomValue(`edge:${key}`));
+  return remember(edgeValueCache, SKELETON_CACHE_MAX_ENTRIES, key, () => randomValue(`edge:${key}`));
 }
 
 function edgeValuesOf(cx: number, cy: number): number[] {

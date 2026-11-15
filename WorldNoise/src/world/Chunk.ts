@@ -4,7 +4,7 @@ import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { cliffEdgesOf, heightLevelAt } from '../elevation/heightLevel';
 import { moistureNoise } from '../moisture/moistureNoise';
-import { roadTilesIn } from '../road/roadMask';
+import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import { groundWithRoad } from '../tileset/ground';
@@ -45,7 +45,9 @@ export class Chunk {
     }
 
     const roads = roadTilesIn(originX - 1, originY - 1, PADDED_SIZE, PADDED_SIZE);
-    const grounds: Ground[] = biomes.map((biome, index) => groundWithRoad(biome.ground, roads[index] === 1));
+    const grounds: Ground[] = biomes.map((biome, index) =>
+      groundWithRoad(biome.ground, roads[index] === ROAD_TILE_MARK),
+    );
 
     const tiles: Tile[] = [];
     for (let ly = 0; ly < CHUNK_SIZE; ly++) {

@@ -2,7 +2,7 @@ import type { Biome } from '../biome/biome';
 import { CLIFF_EDGE_SIZE_DIVISOR } from '../config/constants';
 import { CLIFF_EDGE_COLOR, shadeForHeightLevel } from '../elevation/color';
 import type { CliffEdges } from '../elevation/heightLevel';
-import { ROAD_FALLBACK_COLOR_BY_GROUND } from '../tileset/ground';
+import { fallbackColorOf } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { drawGroundAutotile } from '../tileset/groundSheets';
 
@@ -44,7 +44,7 @@ export class Tile {
     animationFrame: number,
   ): void {
     if (!drawGroundAutotile(ctx, this.ground, this.autotileIndex, animationFrame, screenX, screenY, size)) {
-      ctx.fillStyle = ROAD_FALLBACK_COLOR_BY_GROUND[this.ground] ?? this.biome.color;
+      ctx.fillStyle = fallbackColorOf(this.ground, this.biome);
       ctx.fillRect(screenX, screenY, size, size);
     }
 
