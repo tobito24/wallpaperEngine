@@ -1,4 +1,4 @@
-export const SEED = '1234';
+export const SEED = '12345678';
 
 export const TILE_SIZE_DEFAULT = 32;
 export const MIN_TILE_SIZE = 4;
