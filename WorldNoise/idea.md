@@ -235,6 +235,8 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
 - [ ] Fences or trees where the edge of a town is open (no cliff wall)
+- [ ] Town outline: wavy and stepped instead of the straight chunk rectangle (the edge of the footprint moves by a noise offset of at most `TOWN_OUTLINE_WOBBLE_TILES`, with steps, so the plateau edge is no straight line; the wobble plus the ring of 8 tiles must fit into the buffer of 16 tiles; the layout, the gates and the roads must follow the outline)
+- [ ] Cliff pieces for the east, west and north side and for the corners (today only the south side has a wall texture, the other sides are dark lines), and stairs where a road crosses a cliff
 - [ ] Rule-based decoration
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)
