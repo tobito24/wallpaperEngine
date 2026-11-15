@@ -115,25 +115,38 @@ nothing restructured.
   cliff edge.
 - **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`, the cliff
   edge color), which the cliff art replaces. The ground color comes from the biome.
+- **`tileset/autotile.ts`** (new) — the RPG Maker XP / Pokemon Essentials autotile rules, copied from the Essentials
+  v19.1 script `Data/Scripts/006_Map renderer/003_TileDrawingHelper.rb` (`Autotiles`, `NeighborsToTiles`,
+  `tableNeighbors`) and compared with it by a script (48 quarter entries and 256 mask entries identical; the mask
+  table yields 47 distinct indices, 0 to 46): `AUTOTILE_QUARTER_IDS[index]` gives the four quarters of a tile
+  (1-based ids, 6 columns of 16 px on the 96 x 128 sheet; top left, top right, bottom left, bottom right),
+  `autotileIndexFor(mask)` maps the 8-neighbour mask (N 1, NE 2, E 4, SE 8, S 16, SW 32, W 64, NW 128; a bit is set
+  when the neighbour continues the ground) to the tile index. A diagonal that matters only when both adjacent edges
+  are set is already folded into the table.
+- **`tileset/groundRank.ts`** (new) — the fixed rank of the grounds, deep water 0, shallow water 1, sand 2, grass 3,
+  dirt 4, rock 5, snow 6, and `continuesInto(ground, neighbour)`: a neighbour counts as set when its rank is the same
+  or higher. A ground therefore draws its own rim against lower grounds and a lower ground shows plain fill next to a
+  higher one, so there is never a rim on both sides.
 - **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → autotile file) and
-  `drawGroundFill(ctx, ground, x, y, size)`, which draws the pure fill tile of the ground's autotile sheet (column
-  `AUTOTILE_FILL_TILE_COLUMN` 1, row `AUTOTILE_FILL_TILE_ROW` 2 of the 96 x 128 XP layout, checked on the Essentials
-  `Dirt`, `Sand` and others) and returns false when there is no sheet, so the tile falls back to the biome's flat color.
-  The sheets are the development-only Essentials autotiles in `dev-assets/autotiles/` (see Working here), found by
-  `import.meta.glob`, so a clone without them still builds and runs with flat colors. Mapping: deepWater `Sea deep`,
-  shallowWater `Sea without shore`, sand `Sand`, grass `Light grass`, dirt `Dirt`, rock `Gravel`, snow `White path`. No
-  transitions yet: that is the autotile step.
+  `drawGroundAutotile(ctx, ground, autotileIndex, x, y, size)`, which draws the four 16 px quarters of the tile from
+  the ground's sheet (the two halves are `floor(size / 2)` and the rest, so an odd tile size leaves no gap) and returns
+  false when there is no sheet, so the tile falls back to the biome's flat color. The sheets are the development-only
+  Essentials autotiles in `dev-assets/autotiles/` (see Working here), found by `import.meta.glob`, so a clone without
+  them still builds and runs with flat colors. Mapping: deepWater `Sea deep`, shallowWater `Sea without shore`, sand
+  `Sand`, grass `Light grass`, dirt `Dirt`, rock `Gravel`, snow `White path`. The Essentials rims are painted for grass
+  as the base, so a transition against water or snow shows a grass-green rim; the replacement art is converted to the
+  same layout. Only frame 0 of a sheet is used; animated water is its own step.
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
-  value), a `heightLevel`, its `cliffEdges` and its `biome` (all set at construction), draws the ground (sheet fill,
-  else the biome color), the level shade and the cliff edges — this is exactly the extension point
+  value), a `heightLevel`, its `cliffEdges`, its `biome` and its `autotileIndex` (all set at construction), draws the
+  ground (autotile, else the biome color), the level shade and the cliff edges — this is exactly the extension point
   `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
   simulation color.
 - **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
-  the noise channels directly (not constructor-injected), evaluates elevation and height level on a grid padded by
-  one tile on every side, so the cliff edges of the border tiles come from the same pure functions of the
-  coordinates, never from a neighbouring chunk (no seams), and asks `biomeAt` for the biome of each tile. Noise-based generation is cheap enough that eager
-  per-chunk generation should still be fine here (unlike WFC, which needed more careful chunk-boundary handling in
-  `InfinityWalker`).
+  the noise channels directly (not constructor-injected) and evaluates elevation, height level and biome on a grid
+  padded by one tile on every side, so the cliff edges and the autotile neighbour mask of the border tiles come from the
+  same pure functions of the coordinates, never from a neighbouring chunk (no seams). Noise-based generation is cheap
+  enough that eager per-chunk generation should still be fine here (unlike WFC, which needed more careful
+  chunk-boundary handling in `InfinityWalker`).
 - **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile.
   Unchanged from `TileGridBase`.
 - **`we/propertyListener.ts`** / **`public/project.json`** — two WE properties so far, `slider_tilesize` and
