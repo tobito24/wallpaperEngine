@@ -12,6 +12,7 @@ export const AUTOTILE_QUARTER_SIZE_PX = 16;
 export const AUTOTILE_QUARTER_COLUMNS = 6;
 export const ANIMATED_AUTOTILE_FRAME_DURATION_MS = 250;
 export const CLIFF_SHEET_TILE_SIZE_PX = 32;
+export const OUTSIDE_SHEET_TILE_SIZE_PX = 32;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;
@@ -30,6 +31,9 @@ export const TOWN_DESIGNED_SHARE = 0.2;
 export const TOWN_MIN_LAND_SHARE = 0.97;
 export const TOWN_RING_WIDTH_TILES = 8;
 export const TOWN_OUTLINE_WOBBLE_TILES = 4;
+export const TOWN_BUILDING_MARGIN_TILES = 1;
+export const TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES = 4;
+export const TOWN_HOUSES_PER_CHUNK = 1.5;
 export const TOWN_OUTLINE_NOISE_FREQUENCY = 0.05;
 export const TOWN_OUTLINE_NOISE_OCTAVES = 1;
 export const TOWN_SAMPLE_STRIDE_TILES = 2;

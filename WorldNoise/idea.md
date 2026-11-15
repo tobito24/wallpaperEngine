@@ -232,6 +232,8 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
+  - [x] First buildings: Center, Mart and houses from the private `Outside` sheet placed along the existing roads (`townLayout.ts`)
+  - [ ] Road loop with fountain at the crossing, side paths, gates, trees and fences; houses follow the roads of that layout
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
 - [ ] Fences or trees where the edge of a town is open (no cliff wall)
