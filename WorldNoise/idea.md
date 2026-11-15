@@ -235,7 +235,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
 - [ ] Fences or trees where the edge of a town is open (no cliff wall)
-- [ ] Town outline: wavy and stepped instead of the straight chunk rectangle (the edge of the footprint moves by a noise offset of at most `TOWN_OUTLINE_WOBBLE_TILES`, with steps, so the plateau edge is no straight line; the wobble plus the ring of 8 tiles must fit into the buffer of 16 tiles; the layout, the gates and the roads must follow the outline)
+- [x] Town outline: wavy and stepped; the footprint only loses area (`TOWN_OUTLINE_WOBBLE_TILES` = 4, stepped noise), so it never leaves the chunk block and towns never overlap. Layout, gates and roads still treat the whole chunk footprint as the town (the layout step has to follow the outline)
 - [x] Cliff pieces for the east, west and north side from the rock kit of the private `Outside` tileset; corners by laying two pieces over each other
 - [x] Cliffs redone with the 12 stone pieces of `InfinityWalker/img/tileset.png` (edges, outer and inner corners, one set per level); the Outside rim pieces did not fit together
 - [ ] Stairs where a road crosses a cliff
