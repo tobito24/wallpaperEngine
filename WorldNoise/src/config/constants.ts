@@ -18,6 +18,11 @@ export const ELEVATION_LACUNARITY = 2;
 export const ELEVATION_RAW_RANGE_LOW = 0.2;
 export const ELEVATION_RAW_RANGE_HIGH = 0.8;
 export const ELEVATION_CONTRAST = 0.4;
+export const ELEVATION_SEA_LEVEL = 0.22;
+
+export const HEIGHT_LEVEL_OCTAVES = 2;
+export const HEIGHT_LEVEL_THRESHOLDS: readonly number[] = [0.55, 0.8];
+export const CLIFF_EDGE_SIZE_DIVISOR = 8;
 
 // slider_tickrate in public/project.json
 export const TICK_INTERVAL_DEFAULT_MS = 250;
