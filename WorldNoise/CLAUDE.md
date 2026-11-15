@@ -212,7 +212,10 @@ nothing restructured.
   around it, looked up in the tile's own cell only) and `levelWithTown(baseLevel, info)`: inside the level is the plateau
   level, in the ring a land level is limited to the plateau level minus one up to plus one, water stays water. `Chunk`
   uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`, water in the footprint
-  becomes land). Measured on 858 015 neighbouring land tile pairs around 40 towns: no level jump of two, the footprints of
+  becomes land). The outline is wavy: a tile of the chunk footprint is inside only when its distance to the nearest
+  non-town chunk is larger than a stepped noise value of 0 to `TOWN_OUTLINE_WOBBLE_TILES` (4, `outlineNoise`, frequency
+  0.15, 2 octaves); eroded tiles count as ring, so the footprint only shrinks and the ring (8) plus the wobble stays
+  inside the buffer. Measured on 858 015 neighbouring land tile pairs around 40 towns: no level jump of two, the footprints of
   neighbouring cells are at least 32 tiles apart, all footprint chunks lie in the inner 3 x 3 chunks.
 - **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint;
   `straightRoadRadiusOf`: the straight radius of the town, or null for a waypoint. The road layer reads these; the town
