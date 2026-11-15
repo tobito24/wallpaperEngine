@@ -8,7 +8,7 @@ Development of animated wallpapers for **Wallpaper Engine (Steam)**, a collectio
 - `ColorWar/`: rainbow cyclic-dominance tile automaton, cloned from TileGridBase (done for now, published)
 - `WorldNoise/`: noise and biome terrain generation, cloned from TileGridBase (active)
 - `FirstTestStuff/`: legacy experiments
-- `DesignCorner/`: Photoshop tileset sources
+- `DesignCorner/`: Photoshop tileset sources (`DesignCorner/private/` is git-ignored)
 
 Every project follows one idea and has an `idea.md` with its plan. See [CLAUDE.md](CLAUDE.md) for the rules and the map to
 [docs/](docs/), and `.claude/skills/` for the project skills (`/new-project`, `/publish-prep`, `/docs-maintenance`).

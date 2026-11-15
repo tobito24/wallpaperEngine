@@ -36,7 +36,7 @@ Each folder is one idea and stands alone; there is no shared code between them (
 | `ColorWar/` | Done for now, published | Fork of `TileGridBase`: a 7-color cyclic-dominance tile automaton. Two Workshop listings, "ColorWar" and "ColorWar: Rainbow". |
 | `WorldNoise/` | Active | Fork of `TileGridBase`: noise/biome terrain generation (elevation, moisture, temperature, biome table). |
 | `FirstTestStuff/` | Legacy | Early canvas experiments. Ignore unless asked. |
-| `DesignCorner/` | Assets | Photoshop sources for the tilesets. Binary, not code. |
+| `DesignCorner/` | Assets | Photoshop sources for the tilesets. Binary, not code. `DesignCorner/private/` is git-ignored: third-party art and game maps that must not be published stay there. |
 
 Lineage: `WorldGenerator` → `InfinityWalker` → `TileGridBase` → `ColorWar`, `WorldNoise`.
 
