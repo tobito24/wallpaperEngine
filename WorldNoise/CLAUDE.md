@@ -117,14 +117,14 @@ nothing restructured.
   Same seed means the smoothed field is the low-frequency part of the full one, so levels and ground stay
   correlated. `cliffTypeOf(level, neighbours)` gives the cliff piece of a land tile that has a *higher* neighbour (InfinityWalker's
   `getCliffType`: the piece lies on the lower tile; two orthogonal higher neighbours at a right angle make an inner
-  corner, one makes an edge named by the side it goes down to, only a diagonal one makes an outer corner; null without a
+  corner, otherwise the first higher side makes an edge named by the side it goes down to, only a diagonal one makes an outer corner; null without a
   higher neighbour). Water is never a cliff, a shore is a ground transition. Neighbouring land levels differ by at most one step (checked on 1 000 000
   tiles with the thresholds 0.55 and 0.8; with all 4 octaves a few jumps of two appeared). Why smoothed and not a
   filter: a 5 x 5 majority filter on the levels was measured and made it worse (tiny interior plateaus 16 to 198 in
   600 x 600 tiles at the old terrain scale), because it breaks the narrow middle band into pieces. Both noises use
   `ELEVATION_BASE_FREQUENCY` (0.01, features of about 100 tiles; the reason is in `idea.md`, Paths and towns). Measured
   on one seed and one area of 1 000 000 tiles (about 10 x 10 base features, so read the numbers as an order of
-  magnitude): water 24 % of the tiles, land split 36 / 28 / 36 % over levels 1 to 3, cliff edges on 6 % of the land
+  magnitude): water 24 % of the tiles, land split 36 / 28 / 36 % over levels 1 to 3, cliff edges (old four-side rule) on 6 % of the land
   tiles, 227 plateaus, 22 tiny ones (under 16 tiles) of which 3 inside the land and the rest at the shore, no level jump
   of two.
 - **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`), which the
@@ -161,7 +161,7 @@ nothing restructured.
   frame and never change. With the local sheets both water sheets have 8 frames (a cycle of 2 s); measured on the
   canvas over 4.6 s: 8 distinct images, a change about every 250 ms, 76 % of the screen's pixels (the land) never
   change.
-- **`tileset/cliffTiles.ts`** (new) � `drawCliff(ctx, cliffType, heightLevel, x, y, size)` draws one of the 12 cliff pieces
+- **`tileset/cliffTiles.ts`** (new) — `drawCliff(ctx, cliffType, heightLevel, x, y, size)` draws one of the 12 cliff pieces
   (4 edges, 4 outer and 4 inner corners) from the stone sets of `InfinityWalker/img/tileset.png` (256 x 1 920 px, 32 px
   tiles, 8 per row), copied to `dev-assets/tilesets/infinitywalker.png` and found by `import.meta.glob`; without it the
   function returns false and the tile has no cliff. Each of the three stone sets is a 3 x 3 frame at columns 3 to 5 (rows
@@ -232,7 +232,7 @@ nothing restructured.
   shade — this is exactly the extension point
   `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
   simulation color.
-- **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
+- **`world/Chunk.ts`** — `CHUNK_SIZE �— CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
   the noise channels directly (not constructor-injected) and evaluates elevation, height level, biome and road on a
   grid padded by one tile on every side, so the cliff pieces (which read the eight neighbours) and the autotile neighbour mask (computed from the final
   grounds, road and bridge included) of the border tiles come from the same pure functions of the coordinates, never
