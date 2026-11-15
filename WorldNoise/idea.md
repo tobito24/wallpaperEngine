@@ -148,7 +148,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 
 - [x] Clone `TileGridBase`, rename
 - [x] Elevation noise as flat color bands (water, beach, land, hills, mountain)
-- [ ] Redistribution curve on elevation, so there is less mid-value mush
+- [x] Redistribution curve on elevation, so there is less mid-value mush
 - [ ] Height levels as flat bands, with the speckle countermeasures; judged by eye before any cliff art
 - [ ] Moisture and temperature channels, each in its own folder like `elevation/`
 - [ ] Biome lookup table with flat colors (7 to 10 biomes), borders judged by eye

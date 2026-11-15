@@ -9,9 +9,10 @@ import {
 } from '../config/constants';
 import { redistributeElevation } from './redistribute';
 
-// Salted with the channel name so elevation/moisture/temperature don't end up as the same noise field.
+const ELEVATION_SEED = `${SEED}:elevation`;
+
 const rawElevationNoise: Noise2D = createFractalNoise2D(
-  `${SEED}:elevation`,
+  ELEVATION_SEED,
   ELEVATION_OCTAVES,
   ELEVATION_BASE_FREQUENCY,
   ELEVATION_PERSISTENCE,
