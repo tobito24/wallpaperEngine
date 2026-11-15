@@ -163,7 +163,8 @@ nothing restructured.
   has a lower land neighbour to the south; without the sheet the dark line is drawn as before. The other three sides
   are still the dark lines. `Outside` has no Gen 4 style cliff with wall, corners and stairs (the rock blocks at rows 98
   to 117 are rounded boulders, rows 104 to 107 are strips with a rock rim), so this is a placeholder for the cliff art
-  of the public version.
+  of the public version. The wall is drawn before the level shade, so it is shaded like the ground above it. The sheet
+  is loaded once at startup and is large (about 16 MB decoded); acceptable for development.
 - **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (5) chunks, one
   waypoint node per cell inside the inner 3 x 3 chunks (a buffer of one chunk), jittered by a hash of the seed and the
   cell (`core/keyedRandom.ts`: `randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only;

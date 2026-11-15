@@ -49,13 +49,13 @@ export class Tile {
       ctx.fillRect(screenX, screenY, size, size);
     }
 
+    const southWallDrawn = this.cliffEdges.south && drawCliffSouthWall(ctx, screenX, screenY, size);
+
     const shade = shadeForHeightLevel(this.heightLevel);
     if (shade) {
       ctx.fillStyle = shade;
       ctx.fillRect(screenX, screenY, size, size);
     }
-
-    const southWallDrawn = this.cliffEdges.south && drawCliffSouthWall(ctx, screenX, screenY, size);
 
     const edgeSize = Math.max(1, Math.floor(size / CLIFF_EDGE_SIZE_DIVISOR));
     ctx.fillStyle = CLIFF_EDGE_COLOR;
