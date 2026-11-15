@@ -10,7 +10,8 @@ and a tileset with autotile rules makes the surface look hand-made, in the style
 
 - No gameplay and no character; the camera pans and zooms over the world.
 - No stored world: the world is a pure function of the seed and the coordinates.
-- No WFC anywhere (terrain, paths, decoration, town interiors); that approach lives in `WorldGenerator` and `InfinityWalker`.
+- No WFC anywhere (terrain, paths, decoration, generated town layouts); that approach lives in `WorldGenerator` and
+  `InfinityWalker`. Generated towns are laid out by rules (see Design).
 - No towns that span several cells, no terraforming for paths. A town flattens its own footprint into a plateau and shapes a ring
   of terrain around it (see Design).
 
@@ -74,11 +75,17 @@ Reason for the shape: an endless world has no global view, so every decision mus
   Measured (97 % land rule, 3600 cells, one seed): the large 3 x 3 chunk town at the centre fits 18 % of the cells, an L or T
   shape of 5 chunks (any rotation) inside the 3 x 3 centre block 51 %, and some town (large, L or T, or a 2 x 2 chunk town at
   one of its 4 positions) 61 %. A cell whose candidates all fail keeps a plain waypoint.
-- **Towns are hand-built templates**, stamped into the footprint (chosen and rotated by hash), not generated. The model is the
-  classic Pokemon town: an even area with a loop of roads, buildings in the fields between, trees and cliffs as a frame, and
-  gates where the roads leave. During development a real town (Marmoria City) is rebuilt as the first template; own towns
-  replace it later. A template carries its footprint shape, its tiles and its gates. The template format is decided when the
-  step is built.
+- **Two kinds of towns: generated and designed.** The model of both is the classic Pokemon town: an even area with a loop of
+  roads, buildings in the fields between, trees and cliffs as a frame, and gates where the roads leave. Which kind a town is
+  follows from a hash of its cell; the designed ones are the rarer (the share is a constant, to be judged by eye).
+  - **Generated towns** get their layout from rules, not from WFC, and as a pure function of the cell hash and the footprint:
+    a road loop (or grid) that follows the footprint shape and ends at the gates, building lots along the roads, houses of
+    the two sizes (4 and 8 tiles wide) picked by hash, one Pokemon Center and one Mart per town (a small town may have only
+    the Center), trees and fences in what is left. These rules are a first proposal and are refined when the step is built.
+  - **Designed towns** are hand-built templates, stamped into the footprint (chosen and rotated by hash). During development
+    a real town (Marmoria City) is rebuilt as the first template; the public version gets own designs instead. A template
+    carries its footprint shape, its tiles and its gates. The template format is decided when the step is built.
+  Both kinds fill the same footprint shapes and gates, so the plateau, the ring and the roads treat them alike.
 - **A town sits on a plateau** (like Jubilife City or Marmoria City). It overrides the height level inside its footprint with one
   flat level, the most common land level of the base ground there, and shapes the terrain around it (see the rule below).
   Reason, measured: at
@@ -214,7 +221,8 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Stairs where a road crosses a level change
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [ ] Town candidates, land check, footprint shapes, gates
-- [ ] Town templates: format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
+- [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
+- [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [ ] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1), fences where it is open
 - [ ] Rule-based decoration
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
@@ -241,7 +249,8 @@ roads that always lead on and connect towns, and the seed can be changed from th
 - Desert decoration, swamp, jungle and lava need assets that are not on the sheet yet.
 - Number of height levels (3 is a first guess) and how strong the speckle countermeasures must be.
 - Town layouts: the Pokewiki city list (https://www.pokewiki.de/St%C3%A4dteverzeichnis) is the inspiration, above all the old
-  towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format.
+  towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format, the share of
+  designed towns, and the rules of the generated layout (first proposal in Design).
 - The list of town shapes beyond 2 x 2, 3 x 3, L and T.
 - Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks). A water animation
   speed property needs its own animation clock; scaling `nowMs` would make the frame jump whenever the value changes.
