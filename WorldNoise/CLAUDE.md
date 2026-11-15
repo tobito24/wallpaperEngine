@@ -214,7 +214,7 @@ nothing restructured.
   uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`, water in the footprint
   becomes land). The outline is wavy: a tile of the chunk footprint is inside only when its distance to the nearest
   non-town chunk is larger than a stepped noise value of 0 to `TOWN_OUTLINE_WOBBLE_TILES` (4, `outlineNoise`, frequency
-  0.15, 2 octaves); eroded tiles count as ring, so the footprint only shrinks and the ring still reaches 8 tiles outside
+  0.05, 1 octave: calm waves of about 20 tiles); eroded tiles count as ring, so the footprint only shrinks and the ring still reaches 8 tiles outside
   the chunks (the wobble never adds reach); a water tile in the eroded zone stays water. Measured on the straight
   outline, before the wobble: 858 015 neighbouring land tile pairs around 40 towns: no level jump of two, the footprints of
   neighbouring cells are at least 32 tiles apart, all footprint chunks lie in the inner 3 x 3 chunks.
