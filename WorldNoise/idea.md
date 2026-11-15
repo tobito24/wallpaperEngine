@@ -237,7 +237,8 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Fences or trees where the edge of a town is open (no cliff wall)
 - [ ] Town outline: wavy and stepped instead of the straight chunk rectangle (the edge of the footprint moves by a noise offset of at most `TOWN_OUTLINE_WOBBLE_TILES`, with steps, so the plateau edge is no straight line; the wobble plus the ring of 8 tiles must fit into the buffer of 16 tiles; the layout, the gates and the roads must follow the outline)
 - [x] Cliff pieces for the east, west and north side from the rock kit of the private `Outside` tileset; corners by laying two pieces over each other
-- [ ] Inner corners of cliffs (a diagonal neighbour is lower), and stairs where a road crosses a cliff
+- [x] Cliffs redone with the 12 stone pieces of `InfinityWalker/img/tileset.png` (edges, outer and inner corners, one set per level); the Outside rim pieces did not fit together
+- [ ] Stairs where a road crosses a cliff
 - [ ] Rule-based decoration
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)

@@ -2,7 +2,7 @@ import { TOWN_BIOME, biomeAt } from '../biome/biome';
 import type { Biome } from '../biome/biome';
 import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
-import { cliffEdgesOf, heightLevelAt } from '../elevation/heightLevel';
+import { cliffTypeOf, heightLevelAt } from '../elevation/heightLevel';
 import { moistureNoise } from '../moisture/moistureNoise';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
@@ -58,13 +58,16 @@ export class Chunk {
       for (let lx = 0; lx < CHUNK_SIZE; lx++) {
         const index = (ly + 1) * PADDED_SIZE + (lx + 1);
         const level = levels[index];
-        const cliffEdges = cliffEdgesOf(
-          level,
-          levels[index - PADDED_SIZE],
-          levels[index + 1],
-          levels[index + PADDED_SIZE],
-          levels[index - 1],
-        );
+        const cliffType = cliffTypeOf(level, {
+          north: levels[index - PADDED_SIZE],
+          northEast: levels[index - PADDED_SIZE + 1],
+          east: levels[index + 1],
+          southEast: levels[index + PADDED_SIZE + 1],
+          south: levels[index + PADDED_SIZE],
+          southWest: levels[index + PADDED_SIZE - 1],
+          west: levels[index - 1],
+          northWest: levels[index - PADDED_SIZE - 1],
+        });
 
         const ground = grounds[index];
         let neighbourMask = 0;
@@ -78,7 +81,7 @@ export class Chunk {
             originY + ly,
             elevations[index],
             level,
-            cliffEdges,
+            cliffType,
             biomes[index],
             ground,
             autotileIndexFor(neighbourMask),

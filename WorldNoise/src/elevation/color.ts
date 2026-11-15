@@ -1,7 +1,5 @@
 import { HEIGHT_LEVEL_THRESHOLDS } from '../config/constants';
 
-export const CLIFF_EDGE_COLOR = '#2b1d0e';
-
 const SHADE_BY_HEIGHT_LEVEL: ReadonlyArray<string | null> = [
   null,
   'rgba(0, 0, 0, 0.18)',

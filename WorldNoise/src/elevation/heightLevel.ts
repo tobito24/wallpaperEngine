@@ -12,13 +12,6 @@ import { redistributeElevation } from './redistribute';
 
 export const WATER_LEVEL = 0;
 
-export interface CliffEdges {
-  readonly north: boolean;
-  readonly east: boolean;
-  readonly south: boolean;
-  readonly west: boolean;
-}
-
 const smoothedElevationNoise = createFractalNoise2D(
   ELEVATION_SEED,
   HEIGHT_LEVEL_OCTAVES,
@@ -38,21 +31,57 @@ export function heightLevelAt(worldX: number, worldY: number, elevation: number)
   return level;
 }
 
-function dropsTo(level: number, neighbourLevel: number): boolean {
-  return neighbourLevel > WATER_LEVEL && neighbourLevel < level;
+export type CliffType =
+  | 'northEdge'
+  | 'eastEdge'
+  | 'southEdge'
+  | 'westEdge'
+  | 'northWestOuter'
+  | 'northEastOuter'
+  | 'southEastOuter'
+  | 'southWestOuter'
+  | 'northWestInner'
+  | 'northEastInner'
+  | 'southEastInner'
+  | 'southWestInner';
+
+export interface NeighbourLevels {
+  readonly north: number;
+  readonly northEast: number;
+  readonly east: number;
+  readonly southEast: number;
+  readonly south: number;
+  readonly southWest: number;
+  readonly west: number;
+  readonly northWest: number;
 }
 
-export function cliffEdgesOf(
-  level: number,
-  northLevel: number,
-  eastLevel: number,
-  southLevel: number,
-  westLevel: number,
-): CliffEdges {
-  return {
-    north: dropsTo(level, northLevel),
-    east: dropsTo(level, eastLevel),
-    south: dropsTo(level, southLevel),
-    west: dropsTo(level, westLevel),
-  };
+export function cliffTypeOf(level: number, neighbours: NeighbourLevels): CliffType | null {
+  if (level <= WATER_LEVEL) return null;
+
+  const n = neighbours.north > level;
+  const e = neighbours.east > level;
+  const s = neighbours.south > level;
+  const w = neighbours.west > level;
+  const nw = neighbours.northWest > level;
+  const ne = neighbours.northEast > level;
+  const se = neighbours.southEast > level;
+  const sw = neighbours.southWest > level;
+
+  if (!n && e && s && !w) return 'northWestInner';
+  if (!n && !e && s && w) return 'northEastInner';
+  if (n && e && !s && !w) return 'southWestInner';
+  if (n && !e && !s && w) return 'southEastInner';
+
+  if (n) return 'southEdge';
+  if (s) return 'northEdge';
+  if (e) return 'westEdge';
+  if (w) return 'eastEdge';
+
+  if (nw) return 'southEastOuter';
+  if (ne) return 'southWestOuter';
+  if (se) return 'northWestOuter';
+  if (sw) return 'northEastOuter';
+
+  return null;
 }
