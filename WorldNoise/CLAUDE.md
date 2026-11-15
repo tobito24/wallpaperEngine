@@ -115,10 +115,19 @@ nothing restructured.
   cliff edge.
 - **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`, the cliff
   edge color), which the cliff art replaces. The ground color comes from the biome.
+- **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → autotile file) and
+  `drawGroundFill(ctx, ground, x, y, size)`, which draws the pure fill tile of the ground's autotile sheet (column
+  `AUTOTILE_FILL_TILE_COLUMN` 1, row `AUTOTILE_FILL_TILE_ROW` 2 of the 96 x 128 XP layout, checked on the Essentials
+  `Dirt`, `Sand` and others) and returns false when there is no sheet, so the tile falls back to the biome's flat color.
+  The sheets are the development-only Essentials autotiles in `dev-assets/autotiles/` (see Working here), found by
+  `import.meta.glob`, so a clone without them still builds and runs with flat colors. Mapping: deepWater `Sea deep`,
+  shallowWater `Sea without shore`, sand `Sand`, grass `Light grass`, dirt `Dirt`, rock `Gravel`, snow `White path`. No
+  transitions yet: that is the autotile step.
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
-  value), a `heightLevel`, its `cliffEdges` and its `biome` (all set at construction), draws the biome color, the level
-  shade and the cliff edges — this is exactly the extension point `TileGridBase/CLAUDE.md` describes this file as,
-  and mirrors how `ColorWar`'s `Tile.ts` draws from its own simulation color.
+  value), a `heightLevel`, its `cliffEdges` and its `biome` (all set at construction), draws the ground (sheet fill,
+  else the biome color), the level shade and the cliff edges — this is exactly the extension point
+  `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
+  simulation color.
 - **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
   the noise channels directly (not constructor-injected), evaluates elevation and height level on a grid padded by
   one tile on every side, so the cliff edges of the border tiles come from the same pure functions of the
@@ -155,3 +164,7 @@ Same scripts as `TileGridBase` (this project hasn't diverged yet):
 - `npm run dev` — Vite dev server with HMR.
 - `npm run build` — type-checks (`tsc`) then produces `dist/`.
 - `npm run lint` / `npm run format` — ESLint / Prettier, same configs as `TileGridBase`.
+- Development assets: copy `sea-deep`, `sea-without-shore`, `sand`, `light-grass`, `dirt`, `gravel` and `white-path`
+  (all `.png`; from the Essentials v19.1 `Graphics/Autotiles/`: `Sea deep`, `Sea without shore`, `Sand`, `Light grass`,
+  `Dirt`, `Gravel`, `White path`) into `WorldNoise/dev-assets/autotiles/`. The folder is git-ignored on purpose: these
+  graphics come from Nintendo games and are not cleared for publishing, so they are replaced before any publish.

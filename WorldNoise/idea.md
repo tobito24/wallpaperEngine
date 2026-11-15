@@ -154,7 +154,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Biome lookup table with flat colors (3 x 3 land biomes plus water, beach, mountain and snow peak), borders judged by eye
 - [x] Confirm the autotile layout of the Alienor sheet (quarter tiles, 128 x 96 px per ground)
 - [x] Inventory of the grounds on the sheet, first grounds picked (see Design)
-- [ ] Dev assets: git-ignored asset folder in `WorldNoise/`, a few Essentials autotiles copied in, data table of grounds
+- [x] Dev assets: git-ignored asset folder in `WorldNoise/`, a few Essentials autotiles copied in, data table of grounds
 - [ ] Ground rank order and the XP autotile calculation (48-entry index table), first with placeholder pieces, then with the
       Essentials autotiles
 - [ ] Animated water (frames side by side, one global frame index)

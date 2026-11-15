@@ -12,6 +12,7 @@ export class WorldRenderer {
     nowMs: number,
     debugEnabled: boolean,
   ): void {
+    ctx.imageSmoothingEnabled = false;
     const bounds = camera.getVisibleTileBounds(viewportWidth, viewportHeight);
     const size = Math.ceil(camera.tileSize);
     const chunks = world.syncVisibleChunks(bounds, nowMs);

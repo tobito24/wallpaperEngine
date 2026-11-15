@@ -25,3 +25,6 @@ dist-ssr
 
 # Playwright MCP session artifacts (screenshots, page snapshots, console logs)
 .playwright-mcp/
+
+# Development-only assets (Essentials graphics, not cleared for publishing)
+WorldNoise/dev-assets/

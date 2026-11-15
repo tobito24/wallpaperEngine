@@ -8,6 +8,10 @@ export const ZOOM_STEP_PX = 4;
 export const PAN_SPEED_TILES_PER_SEC = 6;
 export const PAN_SPRINT_MULTIPLIER = 2;
 
+export const TILESET_TILE_SIZE_PX = 32;
+export const AUTOTILE_FILL_TILE_COLUMN = 1;
+export const AUTOTILE_FILL_TILE_ROW = 2;
+
 export const CHUNK_SIZE = 16;
 export const CHUNK_UNLOAD_DELAY_MS = 5000;
 
