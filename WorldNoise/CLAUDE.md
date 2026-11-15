@@ -218,6 +218,18 @@ nothing restructured.
   the chunks (the wobble never adds reach); a water tile in the eroded zone stays water. Measured on the straight
   outline, before the wobble: 858 015 neighbouring land tile pairs around 40 towns: no level jump of two, the footprints of
   neighbouring cells are at least 32 tiles apart, all footprint chunks lie in the inner 3 x 3 chunks.
+- **`town/townBuildings.ts`** and **`town/townLayout.ts`** (new) — the first town content. `BUILDING_TYPES` lists the
+  buildings as rectangles of the private `Outside` sheet (tile column, row, width, height; found by looking at the sheet
+  with a tile grid, as it holds no index): Pokemon Center 0.326 (5 x 5), Mart 0.331 (4 x 4), and five houses of 5 x 4
+  (0.171 blue, 0.192 orange, 0.198 red, 0.179 grey, 3.183 purple). `townDecorationAt(town, x, y)` returns the sheet tile a
+  tile shows or null. The layout of a town is computed once (cached per town, `TOWN_CACHE_MAX_ENTRIES`) as a pure function
+  of the town: tiles that are inside the wavy footprint and not road are free; the Center, the Mart (towns of two or more
+  chunks) and `floor(chunks * TOWN_HOUSES_PER_CHUNK)` random houses are tried in an order of positions shuffled by the town's seeded random stream, and one
+  fits where all its tiles are free and a road tile lies within `TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES` (4) of the tile in
+  front of its door (bottom middle). A placed building blocks its tiles and a margin of `TOWN_BUILDING_MARGIN_TILES` (1).
+  A building that finds no place is left out, the Center too (a small or heavily eroded town can end up without one; the road layout step has to guarantee it). The road layer is read by the layout, never the other way round. `Tile` draws the
+  piece (`tileset/outsideSheet.ts`, `drawOutsideTile`) after the cliff and before the level shade. Not done: the layout
+  of the roads themselves (loop, fountain, side paths, gates), trees and fences; no fountain was found in the sheet yet.
 - **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint;
   `straightRoadRadiusOf`: the straight radius of the town, or null for a waypoint. The road layer reads these; the town
   does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not built

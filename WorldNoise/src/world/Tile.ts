@@ -2,6 +2,8 @@ import type { Biome } from '../biome/biome';
 import { shadeForHeightLevel } from '../elevation/color';
 import type { CliffType } from '../elevation/heightLevel';
 import { drawCliff } from '../tileset/cliffTiles';
+import { drawOutsideTile } from '../tileset/outsideSheet';
+import type { SheetTile } from '../tileset/outsideSheet';
 import { fallbackColorOf } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { drawGroundAutotile } from '../tileset/groundSheets';
@@ -15,6 +17,7 @@ export class Tile {
   readonly biome: Biome;
   readonly ground: Ground;
   readonly autotileIndex: number;
+  readonly decoration: SheetTile | null;
 
   constructor(
     worldX: number,
@@ -25,6 +28,7 @@ export class Tile {
     biome: Biome,
     ground: Ground,
     autotileIndex: number,
+    decoration: SheetTile | null,
   ) {
     this.worldX = worldX;
     this.worldY = worldY;
@@ -34,6 +38,7 @@ export class Tile {
     this.biome = biome;
     this.ground = ground;
     this.autotileIndex = autotileIndex;
+    this.decoration = decoration;
   }
 
   draw(
@@ -49,6 +54,8 @@ export class Tile {
     }
 
     if (this.cliffType) drawCliff(ctx, this.cliffType, this.heightLevel, screenX, screenY, size);
+
+    if (this.decoration) drawOutsideTile(ctx, this.decoration, screenX, screenY, size);
 
     const shade = shadeForHeightLevel(this.heightLevel);
     if (shade) {

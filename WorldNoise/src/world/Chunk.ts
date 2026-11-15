@@ -6,8 +6,11 @@ import { cliffTypeOf, heightLevelAt } from '../elevation/heightLevel';
 import { moistureNoise } from '../moisture/moistureNoise';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
+import type { Town } from '../town/townPlacement';
+import { townDecorationAt } from '../town/townLayout';
 import { levelWithTown, townInfoAt } from '../town/townTerrain';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
+import type { SheetTile } from '../tileset/outsideSheet';
 import { groundWithRoad } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { continuesInto } from '../tileset/groundRank';
@@ -32,6 +35,7 @@ export class Chunk {
     const elevations = new Float64Array(PADDED_SIZE * PADDED_SIZE);
     const levels = new Uint8Array(PADDED_SIZE * PADDED_SIZE);
     const biomes: Biome[] = [];
+    const insideTowns: (Town | null)[] = [];
     for (let py = 0; py < PADDED_SIZE; py++) {
       for (let px = 0; px < PADDED_SIZE; px++) {
         const worldX = originX + px - 1;
@@ -40,6 +44,7 @@ export class Chunk {
         elevations[index] = elevationNoise(worldX, worldY);
         const townInfo = townInfoAt(worldX, worldY);
         levels[index] = levelWithTown(heightLevelAt(worldX, worldY, elevations[index]), townInfo);
+        insideTowns.push(townInfo?.inside ? townInfo.town : null);
         biomes.push(
           townInfo?.inside
             ? TOWN_BIOME
@@ -69,6 +74,9 @@ export class Chunk {
           northWest: levels[index - PADDED_SIZE - 1],
         });
 
+        const town = insideTowns[index];
+        const decoration: SheetTile | null = town ? townDecorationAt(town, originX + lx, originY + ly) : null;
+
         const ground = grounds[index];
         let neighbourMask = 0;
         for (const { dx, dy, bit } of NEIGHBOUR_OFFSETS) {
@@ -85,6 +93,7 @@ export class Chunk {
             biomes[index],
             ground,
             autotileIndexFor(neighbourMask),
+            decoration,
           ),
         );
       }
