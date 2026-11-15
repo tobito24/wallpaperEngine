@@ -2,6 +2,7 @@ import type { Biome } from '../biome/biome';
 import { CLIFF_EDGE_SIZE_DIVISOR } from '../config/constants';
 import { CLIFF_EDGE_COLOR, shadeForHeightLevel } from '../elevation/color';
 import type { CliffEdges } from '../elevation/heightLevel';
+import { drawCliffSouthWall } from '../tileset/cliffTiles';
 import { fallbackColorOf } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { drawGroundAutotile } from '../tileset/groundSheets';
@@ -48,6 +49,8 @@ export class Tile {
       ctx.fillRect(screenX, screenY, size, size);
     }
 
+    const southWallDrawn = this.cliffEdges.south && drawCliffSouthWall(ctx, screenX, screenY, size);
+
     const shade = shadeForHeightLevel(this.heightLevel);
     if (shade) {
       ctx.fillStyle = shade;
@@ -57,7 +60,9 @@ export class Tile {
     const edgeSize = Math.max(1, Math.floor(size / CLIFF_EDGE_SIZE_DIVISOR));
     ctx.fillStyle = CLIFF_EDGE_COLOR;
     if (this.cliffEdges.north) ctx.fillRect(screenX, screenY, size, edgeSize);
-    if (this.cliffEdges.south) ctx.fillRect(screenX, screenY + size - edgeSize, size, edgeSize);
+    if (this.cliffEdges.south && !southWallDrawn) {
+      ctx.fillRect(screenX, screenY + size - edgeSize, size, edgeSize);
+    }
     if (this.cliffEdges.west) ctx.fillRect(screenX, screenY, edgeSize, size);
     if (this.cliffEdges.east) ctx.fillRect(screenX + size - edgeSize, screenY, edgeSize, size);
   }

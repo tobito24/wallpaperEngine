@@ -11,6 +11,8 @@ export const PAN_SPRINT_MULTIPLIER = 2;
 export const AUTOTILE_QUARTER_SIZE_PX = 16;
 export const AUTOTILE_QUARTER_COLUMNS = 6;
 export const ANIMATED_AUTOTILE_FRAME_DURATION_MS = 250;
+export const TILESET_TILE_SIZE_PX = 32;
+export const CLIFF_WALL_HEIGHT_FRACTION = 0.5;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;
