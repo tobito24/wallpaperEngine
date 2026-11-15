@@ -10,6 +10,7 @@ export const PAN_SPRINT_MULTIPLIER = 2;
 
 export const AUTOTILE_QUARTER_SIZE_PX = 16;
 export const AUTOTILE_QUARTER_COLUMNS = 6;
+export const ANIMATED_AUTOTILE_FRAME_DURATION_MS = 250;
 
 export const CHUNK_SIZE = 16;
 export const CHUNK_UNLOAD_DELAY_MS = 5000;

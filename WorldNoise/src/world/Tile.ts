@@ -31,8 +31,16 @@ export class Tile {
     this.autotileIndex = autotileIndex;
   }
 
-  draw(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, size: number): void {
-    if (!drawGroundAutotile(ctx, this.biome.ground, this.autotileIndex, screenX, screenY, size)) {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    screenX: number,
+    screenY: number,
+    size: number,
+    animationFrame: number,
+  ): void {
+    if (
+      !drawGroundAutotile(ctx, this.biome.ground, this.autotileIndex, animationFrame, screenX, screenY, size)
+    ) {
       ctx.fillStyle = this.biome.color;
       ctx.fillRect(screenX, screenY, size, size);
     }

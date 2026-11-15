@@ -158,7 +158,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Ground rank order and the XP autotile calculation (48-entry index table), first with placeholder pieces, then with the
       Essentials autotiles (the placeholder stage was skipped: the Essentials autotiles were at hand and the table was
       checked against their source)
-- [ ] Animated water (frames side by side, one global frame index)
+- [x] Animated water (frames side by side, one global frame index)
 - [ ] Cliff walls where two levels meet, placeholder first, then the cliff blocks of the sheet
 - [ ] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks
 - [ ] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges, stairs on level changes
@@ -193,4 +193,5 @@ roads that always lead on and connect towns, and the seed can be changed from th
   towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format, and how the ramp margin
   of a mountain town keeps neighbouring levels within one step.
 - Cell size (4 x 4 chunks is a first guess) and the list of town shapes.
-- Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks).
+- Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks). A water animation
+  speed property needs its own animation clock; scaling `nowMs` would make the frame jump whenever the value changes.
