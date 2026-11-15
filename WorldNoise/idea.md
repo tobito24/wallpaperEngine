@@ -24,7 +24,7 @@ it, never the steps after it. A step can be switched off on its own for testing.
    and height level (the continuous elevation stays available as its own value).
 2. **Skeleton:** the cell grid with its nodes and edges (see Paths and towns); a pure function of the seed, it reads no tile.
 3. **Town:** is the tile inside a town footprint? Result: the tile of the town template stamped there, and the plateau: the
-   town overrides ground and height level inside its footprint (and the ramp margin around it).
+   town overrides ground and height level inside its footprint (and the terrace ring around it).
 4. **Path:** is the tile on a road? Roads end at the gates of the towns and read the final level, so stairs appear where it
    changes. Road on water becomes a bridge.
 5. **Decoration:** rule-based scatter (trees, rocks, flowers), never on water, path or town.
@@ -37,8 +37,11 @@ why chunk borders never show seams.
 
 Reason for the shape: an endless world has no global view, so every decision must be computable from a small neighbourhood.
 
-- A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon (size open: 3 x 3 or 4 x 4 chunks, see Open
-  questions; a chunk is 16 tiles). Each cell has one node.
+- A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon: **5 x 5 chunks per cell** (80 tiles; a chunk is
+  16 tiles). Reason, measured: a town needs room inside its cell. With 5 x 5 chunks at least one position fits a 3 x 3 chunk
+  town in 54 % of the cells and a 2 x 2 chunk town in 92 % (with 4 x 4: 35 % and 76 %, with 3 x 3: 19 % and 54 %), and two large
+  towns in neighbouring cells leave about 32 tiles of road between them, about the length of a Pokemon route (estimate, not
+  measured). Each cell has one node.
 - A node is either a **town candidate** or a plain **waypoint**. The position of a waypoint is jittered by
   `hash(seed, cx, cy)`; the node of a town is the centre of its footprint, and roads aim at the nearest gate of the footprint.
 - Each edge to a neighbour cell exists by `hash(edge id)`, so both cells agree without knowing each other.
@@ -66,14 +69,25 @@ Reason for the shape: an endless world has no global view, so every decision mus
   replace it later. A template carries its footprint shape, its tiles and its gates. The template format is decided when the
   step is built.
 - **A town sits on a plateau** (like Jubilife City or Marmoria City). It overrides the height level inside its footprint with one
-  flat level and gets a cliff ring and a ramp margin where that level meets the surrounding terrain. Reason, measured: at
+  flat level, the most common land level of the base ground there, and shapes the terrain around it (see the rule below).
+  Reason, measured: at
   the old terrain scale a footprint of town size almost never lies on one level (0.1 % of the positions for 28 x 32, 0 % for
   50 x 38), and at the enlarged scale it is still rare (at least 90 % of the tiles on one land level at 2.8 % of the 2 x 2
   chunk positions and 0.4 % of the 3 x 3 chunk positions), so a town that waits for a flat spot would hardly ever appear. The
   footprint is decided from the *base* ground (before any override), and the final ground is the base ground changed by the
   town. The town reads only layers before it (base ground and skeleton); the path layer reads the town, never the other way
-  round. How the ramp margin keeps neighbouring levels within one step where the plateau meets terrain two levels away is
-  open. Later, a mountain can stand next to a town so that it lies in a valley.
+  round. Later, a mountain can stand next to a town so that it lies in a valley.
+- **The terrace ring** keeps every cliff one step high where the plateau meets terrain that is two levels away (with three
+  levels, plateau 3 next to terrain 1, or the other way round). Around the footprint lies a ring of about 8 tiles (width
+  judged by eye). Inside the footprint the level is the plateau level P. Inside the ring the level is the base terrain level
+  t limited to P - 1 .. P + 1. Then the plateau and the ring differ by at most one step, and the ring and the terrain behind
+  it differ by at most one step (because with three levels |t - P| is at most 2), so the "one step only" rule of the height
+  levels holds everywhere, and where the terrain is close to P the ring is the terrain itself, so it only shows as a terrace
+  where it is needed. Base water outside the footprint stays water (a shore, not a cliff).
+- **Open and fenced edges:** a cliff exists only where the plateau and the ring differ. Where the terrain behind the town is on
+  the plateau level there is no wall, the town is open there. A wanted barrier there is a fence (or trees), placed by the town
+  template or a decoration rule; a gap in the barrier is allowed and gives variety. Roads leave through gates, on stairs where
+  a cliff is in the way.
 
 ### Height levels and cliffs
 
@@ -184,7 +198,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [ ] Town candidates, land check, footprint shapes, gates
 - [ ] Town templates: format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
-- [ ] Town plateau: height override inside the footprint, cliff ring, ramp margin
+- [ ] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1), fences where it is open
 - [ ] Rule-based decoration
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)
@@ -210,13 +224,11 @@ roads that always lead on and connect towns, and the seed can be changed from th
 - Desert decoration, swamp, jungle and lava need assets that are not on the sheet yet.
 - Number of height levels (3 is a first guess) and how strong the speckle countermeasures must be.
 - Town layouts: the Pokewiki city list (https://www.pokewiki.de/St%C3%A4dteverzeichnis) is the inspiration, above all the old
-  towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format, and how the ramp margin
-  of a mountain town keeps neighbouring levels within one step.
-- **Cell size.** The user wants one cell of the grid to be 3 x 3 chunks (48 tiles), as in Mystery Dungeon, and towns of up to
-  3 x 3 chunks. Then the largest town fills its whole cell and two large towns in neighbouring cells would touch with no
-  forest or room between them. Options: cells of 4 x 4 chunks with the town placed anywhere inside (a margin of one chunk
-  at least on one side); or cells of 3 x 3 chunks and a rule that two edge-adjacent cells never both hold a town (fewer
-  towns, one more local rule). Not decided.
+  towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format.
+- **Terrace ring and the cell border.** A footprint is aligned to chunks inside its 5 x 5 chunk cell, so it can touch the cell
+  edge, and the ring of about 8 tiles around it then reaches into the neighbouring cell. Options: a chunk asks the towns of
+  its own and the eight neighbouring cells, and where two rings overlap the nearer town wins; or the footprint keeps one
+  chunk from the cell edge, which leaves a 3 x 3 chunk town one position in its cell and lowers the fit rate. Not decided.
 - The list of town shapes beyond 2 x 2, 3 x 3, L and T.
 - Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks). A water animation
   speed property needs its own animation clock; scaling `nowMs` would make the frame jump whenever the value changes.
