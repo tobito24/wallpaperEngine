@@ -208,7 +208,7 @@ Each step is built and looked at before the next one starts. The plan is final b
       Essentials autotiles (the placeholder stage was skipped: the Essentials autotiles were at hand and the table was
       checked against their source)
 - [x] Animated water (frames side by side, one global frame index)
-- [ ] Cliff walls where two levels meet, placeholder first, then the cliff blocks of the sheet
+- [x] Cliff walls where two levels meet, placeholder first: south wall from the dark rock face of the private `Outside` tileset, the other sides dark lines (the real cliff art, with corners and stairs, comes with the art of the public version)
 - [x] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks (16 tiles per chunk, 5 x 5 chunks per cell)
 - [x] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges (waypoint nodes only, the bridge is a flat color)
 - [ ] Stairs where a road crosses a level change
