@@ -1,5 +1,6 @@
+import type { Biome } from '../biome/biome';
 import { CLIFF_EDGE_SIZE_DIVISOR } from '../config/constants';
-import { CLIFF_EDGE_COLOR, colorForElevation, shadeForHeightLevel } from '../elevation/color';
+import { CLIFF_EDGE_COLOR, shadeForHeightLevel } from '../elevation/color';
 import type { CliffEdges } from '../elevation/heightLevel';
 
 export class Tile {
@@ -8,6 +9,7 @@ export class Tile {
   readonly elevation: number;
   readonly heightLevel: number;
   readonly cliffEdges: CliffEdges;
+  readonly biome: Biome;
 
   constructor(
     worldX: number,
@@ -15,16 +17,18 @@ export class Tile {
     elevation: number,
     heightLevel: number,
     cliffEdges: CliffEdges,
+    biome: Biome,
   ) {
     this.worldX = worldX;
     this.worldY = worldY;
     this.elevation = elevation;
     this.heightLevel = heightLevel;
     this.cliffEdges = cliffEdges;
+    this.biome = biome;
   }
 
   draw(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, size: number): void {
-    ctx.fillStyle = colorForElevation(this.elevation);
+    ctx.fillStyle = this.biome.color;
     ctx.fillRect(screenX, screenY, size, size);
 
     const shade = shadeForHeightLevel(this.heightLevel);
