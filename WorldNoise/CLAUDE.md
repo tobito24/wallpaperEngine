@@ -164,13 +164,18 @@ nothing restructured.
   `TileRegion` (tile column and row plus a rectangle inside the tile). This is the general way to draw non-autotile
   tileset art (cliffs now, later buildings, trees, decoration). The sheet is `dev-assets/tilesets/outside.png`, found by
   `import.meta.glob`; without it the function returns false and the caller falls back.
-- **`tileset/cliffTiles.ts`** (new) — `drawCliffSouthWall`: the south wall of a plateau is the lower half of `Outside`
-  tile column 1, row 100 (dark brown rock face), drawn into the lower `CLIFF_WALL_HEIGHT_FRACTION` (half) of a tile that
-  has a lower land neighbour to the south; without the sheet the dark line is drawn as before. The other three sides
-  are still the dark lines. `Outside` has no Gen 4 style cliff with wall, corners and stairs (the rock blocks at rows 98
-  to 117 are rounded boulders, rows 104 to 107 are strips with a rock rim), so this is a placeholder for the cliff art
-  of the public version. The wall is drawn before the level shade, so it is shaded like the ground above it. The sheet
-  is loaded once at startup and is large (about 16 MB decoded); acceptable for development.
+- **`tileset/cliffTiles.ts`** (new) — the cliff pieces of a land tile that has a lower land neighbour on one side, from
+  the rock kit of `Outside` (rows 98 to 117; the pieces are transparent where the ground shows through, so they lay over
+  each other): south wall = lower half of tile 1.100 (dark rock face, `CLIFF_WALL_HEIGHT_FRACTION` of the tile);
+  west rim = tile 3.102 (rock on the left half), east rim = tile 5.102 (rock on the right half), both from the
+  U-shaped rock frame of the sheet (3.101 to 5.103); north rim = the thin top line of tile 0.107, the line of a ledge
+  (`CLIFF_NORTH_RIM_HEIGHT_FRACTION`). A corner is a tile with two lower neighbours, so its two pieces overlay; the
+  bottom corner pieces 3.103 and 5.103 of the frame, the slanted variants 2.102 and 6.102 and the same kit in grey
+  (rows 108 to 117) are not used yet. Roles were read from the opacity of the tiles. Without the sheet the dark lines
+  are drawn as before. Not done: inner corners (only a diagonal neighbour is lower) and stairs. The rest of the kit are
+  rounded boulders and ledge strips of sand, dirt and grass (rows 104 to 106). Pieces are drawn before the level shade, so
+  they are shaded like the ground above. The sheet is loaded once at startup and is large (about 16 MB decoded);
+  acceptable for development.
 - **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (5) chunks, one
   waypoint node per cell inside the inner 3 x 3 chunks (a buffer of one chunk), jittered by a hash of the seed and the
   cell (`core/keyedRandom.ts`: `randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only;
