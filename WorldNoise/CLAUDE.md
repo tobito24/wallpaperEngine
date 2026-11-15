@@ -47,7 +47,8 @@ nothing restructured.
   **`ELEVATION_OCTAVES`, `ELEVATION_BASE_FREQUENCY`, `ELEVATION_PERSISTENCE`, `ELEVATION_LACUNARITY`,
   `ELEVATION_RAW_RANGE_LOW`/`_HIGH`, `ELEVATION_CONTRAST`, the elevation limits `ELEVATION_DEEP_WATER_LEVEL`,
   `ELEVATION_SEA_LEVEL`, `ELEVATION_BEACH_LEVEL`, `ELEVATION_ROCK_LEVEL`, `HEIGHT_LEVEL_OCTAVES`,
-  `HEIGHT_LEVEL_THRESHOLDS`, `CLIFF_EDGE_SIZE_DIVISOR`** and the seven noise constants of the elevation channel again
+  `HEIGHT_LEVEL_THRESHOLDS`, `CLIFF_EDGE_SIZE_DIVISOR`, `CLIFF_WALL_HEIGHT_FRACTION`,
+  `CLIFF_NORTH_RIM_HEIGHT_FRACTION`, `TILESET_TILE_SIZE_PX`** and the seven noise constants of the elevation channel again
   for each of `MOISTURE_*` and `TEMPERATURE_*` (octaves, base frequency, persistence, lacunarity, raw range low/high,
   contrast), plus `TEMPERATURE_REFERENCE_ELEVATION`, `TEMPERATURE_DROP_PER_ELEVATION` and the band thresholds
   `MOISTURE_BAND_THRESHOLDS` / `TEMPERATURE_BAND_THRESHOLDS`, and the road constants `CELL_SIZE_CHUNKS`,
@@ -234,7 +235,8 @@ nothing restructured.
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
   value), a `heightLevel`, its `cliffEdges`, its `biome`, its final `ground` (the biome's ground, or road or bridge)
   and its `autotileIndex` (all set at construction), draws the ground (autotile, else the flat color of road or
-  bridge, else the biome color), the level shade and the cliff edges — this is exactly the extension point
+  bridge, else the biome color), the cliff pieces (a dark line per side where a piece cannot be drawn) and the level
+  shade — this is exactly the extension point
   `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
   simulation color.
 - **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
