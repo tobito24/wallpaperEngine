@@ -28,3 +28,6 @@ dist-ssr
 
 # Development-only assets (Essentials graphics, not cleared for publishing)
 WorldNoise/dev-assets/
+
+# Material that must not be published (third-party art, maps from games): stays on this machine
+DesignCorner/private/

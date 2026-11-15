@@ -141,7 +141,7 @@ rule on `(seed, x, y)` is consistent across chunk borders without extra work, wh
   Measured on the Essentials v19.1 autotiles (`Graphics/Autotiles/*.png`): one autotile is **96 x 128 px** (3 x 4 tiles of
   32 px, 6 x 8 quarters = 48 pieces). The renderer uses this layout and the well-known 48-entry XP index table.
   `Sea.png` is 768 x 128 px: eight frames of 96 x 128 side by side, i.e. **animated water** is part of the same standard.
-  The Alienor Tileset v2 (`DesignCorner/dewbuse-*.png`, 896 x 2048 px) uses the same 48 quarters but a landscape layout of
+  The Alienor Tileset v2 (`DesignCorner/private/dewbuse-*.png`, 896 x 2048 px) uses the same 48 quarters but a landscape layout of
   128 x 96 px per ground (8 x 6 quarters, shown as sample shapes). It is converted once by a small script into the XP layout
   instead of being supported as a second layout. Each Alienor ground comes twice: on a transparent background and on grass.
   The Essentials autotiles have their base color painted in (for example a pale green behind `Dirt.png`), so a transition is
@@ -175,7 +175,7 @@ rule on `(seed, x, y)` is consistent across chunk borders without extra work, wh
 
 ### First content and extensibility
 
-Source: the inventory of `DesignCorner/dewbuse-*.png` (cells `column.row`, 128 x 96 px each, roughly verified).
+Source: the inventory of `DesignCorner/private/dewbuse-*.png` (cells `column.row`, 128 x 96 px each, roughly verified).
 
 - **Grounds, first guess of the rank order:** deep water (2.6), water (2.5), sand (2.0), grass (base), dirt (2.2), rock (2.7),
   snow (from 2.13). Because the rim is baked in, grass is the base and the others lie on it as overlays.
@@ -231,12 +231,12 @@ roads that always lead on and connect towns, and the seed can be changed from th
 
 - **Art source and credits.** The user has no license for any artwork. The project is a non-commercial hobby project, and the
   artists are named in the Workshop description. Development may use the Essentials graphics; publishing may not (see Assets
-  during development and at publish). `DesignCorner/tileset-biome.png` is already tracked in git; whether that is acceptable is
-  to be decided by the user. `DesignCorner/tileset-biome.png` carries the note "Please give Credit to
-  Kyle-Dove and Sagaxxy!"; whether that allows reuse in a published wallpaper is not clarified. The Alienor Tileset v2
-  (`DesignCorner/dewbuse-*.png`, DeviantArt, by anarlaurendil) is said by the user to be free to use; its exact terms and the
-  credit text wanted are still to be copied from the page into `publishing.md`. Other Pokemon-style fan tilesets may be used if
-  their credit rules are followed.
+  during development and at publish). Third-party material that is not cleared for publishing (the Alienor sheet, the biome
+  tileset with the note "Please give Credit to Kyle-Dove and Sagaxxy!", the example town maps from the Pokemon games) lives in
+  `DesignCorner/private/`, which is git-ignored. `tileset-biome.png` had been committed earlier: it is no longer in the
+  repo, but it is still in two older commits of the public repository; removing it from the history needs a history rewrite
+  and a force push, which has not been done. The Alienor Tileset v2 (`DesignCorner/private/dewbuse-*.png`, DeviantArt, by
+  anarlaurendil) is said by the user to be free to use, but its exact terms were never copied from the page.
 - The tile size of `tileset-biome.png` is not measured. It may be 16 px and would then need scaling or redrawing to 32 px.
 - Desert decoration, swamp, jungle and lava need assets that are not on the sheet yet.
 - Number of height levels (3 is a first guess) and how strong the speckle countermeasures must be.
