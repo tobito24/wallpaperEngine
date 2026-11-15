@@ -7,12 +7,17 @@ import {
   ELEVATION_PERSISTENCE,
   SEED,
 } from '../config/constants';
+import { redistributeElevation } from './redistribute';
 
-// Salted with the channel name so elevation/moisture/temperature don't end up as the same noise field.
-export const elevationNoise: Noise2D = createFractalNoise2D(
-  `${SEED}:elevation`,
+const ELEVATION_SEED = `${SEED}:elevation`;
+
+const rawElevationNoise: Noise2D = createFractalNoise2D(
+  ELEVATION_SEED,
   ELEVATION_OCTAVES,
   ELEVATION_BASE_FREQUENCY,
   ELEVATION_PERSISTENCE,
   ELEVATION_LACUNARITY,
 );
+
+export const elevationNoise: Noise2D = (x: number, y: number): number =>
+  redistributeElevation(rawElevationNoise(x, y));

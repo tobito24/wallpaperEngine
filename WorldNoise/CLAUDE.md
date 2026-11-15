@@ -21,9 +21,9 @@ Replace `TileGridBase`'s placeholder even/odd checkerboard with real procedurall
 - A **biome lookup table** (Minecraft/Terraria-style) mapping `(elevation, moisture, temperature)` → biome →
   tile appearance.
 
-Moisture/temperature, the redistribution curve, and the biome lookup table don't exist yet — only the elevation
-channel is in so far, rendered as flat color bands (no biome logic, just "is this elevation value water/beach/
-land/hills/mountain").
+Moisture/temperature and the biome lookup table don't exist yet — only the elevation channel (with its
+redistribution curve) is in so far, rendered as flat color bands (no biome logic, just "is this elevation value
+water/beach/land/hills/mountain").
 
 ## Inherited from `TileGridBase` (unchanged)
 
@@ -45,7 +45,8 @@ nothing restructured.
   (inherited from `TileGridBase`), plus **`SEED`** (new — the one shared root seed for every pseudo-random/noise
   channel in the project, not just elevation; each channel salts it with its own name, e.g. `` `${SEED}:elevation` ``
   in `elevation/elevationNoise.ts`, so channels don't end up as identical noise fields) and
-  **`ELEVATION_OCTAVES`, `ELEVATION_BASE_FREQUENCY`, `ELEVATION_PERSISTENCE`, `ELEVATION_LACUNARITY`** (new —
+  **`ELEVATION_OCTAVES`, `ELEVATION_BASE_FREQUENCY`, `ELEVATION_PERSISTENCE`, `ELEVATION_LACUNARITY`,
+  `ELEVATION_RAW_RANGE_LOW`/`_HIGH`, `ELEVATION_CONTRAST`** (new —
   tuning constants for the elevation channel live here, same as `ColorWar`'s `PRESET_*` constants, even though the
   code that consumes them lives in a feature folder).
 - **`core/noise.ts`** (new, generic infra alongside `core/Ticker.ts`) — `createFractalNoise2D(seed, octaves,
@@ -56,10 +57,17 @@ nothing restructured.
   [0, 1]. Knows nothing about elevation/tiles/biomes — purely a noise-field primitive, meant to be reused as-is
   for moisture/temperature once those channels get their own `elevation`-style folder.
 - **`elevation/elevationNoise.ts`** (new) — `export const elevationNoise: Noise2D`, a single module-level
-  instance built from `createFractalNoise2D` + the `ELEVATION_*` constants above. A ready-to-call function, not a
-  class to instantiate — there's currently no live-mutable elevation state (no WE property changes the seed), so
-  unlike `ColorWar`'s `WorldPreset` this doesn't need to be owned/passed around by `World`; `Chunk` just imports
-  it directly.
+  function: the private raw fractal noise (`createFractalNoise2D` + the `ELEVATION_*` constants above) passed through
+  `redistributeElevation`. A ready-to-call function, not a class to instantiate — there's currently no live-mutable
+  elevation state (no WE property changes the seed), so unlike `ColorWar`'s `WorldPreset` this doesn't need to be
+  owned/passed around by `World`; `Chunk` just imports it directly.
+- **`elevation/redistribute.ts`** (new) — `redistributeElevation(raw)`: raw fractal noise is bell-shaped (98 % of
+  the values between 0.24 and 0.76, half between 0.4 and 0.6), so the raw range `ELEVATION_RAW_RANGE_LOW`..`HIGH`
+  is stretched to 0..1 (values outside are clamped) and then pushed away from the middle by an S-curve.
+  `ELEVATION_CONTRAST` is in [0, 1): 0 leaves the stretched value unchanged, higher values give more lowland and
+  highland and less middle. Both ranges are checked when the module loads, so a bad constant fails loudly instead
+  of producing NaN. The result is symmetric around 0.5. Retuning any of the three constants moves the color
+  thresholds in `elevation/color.ts`, which are measured against the redistributed values.
 - **`elevation/color.ts`** (new) — `colorForElevation(elevation)`, mapping a 0-1 elevation value to a color via a
   small hardcoded stop table (`ELEVATION_COLOR_STOPS`) — deep water / shallow water / beach / lowland / hills /
   mountain. **This is a placeholder for the eventual biome lookup**, not the real biome system — no
