@@ -46,9 +46,9 @@ nothing restructured.
   channel in the project, not just elevation; each channel salts it with its own name, e.g. `` `${SEED}:elevation` ``
   in `elevation/elevationNoise.ts`, so channels don't end up as identical noise fields) and
   **`ELEVATION_OCTAVES`, `ELEVATION_BASE_FREQUENCY`, `ELEVATION_PERSISTENCE`, `ELEVATION_LACUNARITY`,
-  `ELEVATION_RAW_RANGE_LOW`/`_HIGH`, `ELEVATION_CONTRAST`** (new —
-  tuning constants for the elevation channel live here, same as `ColorWar`'s `PRESET_*` constants, even though the
-  code that consumes them lives in a feature folder).
+  `ELEVATION_RAW_RANGE_LOW`/`_HIGH`, `ELEVATION_CONTRAST`, `ELEVATION_SEA_LEVEL`, `HEIGHT_LEVEL_OCTAVES`,
+  `HEIGHT_LEVEL_THRESHOLDS`** (new — tuning constants for the elevation channel live here, same as `ColorWar`'s
+  `PRESET_*` constants, even though the code that consumes them lives in a feature folder).
 - **`core/noise.ts`** (new, generic infra alongside `core/Ticker.ts`) — `createFractalNoise2D(seed, octaves,
   baseFrequency, persistence, lacunarity)`: wraps `simplex-noise`'s `createNoise2D`, seeded via `alea(seed)` (so
   the same seed always regenerates the same world — no world state needs to be stored/persisted). Layers
@@ -68,19 +68,35 @@ nothing restructured.
   highland and less middle. Both ranges are checked when the module loads, so a bad constant fails loudly instead
   of producing NaN. The result is symmetric around 0.5. Retuning any of the three constants moves the color
   thresholds in `elevation/color.ts`, which are measured against the redistributed values.
+- **`elevation/heightLevel.ts`** (new) — `heightLevelAt(x, y, elevation)`: level 0 is water (elevation at or below
+  `ELEVATION_SEA_LEVEL`), land gets level 1..N from a *smoothed* elevation, i.e. the same seed with only
+  `HEIGHT_LEVEL_OCTAVES` (2) octaves, redistributed like the full elevation and cut at `HEIGHT_LEVEL_THRESHOLDS`.
+  Same seed means the smoothed field is the low-frequency part of the full one, so levels and ground stay
+  correlated. `cliffEdgesOf(...)` marks the sides of a land tile whose neighbour is a lower *land* level; water is never
+  a cliff, a shore is a ground transition. Neighbouring land levels differ by at most one step (checked on 1 000 000
+  tiles with the thresholds 0.55 and 0.8; with all 4 octaves a few jumps of two appeared). Why smoothed and not a
+  filter: a 5 x 5 majority filter on the levels was measured and made it worse (tiny interior plateaus 16 to 198 in
+  600 x 600 tiles), because it breaks the narrow middle band into pieces. With 2 octaves there is about one tiny
+  plateau (under 16 tiles) inside the land per 22 000 tiles; the other tiny ones (62 per 360 000 tiles) sit on shores.
+  Land is about 76 % of the tiles, split 38 / 28 / 34 % over levels 1 to 3, and about 12 % of the land tiles carry a
+  cliff edge.
 - **`elevation/color.ts`** (new) — `colorForElevation(elevation)`, mapping a 0-1 elevation value to a color via a
   small hardcoded stop table (`ELEVATION_COLOR_STOPS`) — deep water / shallow water / beach / lowland / hills /
-  mountain. **This is a placeholder for the eventual biome lookup**, not the real biome system — no
+  mountain. It also holds the temporary flat-band look of the height levels (`shadeForHeightLevel`, the cliff edge
+  color), which the cliff art replaces. **This is a placeholder for the eventual biome lookup**, not the real biome system — no
   moisture/temperature input yet, so e.g. there's no way to distinguish desert from tundra at the same elevation.
   Same role `simulation/Color.ts`'s `colorHex()` plays in `ColorWar`.
-- **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Now holds an `elevation: number` (0-1, set at
-  construction) and calls `colorForElevation()` from `elevation/color.ts` to draw — this is exactly the extension
+- **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Now holds an `elevation: number` (0-1), a `heightLevel`
+  and its `cliffEdges` (all set at construction), draws the ground color, the level shade and the cliff edges via
+  `elevation/color.ts` — this is exactly the extension
   point `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` calls `colorHex()`
   from `simulation/Color.ts`.
 - **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports
-  `elevationNoise` directly (not constructor-injected) and calls it once per tile with that tile's world
-  coordinates to get its elevation. Noise-based generation is cheap enough that eager per-chunk generation should
-  still be fine here (unlike WFC, which needed more careful chunk-boundary handling in `InfinityWalker`).
+  `elevationNoise` directly (not constructor-injected) and evaluates elevation and height level on a grid padded by
+  one tile on every side, so the cliff edges of the border tiles come from the same pure functions of the
+  coordinates, never from a neighbouring chunk (no seams). Noise-based generation is cheap enough that eager
+  per-chunk generation should still be fine here (unlike WFC, which needed more careful chunk-boundary handling in
+  `InfinityWalker`).
 - **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile.
   Unchanged from `TileGridBase`.
 - **`we/propertyListener.ts`** / **`public/project.json`** — two WE properties so far, `slider_tilesize` and

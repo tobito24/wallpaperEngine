@@ -9,7 +9,7 @@ import {
 } from '../config/constants';
 import { redistributeElevation } from './redistribute';
 
-const ELEVATION_SEED = `${SEED}:elevation`;
+export const ELEVATION_SEED = `${SEED}:elevation`;
 
 const rawElevationNoise: Noise2D = createFractalNoise2D(
   ELEVATION_SEED,
