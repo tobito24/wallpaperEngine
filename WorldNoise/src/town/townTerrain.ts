@@ -41,15 +41,30 @@ function outlineWobbleAt(x: number, y: number): number {
   return Math.floor(share * (TOWN_OUTLINE_WOBBLE_TILES + 1));
 }
 
+const townMembershipCache = new WeakMap<Town, readonly boolean[]>();
+
+function membershipOf(town: Town, blockX: number, blockY: number): readonly boolean[] {
+  const cached = townMembershipCache.get(town);
+  if (cached) return cached;
+  const membership = new Array<boolean>(TOWN_BLOCK_CHUNKS * TOWN_BLOCK_CHUNKS).fill(false);
+  for (const [chunkX, chunkY] of town.chunks) {
+    membership[(chunkY - blockY) * TOWN_BLOCK_CHUNKS + (chunkX - blockX)] = true;
+  }
+  townMembershipCache.set(town, membership);
+  return membership;
+}
+
 function distanceToOutsideOfTown(x: number, y: number, town: Town): number {
   const blockX = town.cx * CELL_SIZE_CHUNKS + CELL_BUFFER_CHUNKS;
   const blockY = town.cy * CELL_SIZE_CHUNKS + CELL_BUFFER_CHUNKS;
-  const townChunks = new Set(town.chunks.map(([chunkX, chunkY]) => `${chunkX},${chunkY}`));
+  const membership = membershipOf(town, blockX, blockY);
   let nearest = Infinity;
-  for (let chunkY = blockY - 1; chunkY <= blockY + TOWN_BLOCK_CHUNKS; chunkY++) {
-    for (let chunkX = blockX - 1; chunkX <= blockX + TOWN_BLOCK_CHUNKS; chunkX++) {
-      if (townChunks.has(`${chunkX},${chunkY}`)) continue;
-      nearest = Math.min(nearest, distanceToChunk(x, y, chunkX, chunkY));
+  for (let offsetY = -1; offsetY <= TOWN_BLOCK_CHUNKS; offsetY++) {
+    for (let offsetX = -1; offsetX <= TOWN_BLOCK_CHUNKS; offsetX++) {
+      const insideBlock =
+        offsetX >= 0 && offsetX < TOWN_BLOCK_CHUNKS && offsetY >= 0 && offsetY < TOWN_BLOCK_CHUNKS;
+      if (insideBlock && membership[offsetY * TOWN_BLOCK_CHUNKS + offsetX]) continue;
+      nearest = Math.min(nearest, distanceToChunk(x, y, blockX + offsetX, blockY + offsetY));
     }
   }
   return nearest;
