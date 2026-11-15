@@ -209,8 +209,9 @@ Each step is built and looked at before the next one starts. The plan is final b
       checked against their source)
 - [x] Animated water (frames side by side, one global frame index)
 - [ ] Cliff walls where two levels meet, placeholder first, then the cliff blocks of the sheet
-- [ ] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks
-- [ ] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges, stairs on level changes
+- [x] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks (16 tiles per chunk, 5 x 5 chunks per cell)
+- [x] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges (waypoint nodes only, the bridge is a flat color)
+- [ ] Stairs where a road crosses a level change
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [ ] Town candidates, land check, footprint shapes, gates
 - [ ] Town templates: format, stamping with rotation, Marmoria City rebuilt as the first (dev) template

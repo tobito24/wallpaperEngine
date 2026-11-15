@@ -13,6 +13,12 @@ export const AUTOTILE_QUARTER_COLUMNS = 6;
 export const ANIMATED_AUTOTILE_FRAME_DURATION_MS = 250;
 
 export const CHUNK_SIZE = 16;
+export const CELL_SIZE_CHUNKS = 5;
+export const ROAD_EDGE_PROBABILITY = 0.55;
+export const ROAD_MIN_NODE_DEGREE = 2;
+export const ROAD_HALF_WIDTH_TILES = 1.5;
+export const ROAD_BEND_MAX_TILES = 6;
+export const ROAD_SEGMENT_LENGTH_TILES = 4;
 export const CHUNK_UNLOAD_DELAY_MS = 5000;
 
 export const ELEVATION_OCTAVES = 4;

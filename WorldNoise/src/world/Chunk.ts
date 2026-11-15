@@ -4,8 +4,11 @@ import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { cliffEdgesOf, heightLevelAt } from '../elevation/heightLevel';
 import { moistureNoise } from '../moisture/moistureNoise';
+import { roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
+import { groundWithRoad } from '../tileset/ground';
+import type { Ground } from '../tileset/ground';
 import { continuesInto } from '../tileset/groundRank';
 import { Tile } from './Tile';
 
@@ -41,6 +44,9 @@ export class Chunk {
       }
     }
 
+    const roads = roadTilesIn(originX - 1, originY - 1, PADDED_SIZE, PADDED_SIZE);
+    const grounds: Ground[] = biomes.map((biome, index) => groundWithRoad(biome.ground, roads[index] === 1));
+
     const tiles: Tile[] = [];
     for (let ly = 0; ly < CHUNK_SIZE; ly++) {
       for (let lx = 0; lx < CHUNK_SIZE; lx++) {
@@ -54,10 +60,10 @@ export class Chunk {
           levels[index - 1],
         );
 
-        const biome = biomes[index];
+        const ground = grounds[index];
         let neighbourMask = 0;
         for (const { dx, dy, bit } of NEIGHBOUR_OFFSETS) {
-          if (continuesInto(biome.ground, biomes[index + dy * PADDED_SIZE + dx].ground)) neighbourMask |= bit;
+          if (continuesInto(ground, grounds[index + dy * PADDED_SIZE + dx])) neighbourMask |= bit;
         }
 
         tiles.push(
@@ -67,7 +73,8 @@ export class Chunk {
             elevations[index],
             level,
             cliffEdges,
-            biome,
+            biomes[index],
+            ground,
             autotileIndexFor(neighbourMask),
           ),
         );

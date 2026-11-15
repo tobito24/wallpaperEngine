@@ -1,4 +1,4 @@
-import type { Ground } from '../biome/biome';
+import type { Ground } from './ground';
 
 const GROUND_RANK: Readonly<Record<Ground, number>> = {
   deepWater: 0,
@@ -8,6 +8,8 @@ const GROUND_RANK: Readonly<Record<Ground, number>> = {
   dirt: 4,
   rock: 5,
   snow: 6,
+  road: 7,
+  bridge: 8,
 };
 
 export function continuesInto(ground: Ground, neighbourGround: Ground): boolean {

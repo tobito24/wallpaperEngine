@@ -8,15 +8,15 @@ import {
 } from '../config/constants';
 import { temperatureAtElevation } from '../temperature/temperatureAtElevation';
 
-export type Ground = 'deepWater' | 'shallowWater' | 'sand' | 'grass' | 'dirt' | 'rock' | 'snow';
+export type BiomeGround = 'deepWater' | 'shallowWater' | 'sand' | 'grass' | 'dirt' | 'rock' | 'snow';
 
 export interface Biome {
   readonly id: string;
-  readonly ground: Ground;
+  readonly ground: BiomeGround;
   readonly color: string;
 }
 
-function biome(id: string, ground: Ground, color: string): Biome {
+function biome(id: string, ground: BiomeGround, color: string): Biome {
   return { id, ground, color };
 }
 
