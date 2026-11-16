@@ -1,14 +1,14 @@
 # WorldNoise
 
-**Status: cloned from `TileGridBase`, first noise layer (elevation) in place (2026-09-14).** Next in the lineage after
+**Status: active (cloned from `TileGridBase` 2026-09-14).** Elevation, moisture and temperature noise, biome table, autotiled
+ground, cliffs, roads and the first towns exist; the plan and what is still open are in `idea.md`. Next in the lineage after
 `WorldGenerator` (done, WFC) → `InfinityWalker` (paused, chunked WFC) → `TileGridBase` (active base) →
-**`WorldNoise`**. This is the noise-based world-generation fork `TileGridBase/CLAUDE.md` described as "not
-started" (originally scoped under the working name `WorldForge` before the 2026-09-13 reset that turned
+**`WorldNoise`**. This is the noise-based world-generation fork `TileGridBase/CLAUDE.md` lists (originally scoped under the working name `WorldForge` before the 2026-09-13 reset that turned
 `TileGridBase` into a generic, reusable base — see that project's `CLAUDE.md` and git history before the reset
 for the torn-out reference implementation).
 
-Being built step by step in small increments rather than all at once — check `notes.md` for the current step
-before starting work here.
+Being built step by step in small increments rather than all at once — the ticked steps of `idea.md` show the current state
+(`notes.md` is the user's older log and lags behind).
 
 ## Goal
 
@@ -22,7 +22,8 @@ Replace `TileGridBase`'s placeholder even/odd checkerboard with real procedurall
   tile appearance.
 
 All three channels (elevation with its redistribution curve and height levels, moisture, temperature) and the biome
-lookup table exist. A tile draws its biome as a flat color; the tileset art, rules and decoration are still to come.
+lookup table exist, and tiles are drawn with autotiled grounds, cliffs, roads and the first town buildings. Stairs, the town
+road layout, decoration, own art and the Wallpaper Engine properties are still to come (`idea.md`).
 
 ## Inherited from `TileGridBase` (unchanged)
 
@@ -278,7 +279,7 @@ when the implementation phase is over; then it is deleted.
 
 ## Working here
 
-Same scripts as `TileGridBase` (this project hasn't diverged yet):
+Same scripts as `TileGridBase`:
 
 - `npm install` — first-time setup (not carried over from the clone; `node_modules`/`dist` were excluded on
   purpose).

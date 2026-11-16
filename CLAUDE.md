@@ -30,7 +30,7 @@ Each folder is one idea and stands alone; there is no shared code between them (
 
 | Folder | Status | What it is |
 |---|---|---|
-| `WorldGenerator/` | Done, foundational | Procedural pixel-art landscape with Wave Function Collapse (WFC). Its Wallpaper Engine patterns are the oldest in the repo: question them before copying. |
+| `WorldGenerator/` | Done, published, foundational | Procedural pixel-art landscape with Wave Function Collapse (WFC). Its Wallpaper Engine patterns are the oldest in the repo: question them before copying. |
 | `InfinityWalker/` | Published, paused | Infinite scrolling world with a walking character, chunk-based layered WFC. Local code is ahead of the Workshop version. |
 | `TileGridBase/` | Active, base/template | Camera (pan + zoom) over a chunked tile grid, TypeScript + Vite. Cloned as the start of every tile-grid idea. |
 | `ColorWar/` | Done for now, published | Fork of `TileGridBase`: a 7-color cyclic-dominance tile automaton. Two Workshop listings, "ColorWar" and "ColorWar: Rainbow". |
