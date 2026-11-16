@@ -36,18 +36,31 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   frame and never change. With the local sheets both water sheets have 8 frames (a cycle of 2 s); measured on the
   canvas over 4.6 s: 8 distinct images, a change about every 250 ms, 76 % of the screen's pixels (the land) never
   change.
-- **`autotile-preview.html`** + **`src/tools/autotilePreview.ts`**, **`autotileGenerator.ts`** (new, dev tool, not part of the build
-  output) — make and check a self-made autotile: `npm run dev`, open `/autotile-preview.html`. A 32 x 32 px texture (file input or
-  dropped on the page) is turned into a base sheet of 96 x 128 px: the texture in all ground quarters, an edge 8 px inside the
-  border, transparent outside and no border color (the texture just stops). Options: edge style (`curve` round corners, `edge` cut
-  corners, `wavy` a sine along the edge), inset 0 to 16 px (distance of the edge from the tile border, default 8: a bigger inset makes the shape smaller and shows more of the
-  ground below), outer and inner corner radius, wave height and wave length 16 or 32 px (the waves repeat every 32 px at most, so the edge quarters that
-  must be equal are equal). The radii and the wave height are limited so a corner or wave stays inside its 16 px quarter (outer radius
-  16 - inset - wave height, inner radius inset - wave height, wave height at most the inset and 16 - inset); the page shows the used values.
-  "Download guide" saves a red/green guide layer matching the generated sheet. Inner corners are notches with the same radius. "Download sheet" saves the PNG, which is then
-  decorated in Photoshop. The page also loads a finished PNG from a relative path inside `WorldNoise/` in the form of "Copy Relative Path" (`WorldNoise\autotiles\sand.png`; own art lives in `autotiles/`) and reloads it
-  when the file changes. It shows the sheet with the 32 px tile grid, a test shape assembled with the real `autotile.ts` tables and
-  all 47 tiles, on a checkerboard or ground-colored background. The rules are in `DesignCorner/autotile-template/README.md`.
+- **`autotile-preview.html`** + **`src/tools/`** (`autotilePreview.ts` the page, `autotileControls.ts` the controls,
+  `autotileGenerator.ts` the generator; new, dev tool, not part of the build output) — make and check a self-made autotile:
+  `npm run dev`, open `/autotile-preview.html`. One or more 32 x 32 px textures (file input or dropped on the page; several
+  textures become the frames of the sheet, sorted by file name) are turned into a base sheet of 96 x 128 px per frame: the texture in
+  the ground quarters, transparent outside, no border color (the texture just stops). Every option keeps the quarters equal that
+  must be equal (checked for all styles and options: 14 = 16, 15 = 17 and the other sides, the plain ground quarters), because all
+  edge profiles repeat every 32 px at most. Options:
+  - **Edge:** `curve` (round corners), `edge` (cut corners), `wavy` (sine, triangle, square or scallop, height 0 to 4 px, length 16
+    or 32 px) and `rough` (random bumps from a seed, roughness 0 to 4 px).
+  - **Inset:** 0 to 16 px from the tile border, one value for all sides (default 8) and an optional value per side (a bigger inset
+    makes the shape smaller and shows more of the ground below).
+  - **Corners:** outer and inner radius. Limits keep every corner and wave inside its 16 px quarter: outer radius at most
+    16 - inset - wave height, inner radius at most inset - wave height (the smallest of the four sides counts), wave height at most
+    the inset and 16 - inset. The page shows the used values.
+  - **Fill:** `full texture` or `rim band only` (band width 1 to 16 px, limited like the outer radius; the inside stays transparent,
+    the base for a cliff or foam overlay). The band width is the same on all sides.
+  - **Edge look:** dither 0 to 2 px (checkerboard rings that fade the edge without semi-transparent pixels) and an edge shade
+    (width 0 to 3 px, brighter or darker by a percentage; off by default).
+  - **Texture shift:** x and y, shifts the texture under the shape.
+  "Download sheet" saves the PNG (several frames side by side, the animation frame is picked as in the game, 250 ms, and can be
+  previewed), "Download guide" a red/green guide layer matching the first frame; the sheet is then decorated in Photoshop. The page
+  also loads a finished PNG from a relative path inside `WorldNoise/` in the form of "Copy Relative Path"
+  (`WorldNoise\autotiles\sand.png`; own art lives in `autotiles/`) and reloads it when the file changes. It shows the sheet with the
+  32 px tile grid, a test shape assembled with the real `autotile.ts` tables and all 47 tiles, on a checkerboard or ground-colored
+  background. The rules are in `DesignCorner/autotile-template/README.md`.
 - **`tileset/cliffTiles.ts`** (new) — `drawCliff(ctx, cliffType, heightLevel, x, y, size)` draws one of the 12 cliff pieces
   (4 edges, 4 outer and 4 inner corners) from the stone sets of `InfinityWalker/img/tileset.png` (256 x 1 920 px, 32 px
   tiles, 8 per row), copied to `dev-assets/tilesets/infinitywalker.png` and found by `import.meta.glob`; without it the

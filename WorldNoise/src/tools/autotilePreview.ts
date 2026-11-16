@@ -1,18 +1,23 @@
 import { AUTOTILE_QUARTER_COLUMNS, AUTOTILE_QUARTER_SIZE_PX } from '../config/constants';
 import {
+  onGeneratorControlsChange,
+  readGeneratorOptions,
+  showLimits,
+  updateControlVisibility,
+} from './autotileControls';
+import {
   SHEET_HEIGHT_PX,
   SHEET_WIDTH_PX,
   TEXTURE_SIZE_PX,
   effectiveLimits,
   generateAutotileSheet,
   guideFromSheet,
-  type EdgeStyle,
-  type GeneratorOptions,
 } from './autotileGenerator';
 import { AUTOTILE_QUARTER_IDS, NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 
 const TILE_SIZE_PX = AUTOTILE_QUARTER_SIZE_PX * 2;
 const POLL_INTERVAL_MS = 1000;
+const ANIMATION_FRAME_DURATION_MS = 250;
 const PATH_STORAGE_KEY = 'autotilePreviewPath';
 const PROJECT_FOLDER_PREFIX = 'WorldNoise/';
 
@@ -65,22 +70,20 @@ const sheetCanvas = document.querySelector<HTMLCanvasElement>('#sheet')!;
 const mapCanvas = document.querySelector<HTMLCanvasElement>('#map')!;
 const galleryCanvas = document.querySelector<HTMLCanvasElement>('#gallery')!;
 const textureInput = document.querySelector<HTMLInputElement>('#texture')!;
-const styleSelect = document.querySelector<HTMLSelectElement>('#style')!;
-const insetInput = document.querySelector<HTMLInputElement>('#inset')!;
-const limitsElement = document.querySelector<HTMLSpanElement>('#limits')!;
 const guideButton = document.querySelector<HTMLButtonElement>('#guide')!;
-const outerRadiusInput = document.querySelector<HTMLInputElement>('#outerRadius')!;
-const innerRadiusInput = document.querySelector<HTMLInputElement>('#innerRadius')!;
-const amplitudeInput = document.querySelector<HTMLInputElement>('#amplitude')!;
-const periodSelect = document.querySelector<HTMLSelectElement>('#period')!;
-const amplitudeLabel = document.querySelector<HTMLLabelElement>('#amplitudeLabel')!;
-const periodLabel = document.querySelector<HTMLLabelElement>('#periodLabel')!;
 const downloadButton = document.querySelector<HTMLButtonElement>('#download')!;
+const frameLabel = document.querySelector<HTMLLabelElement>('#frameLabel')!;
+const frameSelect = document.querySelector<HTMLSelectElement>('#frame')!;
+const animateLabel = document.querySelector<HTMLLabelElement>('#animateLabel')!;
+const animateInput = document.querySelector<HTMLInputElement>('#animate')!;
 
 let sheet: CanvasImageSource | undefined;
 let sheetLabel = '';
 let lastModified: string | null = null;
-let texture: ImageData | undefined;
+let textures: ImageData[] = [];
+let sheetWidthPx = SHEET_WIDTH_PX;
+let frameCount = 1;
+let currentFrame = 0;
 let generatedSheet: HTMLCanvasElement | undefined;
 let generatedGuide: HTMLCanvasElement | undefined;
 
@@ -123,7 +126,7 @@ function drawQuarter(
   const position = quarterId - 1;
   ctx.drawImage(
     image,
-    (position % AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
+    currentFrame * SHEET_WIDTH_PX + (position % AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
     Math.floor(position / AUTOTILE_QUARTER_COLUMNS) * AUTOTILE_QUARTER_SIZE_PX,
     AUTOTILE_QUARTER_SIZE_PX,
     AUTOTILE_QUARTER_SIZE_PX,
@@ -176,15 +179,15 @@ function buildGallery(): { grid: Grid; labels: TileLabel[] } {
 
 function drawSheetView(image: CanvasImageSource): void {
   const zoom = scale();
-  sheetCanvas.width = SHEET_WIDTH_PX * zoom;
+  sheetCanvas.width = sheetWidthPx * zoom;
   sheetCanvas.height = SHEET_HEIGHT_PX * zoom;
   const ctx = sheetCanvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
   fillBackground(ctx, sheetCanvas.width, sheetCanvas.height);
-  ctx.drawImage(image, 0, 0, SHEET_WIDTH_PX, SHEET_HEIGHT_PX, 0, 0, sheetCanvas.width, sheetCanvas.height);
+  ctx.drawImage(image, 0, 0, sheetWidthPx, SHEET_HEIGHT_PX, 0, 0, sheetCanvas.width, sheetCanvas.height);
   ctx.strokeStyle = 'rgba(255, 0, 80, 0.55)';
   ctx.lineWidth = 1;
-  for (let x = 0; x <= SHEET_WIDTH_PX; x += TILE_SIZE_PX) {
+  for (let x = 0; x <= sheetWidthPx; x += TILE_SIZE_PX) {
     ctx.beginPath();
     ctx.moveTo(x * zoom + 0.5, 0);
     ctx.lineTo(x * zoom + 0.5, sheetCanvas.height);
@@ -254,15 +257,30 @@ function redraw(): void {
   drawMapView(galleryCanvas, sheet, gallery.grid, GALLERY_ZOOM, gallery.labels);
 }
 
+function updateFrameControls(): void {
+  frameLabel.hidden = frameCount === 1;
+  animateLabel.hidden = frameCount === 1;
+  frameSelect.replaceChildren(
+    ...Array.from({ length: frameCount }, (_, frame) => new Option(String(frame), String(frame))),
+  );
+  currentFrame = Math.min(currentFrame, frameCount - 1);
+  frameSelect.value = String(currentFrame);
+  if (frameCount === 1) animateInput.checked = false;
+}
+
 function showSheet(image: CanvasImageSource, width: number, height: number, label: string): void {
   sheet = image;
   sheetLabel = label;
+  sheetWidthPx = width;
+  frameCount = Math.max(1, Math.floor(width / SHEET_WIDTH_PX));
+  updateFrameControls();
+  const frameText = `${frameCount} frame${frameCount === 1 ? '' : 's'}`;
   const sizeWarning =
     width % SHEET_WIDTH_PX !== 0 || height !== SHEET_HEIGHT_PX
-      ? ` (expected ${SHEET_WIDTH_PX} x ${SHEET_HEIGHT_PX}, showing the top left frame)`
+      ? ` (expected ${SHEET_WIDTH_PX} px per frame x ${SHEET_HEIGHT_PX}, showing ${frameText})`
       : '';
   setStatus(
-    `${sheetLabel}: ${width} x ${height} px${sizeWarning}. The shape uses ${shapeCoverage} of ${AUTOTILE_COUNT} tiles, the gallery below all of them (number = tile index).`,
+    `${sheetLabel}: ${width} x ${height} px, ${frameText}${sizeWarning}. The shape uses ${shapeCoverage} of ${AUTOTILE_COUNT} tiles, the gallery below all of them (number = tile index).`,
     sizeWarning !== '',
   );
   redraw();
@@ -316,61 +334,60 @@ function saveCanvas(canvas: HTMLCanvasElement | undefined, fileName: string): vo
   });
 }
 
-function generatorOptions(): GeneratorOptions {
-  return {
-    style: styleSelect.value as EdgeStyle,
-    insetPx: Number(insetInput.value),
-    outerCornerRadiusPx: Number(outerRadiusInput.value),
-    innerCornerRadiusPx: Number(innerRadiusInput.value),
-    waveAmplitudePx: Number(amplitudeInput.value),
-    wavePeriodPx: Number(periodSelect.value),
-  };
-}
-
-function generateFromTexture(): void {
-  const isWavy = styleSelect.value === 'wavy';
-  amplitudeLabel.hidden = !isWavy;
-  periodLabel.hidden = !isWavy;
-  if (!texture) return;
-  const options = generatorOptions();
-  const limits = effectiveLimits(options);
-  outerRadiusInput.max = String(limits.maxOuterCornerRadiusPx);
-  innerRadiusInput.max = String(limits.maxInnerCornerRadiusPx);
-  limitsElement.textContent = `Used: inset ${limits.insetPx} px, outer radius ${limits.outerCornerRadiusPx} (max ${limits.maxOuterCornerRadiusPx}) px, inner radius ${limits.innerCornerRadiusPx} (max ${limits.maxInnerCornerRadiusPx}) px, wave height ${limits.waveAmplitudePx} px`;
-  const sheetData = generateAutotileSheet(texture, options);
-  const canvas = canvasWith(sheetData);
-  generatedSheet = canvas;
+function generateFromTextures(): void {
+  updateControlVisibility();
+  if (textures.length === 0) return;
+  const options = readGeneratorOptions();
+  showLimits(effectiveLimits(options), options);
+  const sheetData = generateAutotileSheet(textures, options);
+  generatedSheet = canvasWith(sheetData);
   generatedGuide = canvasWith(guideFromSheet(sheetData));
   downloadButton.disabled = false;
   guideButton.disabled = false;
-  showSheet(canvas, canvas.width, canvas.height, 'generated from the texture');
+  const label = `generated from ${textures.length} texture${textures.length === 1 ? '' : 's'}`;
+  showSheet(generatedSheet, generatedSheet.width, generatedSheet.height, label);
 }
 
-function useTexture(bitmap: ImageBitmap): void {
+function imageDataOf(bitmap: ImageBitmap): ImageData {
   const canvas = document.createElement('canvas');
   canvas.width = TEXTURE_SIZE_PX;
   canvas.height = TEXTURE_SIZE_PX;
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(bitmap, 0, 0);
-  texture = ctx.getImageData(0, 0, TEXTURE_SIZE_PX, TEXTURE_SIZE_PX);
-  generateFromTexture();
+  return ctx.getImageData(0, 0, TEXTURE_SIZE_PX, TEXTURE_SIZE_PX);
 }
 
-async function openImage(file: File): Promise<void> {
-  const bitmap = await createImageBitmap(file);
-  if (bitmap.width === TEXTURE_SIZE_PX && bitmap.height === TEXTURE_SIZE_PX) useTexture(bitmap);
-  else showSheet(bitmap, bitmap.width, bitmap.height, `${file.name} (dropped, no auto reload)`);
+async function openFiles(files: File[]): Promise<void> {
+  const opened = await Promise.all(
+    files.map(async (file) => ({ file, bitmap: await createImageBitmap(file) })),
+  );
+  opened.sort((first, second) => first.file.name.localeCompare(second.file.name));
+  const textureFiles = opened.filter(
+    ({ bitmap }) => bitmap.width === TEXTURE_SIZE_PX && bitmap.height === TEXTURE_SIZE_PX,
+  );
+  if (textureFiles.length > 0) {
+    textures = textureFiles.map(({ bitmap }) => imageDataOf(bitmap));
+    generateFromTextures();
+  } else if (opened.length > 0) {
+    const { file, bitmap } = opened[0];
+    showSheet(bitmap, bitmap.width, bitmap.height, `${file.name} (dropped, no auto reload)`);
+  }
 }
 
-textureInput.addEventListener('change', () => {
-  const file = textureInput.files?.[0];
-  if (file) void openImage(file);
-});
-[styleSelect, insetInput, outerRadiusInput, innerRadiusInput, amplitudeInput, periodSelect].forEach(
-  (control) => control.addEventListener('input', generateFromTexture),
-);
+textureInput.addEventListener('change', () => void openFiles([...(textureInput.files ?? [])]));
+onGeneratorControlsChange(generateFromTextures);
 downloadButton.addEventListener('click', () => saveCanvas(generatedSheet, 'autotile.png'));
 guideButton.addEventListener('click', () => saveCanvas(generatedGuide, 'autotile-guide.png'));
+frameSelect.addEventListener('change', () => {
+  currentFrame = Number(frameSelect.value);
+  redraw();
+});
+setInterval(() => {
+  if (!animateInput.checked || frameCount < 2) return;
+  currentFrame = (currentFrame + 1) % frameCount;
+  frameSelect.value = String(currentFrame);
+  redraw();
+}, ANIMATION_FRAME_DURATION_MS);
 
 pathInput.value = localStorage.getItem(PATH_STORAGE_KEY) ?? pathInput.value;
 pathInput.addEventListener('change', () => {
@@ -383,10 +400,9 @@ scaleSelect.addEventListener('change', redraw);
 window.addEventListener('dragover', (event) => event.preventDefault());
 window.addEventListener('drop', async (event) => {
   event.preventDefault();
-  const file = event.dataTransfer?.files[0];
-  if (!file) return;
-  await openImage(file);
+  await openFiles([...(event.dataTransfer?.files ?? [])]);
 });
 
+updateControlVisibility();
 void loadFromPath();
 setInterval(() => void reloadWhenFileChanged(), POLL_INTERVAL_MS);

@@ -73,16 +73,18 @@ a semi-transparent edge.
 
 ## Workflow
 
-1. Draw a seamless 32 x 32 px texture.
-2. Start `npm run dev` in `WorldNoise/`, open `/autotile-preview.html`, choose the texture (or drop it on the page). The page generates the
-   base sheet (rules above) and shows it at once. Choose the edge (curve = round corners, edge = cut corners, wavy = a wave along the edge),
-   the inset (0 to 16 px, how far the texture stays away from the tile border: a bigger inset makes the whole shape smaller and shows more
-   of the ground below), the outer and inner corner radius (the inner one cannot be larger than the inset, see docs/tileset.md) and, for wavy, the wave height (0 to 4 px) and length (16 or 32 px); then "Download sheet" and
-   "Download guide" (a red/green guide layer that matches this sheet, in place of `autotile-template-1x.png` when the inset is not 8 px).
-   The texture simply stops at the edge, there is no border color.
-3. Open the PNG in Photoshop with the guide (`autotile-template-1x.png` for the default inset of 8 px) as a guide layer and add the details. Keep the rules: only the 16 quarters of
-   rule 5 are drawn by hand, copy the equal ones (rule 4), keep the edge on the red/green border, no semi-transparent pixels.
-4. Save the sheet into `WorldNoise/autotiles/`, paste its relative path (Copy Relative Path, `WorldNoise\autotiles\sand.png`) into the preview and look at it again after every save.
+1. Draw a seamless 32 x 32 px texture (for a water sheet with frames, one texture per frame, named so that they sort in the frame order).
+2. Start `npm run dev` in `WorldNoise/`, open `/autotile-preview.html`, choose the texture(s) (or drop them on the page). The page
+   generates the base sheet (rules above) and shows it at once. Options, all described in [docs/tileset.md](../../WorldNoise/docs/tileset.md):
+   edge style (curve, edge, wavy with four wave shapes, rough with a seed), inset for all sides or per side, outer and inner corner radius,
+   full texture or a rim band only, dither, edge shade and texture shift. The texture simply stops at the edge, there is no border color
+   unless you switch the edge shade on. Then "Download sheet" and "Download guide" (a red/green guide layer that matches the generated
+   sheet, in place of `autotile-template-1x.png` when the inset is not 8 px).
+3. Open the PNG in Photoshop with the guide (`autotile-template-1x.png` for the default inset of 8 px) as a guide layer and add the details.
+   Keep the rules: only the 16 quarters of rule 5 are drawn by hand, copy the equal ones (rule 4), keep the edge on the red/green border,
+   no semi-transparent pixels.
+4. Save the sheet into `WorldNoise/autotiles/`, paste its relative path (Copy Relative Path, `WorldNoise\autotiles\sand.png`) into the
+   preview and look at it again after every save.
 
 An image-generation AI was tried for the whole sheet and dropped: it does not keep the quarter grid, repeats nothing every 32 px and draws
 the inner corners as islands.
