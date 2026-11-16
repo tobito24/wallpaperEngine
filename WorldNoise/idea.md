@@ -172,10 +172,10 @@ rule on `(seed, x, y)` is consistent across chunk borders without extra work, wh
 - A neighbour counts as set if it has the same ground or a higher rank. Grounds have a fixed **rank order** (for example water <
   sand < grass < dirt < rock < snow). A ground draws itself over the lower grounds beside it, in rank order. The result per
   neighbourhood signature is cached.
-- **Own art, later option:** where no ready autotile exists, one is composed from a seamless base texture plus an alpha mask set
-  and written out in the same 96 x 128 layout. Each ground then has one fixed mask family, and families differ between grounds
-  (soft and round for water, jagged for rock, fluffy for snow). A random variant within one ground is not planned: it would need
-  masks that cut the tile borders at the same points.
+- **Own art:** where no ready autotile exists, a base sheet in the same 96 x 128 layout is generated from a seamless 32 x 32 px texture
+  (the preview page, `src/tools/autotileGenerator.ts`) and decorated in Photoshop. Its edges are transparent, so the ground below shows
+  through (the renderer has to draw that ground first). The edge bumps repeat every 32 px, which is what lets quarters be reused; a random
+  variant within one ground is not planned. The rules and the template are in `DesignCorner/autotile-template/`.
 - **Animated water:** a ground can have several frames (the Essentials way, frames side by side). The renderer picks the frame
   from the time, the same for all tiles, so the sea moves as one. The frame count and speed are constants.
 - Until the art exists, the renderer draws flat colors with placeholder masks, so the pipeline can be tested without assets.
@@ -244,6 +244,9 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Cliffs redone with the 12 stone pieces of `InfinityWalker/img/tileset.png` (edges, outer and inner corners, one set per level); the Outside rim pieces did not fit together
 - [ ] Stairs where a road crosses a cliff
 - [ ] Rule-based decoration
+- [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
+- [ ] Draw the lower ground under a tile with a transparent autotile rim (`Tile.draw`), so own sheets show the neighbour and no background
+- [ ] First own ground (grass) decorated in Photoshop and checked in the preview, then the other grounds
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)
 - [ ] Wallpaper Engine properties (at least the seed)
