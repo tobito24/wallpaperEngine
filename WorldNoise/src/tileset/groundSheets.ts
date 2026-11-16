@@ -108,8 +108,9 @@ export function drawGroundUnderlay(
   const plainQuarterIds = AUTOTILE_QUARTER_IDS[PLAIN_GROUND_AUTOTILE_INDEX];
   const firstHalf = Math.floor(size / 2);
   const secondHalf = size - firstHalf;
-  underlays.forEach((underlay, quarter) => {
-    if (underlay === null) return;
+  for (let quarter = 0; quarter < underlays.length; quarter++) {
+    const underlay = underlays[quarter];
+    if (underlay === null) continue;
     const isRight = quarter % 2 === 1;
     const isBottom = quarter >= 2;
     const x = screenX + (isRight ? firstHalf : 0);
@@ -123,7 +124,7 @@ export function drawGroundUnderlay(
       ctx.fillStyle = fallbackColorOf(underlay);
       ctx.fillRect(x, y, width, height);
     }
-  });
+  }
 }
 
 function drawQuarters(
@@ -139,19 +140,19 @@ function drawQuarters(
   if (!sheet) return false;
   const firstHalf = Math.floor(size / 2);
   const secondHalf = size - firstHalf;
-  quarterIds.forEach((quarterId, quarter) => {
+  for (let quarter = 0; quarter < quarterIds.length; quarter++) {
     const isRight = quarter % 2 === 1;
     const isBottom = quarter >= 2;
     drawQuarter(
       ctx,
       sheet,
-      quarterId,
+      quarterIds[quarter],
       animationFrame,
       screenX + (isRight ? firstHalf : 0),
       screenY + (isBottom ? firstHalf : 0),
       isRight ? secondHalf : firstHalf,
       isBottom ? secondHalf : firstHalf,
     );
-  });
+  }
   return true;
 }

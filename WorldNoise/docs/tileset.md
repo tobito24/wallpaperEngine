@@ -21,8 +21,9 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   savanna 9, forest 10, jungle 11, mountain 12, snow peak 13, road 14, bridge 15. `continuesInto(ground, neighbour)`: a
   neighbour counts as set when its rank is the same or higher, so a ground draws its own rim against lower grounds and a lower
   ground shows plain fill next to a higher one, never a rim on both sides; a road has a rim on every ground it crosses.
-  `underlayGround(ground, neighbours)` gives the highest lower ground among the neighbours of a quarter (its two edge neighbours
-  and its diagonal one), or none.
+  `underlayGround(ground, firstEdge, secondEdge, diagonal)` gives the ground below the rim of a quarter: the higher of the lower
+  edge neighbours, and only when no edge neighbour is lower the diagonal one (an inner corner), else none; so a coast keeps the
+  water below it even if a higher ground touches the corner.
 - **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → file in `autotiles/`, own art:
   beach `sand`, meadow `grass`, steppe `grass-light-wild`, mountain `gravel`, road `brick-path`, the others by their kebab-case name) and
   `drawGroundAutotile(ctx, ground, autotileIndex, frame, x, y, size)`, which draws the four 16 px quarters of the tile from the

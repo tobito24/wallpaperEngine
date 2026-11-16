@@ -19,27 +19,11 @@ import { Tile } from './Tile';
 const BORDER_COLOR = '#ffcc00';
 const PADDED_SIZE = CHUNK_SIZE + 2;
 
-const NEIGHBOURS_OF_QUARTER: readonly (readonly (readonly [number, number])[])[] = [
-  [
-    [0, -1],
-    [-1, 0],
-    [-1, -1],
-  ],
-  [
-    [0, -1],
-    [1, 0],
-    [1, -1],
-  ],
-  [
-    [0, 1],
-    [-1, 0],
-    [-1, 1],
-  ],
-  [
-    [0, 1],
-    [1, 0],
-    [1, 1],
-  ],
+const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, number, number, number])[] = [
+  [0, -1, -1, 0, -1, -1],
+  [0, -1, 1, 0, 1, -1],
+  [0, 1, -1, 0, -1, 1],
+  [0, 1, 1, 0, 1, 1],
 ];
 
 export class Chunk {
@@ -106,13 +90,20 @@ export class Chunk {
           if (continuesInto(ground, grounds[index + dy * PADDED_SIZE + dx])) neighbourMask |= bit;
         }
 
-        const underlays = NEIGHBOURS_OF_QUARTER.map((quarterNeighbours) =>
-          underlayGround(
-            ground,
-            quarterNeighbours.map(([dx, dy]) => grounds[index + dy * PADDED_SIZE + dx]),
-          ),
+        let underlays: (Ground | null)[] | null = null;
+        QUARTER_NEIGHBOUR_OFFSETS.forEach(
+          ([verticalDx, verticalDy, horizontalDx, horizontalDy, diagonalDx, diagonalDy], quarter) => {
+            const underlay = underlayGround(
+              ground,
+              grounds[index + verticalDy * PADDED_SIZE + verticalDx],
+              grounds[index + horizontalDy * PADDED_SIZE + horizontalDx],
+              grounds[index + diagonalDy * PADDED_SIZE + diagonalDx],
+            );
+            if (underlay === null) return;
+            underlays ??= [null, null, null, null];
+            underlays[quarter] = underlay;
+          },
         );
-        const hasUnderlay = underlays.some((underlay) => underlay !== null);
 
         tiles.push(
           new Tile(
@@ -124,7 +115,7 @@ export class Chunk {
             biomes[index],
             ground,
             autotileIndexFor(neighbourMask),
-            hasUnderlay ? underlays : null,
+            underlays,
             decoration,
           ),
         );

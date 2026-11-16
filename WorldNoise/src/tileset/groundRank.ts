@@ -23,11 +23,19 @@ export function continuesInto(ground: Ground, neighbourGround: Ground): boolean 
   return GROUND_RANK[neighbourGround] >= GROUND_RANK[ground];
 }
 
-export function underlayGround(ground: Ground, neighbourGrounds: readonly Ground[]): Ground | null {
-  let underlay: Ground | null = null;
-  for (const neighbour of neighbourGrounds) {
-    if (GROUND_RANK[neighbour] >= GROUND_RANK[ground]) continue;
-    if (underlay === null || GROUND_RANK[neighbour] > GROUND_RANK[underlay]) underlay = neighbour;
-  }
-  return underlay;
+export function underlayGround(
+  ground: Ground,
+  firstEdge: Ground,
+  secondEdge: Ground,
+  diagonal: Ground,
+): Ground | null {
+  const ownRank = GROUND_RANK[ground];
+  const firstRank = GROUND_RANK[firstEdge];
+  const secondRank = GROUND_RANK[secondEdge];
+  const firstIsLower = firstRank < ownRank;
+  const secondIsLower = secondRank < ownRank;
+  if (firstIsLower && secondIsLower) return firstRank >= secondRank ? firstEdge : secondEdge;
+  if (firstIsLower) return firstEdge;
+  if (secondIsLower) return secondEdge;
+  return GROUND_RANK[diagonal] < ownRank ? diagonal : null;
 }

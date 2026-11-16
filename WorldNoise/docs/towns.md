@@ -28,7 +28,7 @@ Paths and towns.
 - **`town/townTerrain.ts`** (new) — `townInfoAt(x, y)` (inside the footprint, or in the ring of `TOWN_RING_WIDTH_TILES` (8)
   around it, looked up in the tile's own cell only) and `levelWithTown(baseLevel, info)`: inside the level is the plateau
   level, in the ring a land level is limited to the plateau level minus one up to plus one, water stays water. `Chunk`
-  uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`, water in the footprint
+  uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`; a higher ground next to a town, like forest or jungle, draws its rim over it, water in the footprint
   becomes land). The outline is wavy: a tile of the chunk footprint is inside only when its distance to the nearest
   non-town chunk is larger than a stepped noise value of 0 to `TOWN_OUTLINE_WOBBLE_TILES` (4, `outlineNoise`, frequency
   0.05, 1 octave: calm waves of about 20 tiles); eroded tiles count as ring, so the footprint only shrinks and the ring still reaches 8 tiles outside
