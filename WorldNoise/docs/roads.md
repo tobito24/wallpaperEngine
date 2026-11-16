@@ -46,27 +46,32 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES
   road, and the higher side (`upperSide`); the lower level is always the upper one minus 1, so a stair never spans two steps. The footprint
   is 6 tiles along the road (3 each side of the boundary) and 7 across (the lane and 3 each side: the stairs of the next steps need a
   straight cliff of 6 rows). The road is orthogonal to the cliff it meets, so a candidate looks for a place where the cliff already is:
-  `bestPlacementAlongBoundary` tries the lane shifted along the cliff (0, -1, 1, -2, ... up to `CROSSING_MAX_LANE_SHIFT_TILES`, 6), finds the
+  `placeCrossing(candidate, preferredLane, isAllowed)` tries the lanes within `CROSSING_MAX_LANE_SHIFT_TILES` (6) of the lane of the candidate,
+  nearest to the preferred lane first, finds the
   boundary of that lane within `CROSSING_BOUNDARY_SEARCH_TILES` (3) of the first one and counts the tiles of the footprint whose natural level
-  differs from the planned one (`tilesToFlatten`); the buildable lane with the fewest wins (the smaller shift on a tie) and needs at most
+  differs from the planned one (`tilesToFlatten`); the buildable lane with the fewest wins (the lane nearest to the preferred one on a tie) and needs at most
   `CROSSING_MAX_FLATTENED_TILES` (8 of 42), so a boundary in steps of one tile is accepted and a sliver or a slant is not. Buildable: no
   water within the footprint plus the clearance the water limit demands for the two levels (`waterClearanceTiles` minus 1: none for 2/1, 2 for
   3/2, 4 for 4/3) and no town tile inside the footprint. Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
   the centre, whatever the axes) are independent. Closer ones of the same axis chain into a run when the gap between their straight stretches
-  (`|boundary difference|` minus 6) is at least twice their lane difference. `straightenThrough` replaces the curve around a run
+  (`|boundary difference|` minus 6) is at least twice their lane difference; a candidate close to the last crossing of the edge therefore
+  prefers the lane of that crossing and only takes lanes where the chain holds, so the road runs straight through the cliffs of a run
+  instead of wandering sideways between them. `straightenThrough` replaces the curve around a run
   (3 tiles each side of every boundary straight along the axis through the middle of the lane; `CROSSING_APPROACH_TILES` (8) of cosine
   blending to the curve on the outer sides, so the road goes sideways to a shifted lane over those 8 tiles; between two crossings the lane
   blends from one to the other: each crossing has the weight 1 on its straight stretch and a cosine fade outside, the lane is the
   curve mixed with the average of the lanes weighted by weight / (1 - weight), which is exactly the lane of the crossing on its stretch).
   A run where the curve is not monotone along the axis in the window is not built. Crossings of different edges whose footprints touch
-  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 268 crossings on 191 edges
-  (39 chained pairs), of 204 whole footprints 0 differ after the cleanup, 2.8 of 42 tiles changed on average and 8 at most, no jump of two levels
+  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 333 crossings (175 of them
+  north/south), of 253 whole footprints 0 differ after the cleanup, 3.1 of 42 tiles changed on average and 8 at most, no jump of two levels
   among land, the road in the lane exactly 3 tiles wide. History: 12 x 11 footprint with the support check at distance 3 gave 48 crossings (148
   without any check, which left box-shaped plateaus and 56 jumps of two levels at their rims), 6 x 7 with a stricter check 180; before the chain
-  rule roughly half of the candidates that passed the terrain checks were lost to the spacing of 23.
+  rule roughly half of the candidates that passed the terrain checks were lost to the spacing of 23; with the chain rule 62 of the 201
+  dropped placements overlapped an accepted crossing (cliffs less than 6 tiles apart, no room for two stairs) and 89 could not chain
+  because the lanes of their straight places were too far apart, the case the preferred lane addresses (268 -> 333 crossings).
 - **`road/crossingTerrain.ts`** (new) — `crossingsOf(edges)`, `flattenCrossings(levels, minX, minY, size, crossings)`: sets every tile of
   a footprint to the upper or the lower level of the crossing, a straight edge. `Chunk` does this on its level block before the
-  water limit and the cleanup (measured: all 204 footprints inside 1 024 x 1 024 tiles carry exactly their levels after the cleanup; 1.3 ms per chunk).
+  water limit and the cleanup (measured: all 253 footprints inside 1 024 x 1 024 tiles carry exactly their levels after the cleanup; 1.3 ms per chunk).
 - **`road/roadMask.ts`** (new) — `roadTilesIn(minX, minY, width, height)`: marks the tiles whose centre is within
   `ROAD_HALF_WIDTH_TILES` (1.5, about 3 tiles wide) of a road (the straightened curve of every edge of `roadEdgesIn`). A pure function of the coordinates: two overlapping rectangles agree on every shared tile (0 of
   57 200 compared tiles differed), so roads have no seams at chunk borders. Roads are 5.2 % of the world, one chunk

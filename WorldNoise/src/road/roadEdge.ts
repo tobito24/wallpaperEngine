@@ -2,7 +2,7 @@ import { CROSSING_HALF_LENGTH_TILES, ROAD_EDGE_CACHE_MAX_ENTRIES } from '../conf
 import { remember } from '../core/boundedCache';
 import { cellIndexOf, edgeExists, edgeKey } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
-import { centreOf, crossingCandidates } from './roadCrossing';
+import { centreOf, crossingCandidates, placeCrossing } from './roadCrossing';
 import type { RoadCrossing } from './roadCrossing';
 import { edgeCurve } from './roadCurve';
 import { CROSSING_SPACING_TILES, straightenThrough } from './roadStraightening';
@@ -37,8 +37,15 @@ function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
   let polylineBeforeLastRun = curve;
   let polyline = curve;
 
-  for (const candidate of crossingCandidates(curve)) {
+  for (const base of crossingCandidates(curve)) {
     const lastRun = runs.at(-1);
+    const previous = lastRun?.[lastRun.length - 1];
+    const candidate =
+      previous !== undefined && !isDisjoint(previous, base)
+        ? placeCrossing(base, previous.lane, (placed) => chainsOnto(previous, placed))
+        : placeCrossing(base, base.lane, () => true);
+    if (candidate === null) continue;
+
     const earlierRuns = runs.slice(0, -1).flat();
     if (!earlierRuns.every((other) => isDisjoint(other, candidate))) continue;
 
