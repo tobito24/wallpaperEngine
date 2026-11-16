@@ -19,7 +19,11 @@ delay, tick interval range) live in `config/constants.ts` unchanged from `TileGr
   from a neighbouring chunk (no seams). Noise-based generation is cheap
   enough that eager per-chunk generation should still be fine here (unlike WFC, which needed more careful
   chunk-boundary handling in `InfinityWalker`).
-- **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile.
+- **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile. With the debug mode (`r`) it also
+  draws the chunk borders and `render/crossingDebug.ts`: a colored square on every place where a road changes its level, by what
+  became of it (`RoadEdge.candidateOutcomes`), and a legend in the HUD: green stairs, grey no straight edge within reach, red too close
+  to a stair (the footprints would overlap), orange more than `CROSSING_MAX_FLATTENED_TILES` to flatten, blue water near, purple town,
+  pink the road curve cannot be straightened there. The square sits on the raw place of the road, not on the shifted crossing.
   Unchanged from `TileGridBase`.
 - **`we/propertyListener.ts`** / **`public/project.json`** — two WE properties so far, `slider_tilesize` and
   `slider_tickrate`. Edited by hand in both places, not derived from each other (see [wallpaper-engine-integration](../../docs/wallpaper-engine-integration.md)). Unchanged

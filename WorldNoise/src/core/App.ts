@@ -7,6 +7,7 @@ import {
   DebugState,
   InputState,
 } from './input';
+import { CROSSING_LEGEND_HEIGHT_PX, drawCrossingLegend } from '../render/crossingDebug';
 import { WorldRenderer } from '../render/WorldRenderer';
 import { World } from '../world/World';
 import { attachWallpaperPropertyListener } from '../we/propertyListener';
@@ -85,7 +86,7 @@ export class App {
 
   private renderDebugHud(): void {
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    this.ctx.fillRect(0, 0, 260, 92);
+    this.ctx.fillRect(0, 0, 260, 92 + CROSSING_LEGEND_HEIGHT_PX);
 
     this.ctx.fillStyle = '#cfd3d8';
     this.ctx.font = '12px monospace';
@@ -98,6 +99,7 @@ export class App {
     this.ctx.fillText(`chunks loaded: ${this.world.loadedChunkCount}`, 8, 48);
     this.ctx.fillText(`ticks: ${this.tickCount} (${this.ticker.tickIntervalMs}ms interval)`, 8, 64);
     this.ctx.fillText('debug: on (r to toggle)', 8, 80);
+    drawCrossingLegend(this.ctx, 8, 92);
   }
 
   private render(): void {
