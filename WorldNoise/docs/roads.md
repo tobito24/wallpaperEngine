@@ -15,7 +15,8 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
 ## Modules
 
 - **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (5) chunks, one
-  waypoint node per cell inside the inner 3 x 3 chunks (a buffer of one chunk), jittered by a hash of the seed and the
+  node per cell inside the inner 3 x 3 chunks (a buffer of one chunk, `nodeAreaOf`); where in that area a waypoint lies is
+  decided by `town/waypointNodes.ts`, the grid itself is topology only. Node candidates and edges are hashes of the seed and the
   cell (`core/keyedRandom.ts`: `randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only;
   results are cached by `core/boundedCache.ts`, which clears a cache at `SKELETON_CACHE_MAX_ENTRIES` (20 000) entries
   and so cannot change a result). An edge between two neighbouring cells exists when its hash value is below
