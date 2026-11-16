@@ -83,7 +83,8 @@ each have octaves, base frequency, persistence, lacunarity, raw range low/high a
   gap. For each level k from 2 up the mask `level >= k` gets a morphological opening and then a closing with a 2 x 2 block
   (every plateau tile lies in a 2 x 2 block of plateau, every lower tile next to it in one of lower land or water), and the new
   level is 1 + the number of masks a land tile is in; water stays water. The operators are monotone, so level 3 stays inside
-  level 2 and land levels still differ by one step at most. `Chunk` computes a block with a margin of 3 tiles (the padding of 1 plus
+  level 2; that neighbouring land levels still differ by one step at most is not guaranteed (on a random field it can fail), but it
+  held on the real terrain: 0 jumps of two in 565 504 tiles. `Chunk` computes a block with a margin of 3 tiles (the padding of 1 plus
   the reach of 2 of the filter) of the level after the town override and crops it, so a chunk gets exactly the levels the whole
   map would get (checked on 768 x 768 tiles: 0 differing tiles). Measured on that area: tiles that are not in a 2 x 2 block of
   plateau 66 before, 0 after; thin lower land next to a plateau 52 before, 0 after; 116 of 565 504 tiles changed; chunk generation
