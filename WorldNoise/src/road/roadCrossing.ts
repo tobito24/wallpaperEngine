@@ -42,6 +42,12 @@ if (Math.max(CROSSING_HALF_LENGTH_TILES, CROSSING_HALF_WIDTH_TILES) >= MAX_FOOTP
   throw new Error('A crossing footprint must stay closer to its road than a road to the edge of its cell');
 }
 
+export function centreOf(crossing: RoadCrossing): { readonly x: number; readonly y: number } {
+  return crossing.travelAxis === 'x'
+    ? { x: crossing.boundary, y: crossing.lane }
+    : { x: crossing.lane, y: crossing.boundary };
+}
+
 export function footprintOf(crossing: RoadCrossing): TileRectangle {
   const alongTravel = crossing.boundary - CROSSING_HALF_LENGTH_TILES;
   const alongLane = crossing.lane - CROSSING_HALF_WIDTH_TILES;

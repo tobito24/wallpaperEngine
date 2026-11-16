@@ -25,7 +25,7 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES
   the town layer. Measured on 57 600 cells: no node has fewer than two edges (46 % have 2, 39 % 3, 15 % 4), every
   edge is seen identically from both ends. Degree two does not make one connected network: islands of linked cells and
   closed loops can exist, and a path between two given towns is not guaranteed.
-- **`road/roadCurve.ts`** (new) — `edgeCurve(ax, ay, bx, by)`: the curve of the road of an edge, before the crossings are cut into it,, given by the two cells in either
+- **`road/roadCurve.ts`** (new) — `edgeCurve(ax, ay, bx, by)`: the curve of the road of an edge, before the crossings are cut into it, given by the two cells in either
   order (the nodes are put in the canonical order inside, so the result never depends on the order of the call), a line
   between its two nodes bent sideways by up to `ROAD_BEND_MAX_TILES` (6) with `ROAD_BEND_CONTROL_COUNT` (3) smooth
   control offsets from hashes of the edge (zero at both nodes), cut into segments of about `ROAD_SEGMENT_LENGTH_TILES`
@@ -47,7 +47,7 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES
   is 12 tiles along the road and 11 across. A candidate is kept when the natural terrain supports it (the sides at 3 and 6 tiles from the
   boundary and at 3 tiles to the left and right of the lane, plus the lane itself, hold their level: no sliver that the cleanup would remove,
   no boundary at a slant), when no water lies within the footprint plus `WATER_LIMIT_REACH_TILES`, no town tile is inside and no
-  other crossing of the same edge is closer than `CROSSING_SPACING_TILES` (29). `straightenAt` then replaces the curve around the crossing
+  other crossing of the same edge is closer than `CROSSING_SPACING_TILES` (29, in both x and y of the centre, whatever the axes). `straightenAt` then replaces the curve around the crossing
   (6 tiles each side straight along the axis through the middle of the lane, `CROSSING_APPROACH_TILES` (8) of cosine blending back to the curve);
   a crossing where the curve is not monotone along the axis in that window is dropped. Crossings of different edges whose footprints touch are not
   resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 48 crossings (148 without

@@ -2,7 +2,7 @@ import { ROAD_EDGE_CACHE_MAX_ENTRIES } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import { cellIndexOf, edgeExists, edgeKey } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
-import { crossingCandidates } from './roadCrossing';
+import { centreOf, crossingCandidates } from './roadCrossing';
 import type { RoadCrossing } from './roadCrossing';
 import { edgeCurve } from './roadCurve';
 import { CROSSING_SPACING_TILES, straightenAt } from './roadStraightening';
@@ -20,11 +20,14 @@ const EDGE_DIRECTIONS: readonly (readonly [number, number])[] = [
 const edgeCache = new Map<string, RoadEdge>();
 
 function isFarFromAll(candidate: RoadCrossing, accepted: readonly RoadCrossing[]): boolean {
-  return accepted.every(
-    (other) =>
-      Math.abs(candidate.boundary - other.boundary) >= CROSSING_SPACING_TILES ||
-      Math.abs(candidate.lane - other.lane) >= CROSSING_SPACING_TILES,
-  );
+  const centre = centreOf(candidate);
+  return accepted.every((other) => {
+    const otherCentre = centreOf(other);
+    return (
+      Math.max(Math.abs(centre.x - otherCentre.x), Math.abs(centre.y - otherCentre.y)) >=
+      CROSSING_SPACING_TILES
+    );
+  });
 }
 
 function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
