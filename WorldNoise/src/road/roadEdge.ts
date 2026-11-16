@@ -2,7 +2,7 @@ import { CROSSING_HALF_LENGTH_TILES, ROAD_EDGE_CACHE_MAX_ENTRIES } from '../conf
 import { remember } from '../core/boundedCache';
 import { cellIndexOf, edgeExists, edgeKey } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
-import { centreOf, crossingCandidates, placeCrossing } from './roadCrossing';
+import { centreOf, crossingCandidates, lowerSideLaneOffsetTiles, placeCrossing } from './roadCrossing';
 import type { RoadCrossing } from './roadCrossing';
 import { edgeCurve } from './roadCurve';
 import { CROSSING_SPACING_TILES, straightenThrough } from './roadStraightening';
@@ -28,7 +28,10 @@ function isDisjoint(a: RoadCrossing, b: RoadCrossing): boolean {
 function chainsOnto(previous: RoadCrossing, next: RoadCrossing): boolean {
   if (previous.travelAxis !== next.travelAxis) return false;
   const gapTiles = Math.abs(next.boundary - previous.boundary) - 2 * CROSSING_HALF_LENGTH_TILES;
-  return gapTiles >= 2 * Math.abs(next.lane - previous.lane);
+  const laneSpread =
+    Math.abs(next.lane - previous.lane) +
+    Math.max(lowerSideLaneOffsetTiles(previous), lowerSideLaneOffsetTiles(next));
+  return gapTiles >= 2 * laneSpread;
 }
 
 function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {

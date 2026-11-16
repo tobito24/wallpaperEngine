@@ -9,7 +9,7 @@ Part of [WorldNoise](../CLAUDE.md). Source folders: `src/skeleton/`, `src/road/`
 its cell; the town shapes need a block of 3 x 3 chunks, so `CELL_SIZE_CHUNKS` minus twice the buffer must be 3, and the ring
 of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the modules load), `ROAD_EDGE_PROBABILITY`,
 `ROAD_MIN_NODE_DEGREE`, `ROAD_HALF_WIDTH_TILES`, `ROAD_BEND_MAX_TILES`, `ROAD_SEGMENT_LENGTH_TILES`, `ROAD_BEND_CONTROL_COUNT`,
-the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES`, `CROSSING_APPROACH_TILES`, `CROSSING_MAX_LANE_SHIFT_TILES`, `CROSSING_BOUNDARY_SEARCH_TILES`, `CROSSING_MAX_FLATTENED_TILES`, `CROSSING_SAMPLE_STEP_TILES`,
+the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TILES`, `CROSSING_LANES_AFTER_TILES`, `CROSSING_EAST_WEST_EXTRA_LANES_AFTER_TILES`, `CROSSING_APPROACH_TILES`, `CROSSING_MAX_LANE_SHIFT_TILES`, `CROSSING_BOUNDARY_SEARCH_TILES`, `CROSSING_MAX_FLATTENED_TILES`, `CROSSING_SAMPLE_STEP_TILES`,
 `CROSSING_STRAIGHTENING_STEP_TILES`) and the cache limits `SKELETON_CACHE_MAX_ENTRIES` / `ROAD_EDGE_CACHE_MAX_ENTRIES`.
 
 ## Modules
@@ -38,15 +38,16 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES
 - **`road/roadEdge.ts`** (new) — `roadEdge(ax, ay, bx, by)`: the curve of an edge plus its crossings, cached per edge
   (`ROAD_EDGE_CACHE_MAX_ENTRIES`, 5 000); `roadEdgesIn(minX, minY, width, height)`: the edges of the east and south side of every cell around
   a rectangle (a road stays at least 10 tiles away from the border of its cells, so a crossing footprint, at most 10 tiles from the road
-  (`CROSSING_HALF_WIDTH_TILES` plus `CROSSING_MAX_LANE_SHIFT_TILES` plus one for the rounding of the lane), never reaches into a cell this misses; checked when the modules load).
+  (`CROSSING_LANES_AFTER_TILES` plus the extra lane of an east/west crossing plus `CROSSING_MAX_LANE_SHIFT_TILES` plus one for the rounding of the lane), never reaches into a cell this misses; checked when the modules load).
 - **`road/roadCrossing.ts`, `road/roadStraightening.ts`** (new) — a *crossing* is a level change along the curve of a road. The curve is walked
   in steps of `CROSSING_SAMPLE_STEP_TILES` (0.5) over the terrain level before cleanup (noise level with the town override). A change
   is a candidate when the higher level is at least 2 (a cliff exists) and the lower one is land. The road travels along the axis it moves
   along most (`travelAxis`); the crossing has the integer `boundary` between two tile columns (rows) and the `lane`, the row (column) of the
   road, and the higher side (`upperSide`); the lower level is always the upper one minus 1, so a stair never spans two steps. The footprint
-  is 6 tiles along the road (3 each side of the boundary) and 7 across (the lane and 3 each side: the stairs of the next steps need a
-  straight cliff of 6 rows). The road is orthogonal to the cliff it meets, so a candidate looks for a place where the cliff already is:
-  `placeCrossing(candidate, preferredLane, isAllowed)` tries the lanes within `CROSSING_MAX_LANE_SHIFT_TILES` (6) of the lane of the candidate,
+  is 6 tiles along the road (3 each side of the boundary) and 7 across for a north/south crossing (the lane and 3 each side), 8 for an
+  east/west one (3 before the lane, 4 after it: the bulge below ends one row lower, and without the extra row a bay of one tile
+  between the bulge and the terrain behind it is closed by the cleanup, measured: 35 of the east/west footprints inside the area). The road is orthogonal to the cliff it meets, so a candidate looks for a place where the cliff already is:
+  `placeCrossing(candidate, preferredLane, isAllowed)` tries the lanes within `CROSSING_MAX_LANE_SHIFT_TILES` (5) of the lane of the candidate,
   nearest to the preferred lane first, finds the
   boundary of that lane within `CROSSING_BOUNDARY_SEARCH_TILES` (3) of the first one and counts the tiles of the footprint whose natural level
   differs from the planned one (`tilesToFlatten`); the buildable lane with the fewest wins (the lane nearest to the preferred one on a tie) and needs at most
@@ -62,16 +63,26 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES
   blends from one to the other: each crossing has the weight 1 on its straight stretch and a cosine fade outside, the lane is the
   curve mixed with the average of the lanes weighted by weight / (1 - weight), which is exactly the lane of the crossing on its stretch).
   A run where the curve is not monotone along the axis in the window is not built. Crossings of different edges whose footprints touch
-  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 334 crossings (176 of them
-  north/south), of 253 whole footprints 0 differ after the cleanup, 3.1 of 42 tiles changed on average and 8 at most, no jump of two levels
+  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 301 crossings (176 of them
+  north/south, 125 east/west; 334 before the east/west bulge, which costs lanes), of 227 whole footprints 0 differ after the cleanup, 4.8 tiles changed on
+  average and 12 at most (an east/west footprint has 6 x 8 tiles), no jump of two levels
   among land, the road in the lane exactly 3 tiles wide. History: 12 x 11 footprint with the support check at distance 3 gave 48 crossings (148
   without any check, which left box-shaped plateaus and 56 jumps of two levels at their rims), 6 x 7 with a stricter check 180; before the chain
   rule roughly half of the candidates that passed the terrain checks were lost to the spacing of 23; with the chain rule 62 of the 201
   dropped placements overlapped an accepted crossing (cliffs less than 6 tiles apart, no room for two stairs) and 89 could not chain
   because the lanes of their straight places were too far apart, the case the preferred lane addresses (268 -> 334 crossings).
+  **East/west crossings** (`travelAxis` x, the cliff runs north/south) are stairs of 2 x 4 tiles over a bulge: `plannedLevelAt` raises the
+  tile next to the boundary on the lower side (`bulgeColumnOf`) to the upper level for 4 rows (lane - 1 to lane + 2), so the cliff pieces
+  of the bulge come out of the normal rule (two inner corners, two outer corners, two edges, measured on all east/west crossings inside
+  1 024 x 1 024 tiles) and `tilesToFlatten` counts without the bulge. The road on the lower side lies one row south of the upper one
+  (`lowerSideLaneOffsetTiles`, 1): in `straightenThrough` every crossing has a lane before and a lane after its boundary (the upper and
+  the lower lane in the order of the progress along the curve), the sample at the boundary exists twice, so the polyline steps
+  by one row in the middle of the stairs and both roads end straight at the stairs (measured: the road tiles next to the stairs are
+  exactly rows lane - 1 to lane + 1 on the upper side and lane to lane + 2 on the lower side in all of them). `chainsOnto` adds that offset to the
+  lane difference.
 - **`road/crossingTerrain.ts`** (new) — `crossingsOf(edges)`, `flattenCrossings(levels, minX, minY, size, crossings)`: sets every tile of
   a footprint to the upper or the lower level of the crossing, a straight edge. `Chunk` does this on its level block before the
-  water limit and the cleanup (measured: all 253 footprints inside 1 024 x 1 024 tiles carry exactly their levels after the cleanup; 1.3 ms per chunk).
+  water limit and the cleanup (measured: all 227 footprints inside 1 024 x 1 024 tiles carry exactly their levels after the cleanup; 1.8 ms per chunk).
 - **`road/roadMask.ts`** (new) — `roadTilesIn(minX, minY, width, height)`: marks the tiles whose centre is within
   `ROAD_HALF_WIDTH_TILES` (1.5, about 3 tiles wide) of a road (the straightened curve of every edge of `roadEdgesIn`). A pure function of the coordinates: two overlapping rectangles agree on every shared tile (0 of
   57 200 compared tiles differed), so roads have no seams at chunk borders. Roads are 5.2 % of the world, one chunk
