@@ -54,9 +54,10 @@ Reason for the shape: an endless world has no global view, so every decision mus
 - **Paths never end:** every node needs at least two edges. A node with fewer takes the edges with the lowest hash values, and an
   edge exists if either of its two nodes asks for it. The rule only needs the four edges of a node, so it is local. A global
   spanning tree like in Mystery Dungeon is not possible without a global view.
-- The course of an edge is the line between its two nodes, bent by noise. A tile only asks "is a road near me?", so no state is
-  stored and chunks need no coordination.
-- On water a road becomes a **bridge**. Roads do not route around water (A* per edge is a possible later upgrade).
+- The course of an edge was the line between its two nodes, bent by noise; it is replaced by the **road planning** below (a path
+  planned on the height levels). A tile only asks "is a road near me?", so no state is stored and chunks need no coordination.
+- On water a road becomes a **bridge**. A water tile costs more than a land tile in the planning below, so a road goes around
+  water where a detour is cheaper.
 - **Towns** sit on land. A candidate checks its footprint against the base ground (before any town override); if too much of it
   is water, the node becomes a plain waypoint (first rule: at least 97 % land; at the terrain scale of 0.01 that holds for 33 %
   of the 2 x 2 chunk positions and 18 % of the 3 x 3 chunk positions, a candidate can try more than one position in its cell).
@@ -68,7 +69,7 @@ Reason for the shape: an endless world has no global view, so every decision mus
   is 2 x 2 chunks (32 x 32 tiles, like Lavender Town of HGSS with about 28 x 32), a large city up to 3 x 3 chunks (48 x 48, like
   Jubilife City of Platinum with about 50 x 38). Houses are 4 tiles wide (small) or 8 (large). A footprint is a set of whole
   chunks inside the inner 3 x 3 chunks of its own cell (one chunk of buffer on every side), picked from a small list of shapes
-  (2 x 2, 3 x 3, rectangle, L, T), rotated by hash. A chunk only asks its own cell. Roads end at a gate on the footprint.
+  (2 x 2, 3 x 3, rectangle, L, T), rotated by hash. A chunk only asks its own cell. Roads end at a gate on the footprint (see the town gates in the road planning below).
   An **O town** is a layout of the 3 x 3 footprint, not a footprint of its own: the town lies in a ring around a free centre
   chunk, and the template puts something into the centre (a pond, a park, a rock). Measured: as a footprint with the centre
   left to the terrain an O would fit 16 % of the cells, but only 0.1 % of the cells where the full 3 x 3 does not, because
@@ -91,7 +92,8 @@ Reason for the shape: an endless world has no global view, so every decision mus
     kept straight as far as the farthest corner of the footprint from the node (the straight radius of the town, then a fade
     of `TOWN_STRAIGHT_ROAD_FADE_TILES`) and bent only outside. Where they enter the footprint are the gates, where they meet
     is the crossing. They enter at the angle of the neighbouring node, not along the axes, and in an L or T a road can cross
-    a notch and leave and enter the footprint again; the layout step decides whether to straighten or reroute them.
+    a notch and leave and enter the footprint again (this is the state today; the town gates and the street grid of the road
+    planning below replace it).
   - **Designed towns** are hand-built templates, stamped into the footprint (chosen and rotated by hash). During development
     a real town (Marmoria City) is rebuilt as the first template; the public version gets own designs instead. A template
     carries its footprint shape, its tiles and its gates. The template format is decided when the step is built.
@@ -121,6 +123,60 @@ Reason for the shape: an endless world has no global view, so every decision mus
   level there is no wall, the town is open there. A wanted barrier there is a fence (or trees), placed by the town template or
   a decoration rule; a gap in the barrier is allowed and gives variety. Roads leave through gates, on stairs where a cliff is
   in the way.
+
+### Road planning (decided 2026-11-17, not built yet)
+
+The goal: no blocked roads, every road is clean, and where it meets a cliff it meets it at a right angle on stairs. The stairs
+(crossings, flat footprints, straightening) are built, but they sit on roads that know nothing about the height levels. Measured
+on 232 road edges of 1 024 x 1 024 tiles (the numbers of the old state are in `docs/roads.md`):
+
+- Of 974 places where a road changes its level only 429 got stairs; the failures are mostly roads that meet a cliff at a slant
+  (80 % of "too much to flatten" and "no straight edge" are at 40 degrees or more).
+- The bent line between two nodes cannot be improved by chance: the best of 32 random bends per edge leaves 174 of 232 edges with
+  a failure; larger bends make it worse.
+- 21 % of the 169 cell nodes lie in water and 28 % within 3 tiles of a cliff edge, because the node of a waypoint is a random point.
+- A road planned on the level field (prototype, grid A* with the stairs rules as costs) reaches 231 of 232 edges without a failed
+  crossing, with 631 crossings (before: 974 places) and a road 21 to 24 % longer than the bent line. The straightening of
+  today cannot use such a road (347 of 473 crossings failed at the straightening), so it goes away.
+
+Decisions:
+
+1. **Waypoint nodes sit on the best land.** The node of a waypoint cell is the best of 16 hashed candidate positions in the node
+   area of the cell: the one with the largest clearance (Chebyshev distance to the nearest tile of another level or to water,
+   water itself is worth nothing). Town nodes stay the centre of the town. Deterministic, cached per cell.
+2. **Town gates.** An edge runs between neighbouring cells, so a town has at most four gates, one per side that has an edge, and
+   only for edges that exist; a town does not need all four. The gate lies on the outline of the plateau in the middle third of
+   that side (picked by hash) and points along the side's axis. The planner starts at the gate. Inside the plateau the town has a
+   street grid (the layout step of the generated towns); until that exists the road runs straight from the gate to the town node.
+   The planner never plans inside a plateau.
+3. **A path finder per edge replaces the bent line, the walk for crossings and the straightening.** Grid A* between the two ends
+   (nodes or gates) in a box around them; state is tile, direction, run and lock. Rules, each with its reason:
+   - a land step costs 1, a turn a little more, a water tile several times a land tile (a bridge is a last resort);
+   - the road is 3 tiles wide: a tile whose side tiles lie on another level costs extra, so the road does not run along a cliff;
+   - a level change is allowed only where `placeCrossing` accepts the stairs on exactly the lane of the road (at most 8 tiles to
+     flatten, no water near, `CROSSING_MAX_FLATTENED_TILES`), its cost is small plus half a tile per flattened tile, so the
+     terrain gives in a little (a limit of 16 instead of 8 shortened the roads by only 3 %, measured), and the road crosses
+     straight (5 tiles straight before and after the crossing, at least 4 tiles between two turns);
+   - the result is the list of crossings (the gates of the road) plus the path; the crossing list is no longer found by walking
+     the road. A level change that is no crossing is a failure shown by the debug overlay.
+4. **Smooth curves, no return to a raw road.** The corners of the path are rounded (radius 2, the straights at a crossing stay
+   exact), and on a straight of 24 tiles or more outside towns the road gets a gentle wave (amplitude at most 2 tiles, about 32
+   tiles long, zero near its ends and near every crossing) wherever the wave stays on one level. The result is a polyline as
+   today, so the road mask, the stairs and the overlay do not change.
+5. **Stairs may be closer.** Two crossings of a road only need their boundaries 2 tiles apart (north/south) or 4 (east/west,
+   because of the bulge), as long as their levels agree; the later one is checked against the terrain the earlier one made. Today
+   they need 6 (142 of 428 planned pairs are closer than 6).
+6. **Chunk locality.** A planned edge is cached like an edge today. The box of the search lies inside the two cells of the edge,
+   and `roadEdgesIn` looks one cell further (2 cells around the rectangle instead of 1), because a footprint can reach out of
+   the two cells. Costs are integers (scaled by 10) so the result does not depend on rounding. Measured prototype: about 26 ms
+   per edge once, 6 s for the 232 edges.
+
+Built in this order, each step measured and looked at before the next: (1) nodes, (2) town gates (interim straight inside),
+(3) the path finder with crossings (the old walk and straightening are deleted), (4) curves and waves, (5) closer stairs.
+Measured on the same 232 edges and seed, a step is good when: at least 95 % of the edges have no failed crossing, at most 1 % of
+the crossings are failures, no waypoint node lies in water and 90 % have a clearance of 4 or more, the roads are at most 30 %
+longer than the bent line, a chunk takes at most 3 ms (1.9 ms today), a chunk equals the whole map (levels, stairs, road
+mask), and no building stands on a stair.
 
 ### Height levels and cliffs
 
@@ -248,7 +304,12 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Cliff walls where two levels meet, placeholder first: south wall from the dark rock face of the private `Outside` tileset, the other sides dark lines (the real cliff art, with corners and stairs, comes with the art of the public version)
 - [x] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks (16 tiles per chunk, 5 x 5 chunks per cell)
 - [x] Path graph: cell nodes, edge hashes, degree rule, bent roads, bridges (waypoint nodes only, the bridge is a flat color)
-- [ ] Stairs where a road crosses a level change
+- [x] Stairs where a road crosses a level change (crossings of the bent road, see Road planning for the next stage)
+- [ ] Road planning 1: waypoint nodes on the best land (largest clearance of 16 hashed candidates)
+- [ ] Road planning 2: town gates, one per side with an edge, the planner starts there (straight road to the node inside until the street grid exists)
+- [ ] Road planning 3: grid path finder with stairs as crossing rules, replacing the bent line, the walk for crossings and the straightening
+- [ ] Road planning 4: rounded corners and gentle waves on long straights outside towns
+- [ ] Road planning 5: stairs closer together (north/south 2 tiles, east/west 4, levels must agree)
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
