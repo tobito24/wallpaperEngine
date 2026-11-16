@@ -15,6 +15,7 @@ import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { groundWithRoad } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
+import { lowerNeighbourGround } from '../tileset/cliffUnderlay';
 import { continuesInto, underlayGround } from '../tileset/groundRank';
 import { Tile } from './Tile';
 
@@ -130,6 +131,28 @@ export class Chunk {
           },
         );
 
+        let cliffUnderlays: (Ground | null)[] | null = null;
+        if (cliffType) {
+          QUARTER_NEIGHBOUR_OFFSETS.forEach(
+            ([verticalDx, verticalDy, horizontalDx, horizontalDy, diagonalDx, diagonalDy], quarter) => {
+              const verticalIndex = index + verticalDy * PADDED_SIZE + verticalDx;
+              const horizontalIndex = index + horizontalDy * PADDED_SIZE + horizontalDx;
+              const diagonalIndex = index + diagonalDy * PADDED_SIZE + diagonalDx;
+              const lower = lowerNeighbourGround(
+                level,
+                levels[verticalIndex],
+                grounds[verticalIndex],
+                levels[horizontalIndex],
+                grounds[horizontalIndex],
+                levels[diagonalIndex],
+                grounds[diagonalIndex],
+              );
+              if (lower === null) return;
+              cliffUnderlays ??= [null, null, null, null];
+              cliffUnderlays[quarter] = lower;
+            },
+          );
+        }
         tiles.push(
           new Tile(
             originX + lx,
@@ -141,6 +164,7 @@ export class Chunk {
             ground,
             autotileIndexFor(neighbourMask),
             underlays,
+            cliffUnderlays,
             decoration,
           ),
         );

@@ -64,11 +64,15 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   32 px tile grid, a test shape assembled with the real `autotile.ts` tables and all 47 tiles, on a checkerboard or ground-colored
   background. The rules are in `DesignCorner/autotile-template/README.md`.
 - **`tileset/cliffTiles.ts`** (new) — `drawCliff(ctx, cliffType, heightLevel, x, y, size)` draws one of the 12 cliff pieces
-  (4 edges, 4 outer and 4 inner corners) from the stone sets of `InfinityWalker/img/tileset.png` (256 x 1 920 px, 32 px
-  tiles, 8 per row), copied to `assets/tilesets/infinitywalker.png` and found by `import.meta.glob`; without it the
-  function returns false and the tile has no cliff. Each of the three stone sets is a 3 x 3 frame at columns 3 to 5 (rows
-  8, 14, 20) plus the inner corners at columns 6 and 7; the set follows the level of the lower tile (1 brown, 2 grey,
-  3 dark brown). The inner corners of the grey set lie mirrored in the sheet, which `tiles.js` of InfinityWalker already
-  accounts for (`GREY_STONE_INNER_OFFSETS`). Pieces are drawn before the level shade. Earlier tried and dropped: pieces
-  cut from the Essentials `Outside` rock kit, which did not fit together (no corners). Not done: stairs where a road
-  crosses a cliff; a tile with higher neighbours on three sides or on two opposite sides takes the first matching edge.
+  (4 edges, 4 outer and 4 inner corners) of the 16-pattern, one 32 px tile each, from `assets/cliff-assets/cliff-0.png` to
+  `cliff-2.png` (160 x 96 px: a 3 x 3 frame of a plateau with the rim and the wall inside it, plus the four inner corners at columns
+  3 and 4 of rows 0 and 1), found by `import.meta.glob`; without a sheet the function returns false and the tile has no cliff. The
+  set follows the level of the higher tile: level 2 uses `cliff-0`, level 3 `cliff-1`, `cliff-2` is the reserve. The piece lies on the
+  higher tile, so the lower neighbour shows through its transparent corners: `tileset/cliffUnderlay.ts` (`lowerNeighbourGround`)
+  gives per quarter the ground of the lower neighbour (a lower vertical edge neighbour first, then a horizontal one, then the
+  diagonal one), and `Tile.draw` draws these quarters (`cliffUnderlays`) after the ground and before the piece. Pieces are drawn
+  before the level shade. Earlier tried and dropped: pieces cut from the Essentials `Outside` rock kit (no corners) and the stone
+  sets of `InfinityWalker/img/tileset.png` (pieces on the lower tile). Measured on 768 x 768 tiles: 36 550 cliff tiles, all 12
+  types used, none with lower neighbours on opposite sides or on three sides, 3 with two lower diagonals and no lower edge
+  (they show one inner corner), 818 next to water. Not done: the inner ring (autotile of the top texture), stairs where a road
+  crosses a cliff, a straight edge at a road.

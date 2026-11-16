@@ -1,35 +1,34 @@
 import { CLIFF_SHEET_TILE_SIZE_PX } from '../config/constants';
 import type { CliffType } from '../elevation/heightLevel';
 
-const SHEET_KEY = '../../assets/tilesets/infinitywalker.png';
+const SHEET_DIRECTORY = '../../assets/cliff-assets/';
+const LOWEST_CLIFF_LEVEL = 2;
+const CLIFF_SET_COUNT = 3;
 
-const sheetUrls = import.meta.glob<string>('../../assets/tilesets/*.png', {
+const sheetUrls = import.meta.glob<string>('../../assets/cliff-assets/cliff-?.png', {
   eager: true,
   query: '?url',
   import: 'default',
 });
 
-function loadSheet(): HTMLImageElement | undefined {
-  const url = sheetUrls[SHEET_KEY];
-  if (!url) return undefined;
-  const image = new Image();
-  image.src = url;
-  return image;
+function loadSheets(): (HTMLImageElement | undefined)[] {
+  return Array.from({ length: CLIFF_SET_COUNT }, (_, set) => {
+    const url = sheetUrls[`${SHEET_DIRECTORY}cliff-${set}.png`];
+    if (!url) return undefined;
+    const image = new Image();
+    image.src = url;
+    return image;
+  });
 }
 
-const cliffSheet = loadSheet();
+const cliffSheets = loadSheets();
 
 interface SheetPosition {
   readonly column: number;
   readonly row: number;
 }
 
-const FRAME_ORIGIN_COLUMN = 3;
-const FIRST_FRAME_ROW = 8;
-const FRAME_ROW_STRIDE = 6;
-const STONE_GROUP_COUNT = 3;
-
-const OFFSETS_IN_GROUP: Record<CliffType, SheetPosition> = {
+const OFFSETS_IN_SHEET: Record<CliffType, SheetPosition> = {
   northWestOuter: { column: 0, row: 0 },
   northEdge: { column: 1, row: 0 },
   northEastOuter: { column: 2, row: 0 },
@@ -44,14 +43,15 @@ const OFFSETS_IN_GROUP: Record<CliffType, SheetPosition> = {
   northWestInner: { column: 4, row: 1 },
 };
 
-const GREY_STONE_GROUP = 1;
+function sheetForLevel(heightLevel: number): HTMLImageElement | undefined {
+  const set = Math.min(Math.max(heightLevel - LOWEST_CLIFF_LEVEL, 0), CLIFF_SET_COUNT - 1);
+  const sheet = cliffSheets[set];
+  return sheet && sheet.complete && sheet.naturalWidth > 0 ? sheet : undefined;
+}
 
-const GREY_STONE_INNER_OFFSETS: Partial<Record<CliffType, SheetPosition>> = {
-  northWestInner: { column: 3, row: 0 },
-  northEastInner: { column: 4, row: 0 },
-  southEastInner: { column: 4, row: 1 },
-  southWestInner: { column: 3, row: 1 },
-};
+export function hasCliffSheet(heightLevel: number): boolean {
+  return sheetForLevel(heightLevel) !== undefined;
+}
 
 export function drawCliff(
   ctx: CanvasRenderingContext2D,
@@ -61,15 +61,14 @@ export function drawCliff(
   screenY: number,
   size: number,
 ): boolean {
-  if (!cliffSheet || !cliffSheet.complete || cliffSheet.naturalWidth === 0) return false;
+  const sheet = sheetForLevel(heightLevel);
+  if (!sheet) return false;
 
-  const group = (heightLevel - 1) % STONE_GROUP_COUNT;
-  const offset =
-    (group === GREY_STONE_GROUP && GREY_STONE_INNER_OFFSETS[cliffType]) || OFFSETS_IN_GROUP[cliffType];
+  const offset = OFFSETS_IN_SHEET[cliffType];
   ctx.drawImage(
-    cliffSheet,
-    (FRAME_ORIGIN_COLUMN + offset.column) * CLIFF_SHEET_TILE_SIZE_PX,
-    (FIRST_FRAME_ROW + group * FRAME_ROW_STRIDE + offset.row) * CLIFF_SHEET_TILE_SIZE_PX,
+    sheet,
+    offset.column * CLIFF_SHEET_TILE_SIZE_PX,
+    offset.row * CLIFF_SHEET_TILE_SIZE_PX,
     CLIFF_SHEET_TILE_SIZE_PX,
     CLIFF_SHEET_TILE_SIZE_PX,
     screenX,

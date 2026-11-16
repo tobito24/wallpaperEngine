@@ -58,31 +58,27 @@ export interface NeighbourLevels {
 }
 
 export function cliffTypeOf(level: number, neighbours: NeighbourLevels): CliffType | null {
-  if (level <= WATER_LEVEL) return null;
+  if (level <= WATER_LEVEL + 1) return null;
 
-  const n = neighbours.north > level;
-  const e = neighbours.east > level;
-  const s = neighbours.south > level;
-  const w = neighbours.west > level;
-  const nw = neighbours.northWest > level;
-  const ne = neighbours.northEast > level;
-  const se = neighbours.southEast > level;
-  const sw = neighbours.southWest > level;
+  const n = neighbours.north < level;
+  const e = neighbours.east < level;
+  const s = neighbours.south < level;
+  const w = neighbours.west < level;
 
-  if (!n && e && s && !w) return 'northWestInner';
-  if (!n && !e && s && w) return 'northEastInner';
-  if (n && e && !s && !w) return 'southWestInner';
-  if (n && !e && !s && w) return 'southEastInner';
+  if (n && w) return 'northWestOuter';
+  if (n && e) return 'northEastOuter';
+  if (s && e) return 'southEastOuter';
+  if (s && w) return 'southWestOuter';
 
-  if (n) return 'southEdge';
-  if (s) return 'northEdge';
-  if (e) return 'westEdge';
-  if (w) return 'eastEdge';
+  if (n) return 'northEdge';
+  if (s) return 'southEdge';
+  if (e) return 'eastEdge';
+  if (w) return 'westEdge';
 
-  if (nw) return 'southEastOuter';
-  if (ne) return 'southWestOuter';
-  if (se) return 'northWestOuter';
-  if (sw) return 'northEastOuter';
+  if (neighbours.northWest < level) return 'northWestInner';
+  if (neighbours.northEast < level) return 'northEastInner';
+  if (neighbours.southEast < level) return 'southEastInner';
+  if (neighbours.southWest < level) return 'southWestInner';
 
   return null;
 }
