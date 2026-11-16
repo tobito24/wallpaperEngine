@@ -91,6 +91,8 @@ export function describeLimits(limits: EffectiveLimits, options: GeneratorOption
     `inner radius ${limits.innerCornerRadiusPx} (max ${limits.maxInnerCornerRadiusPx}) px`,
   ];
   if (options.fillMode === 'rim') parts.push(`band ${limits.rimWidthPx} (max ${limits.maxRimWidthPx}) px`);
+  if (options.ditherPx > 0) parts.push(`dither ${limits.ditherPx} (max ${limits.maxDitherPx}) px`);
+  if (options.shadeWidthPx > 0) parts.push(`shade ${limits.shadeWidthPx} (max ${limits.maxShadeWidthPx}) px`);
   if (options.style === 'wavy' || options.style === 'rough') {
     parts.push(
       `height top ${waveAmplitudes.top}, right ${waveAmplitudes.right}, bottom ${waveAmplitudes.bottom}, left ${waveAmplitudes.left} px`,
@@ -103,6 +105,8 @@ export function showLimits(limits: EffectiveLimits, options: GeneratorOptions): 
   outerRadiusInput.max = String(limits.maxOuterCornerRadiusPx);
   innerRadiusInput.max = String(limits.maxInnerCornerRadiusPx);
   rimWidthInput.max = String(limits.maxRimWidthPx);
+  ditherInput.max = String(limits.maxDitherPx);
+  shadeWidthInput.max = String(limits.maxShadeWidthPx);
   limitsElement.textContent = describeLimits(limits, options);
 }
 

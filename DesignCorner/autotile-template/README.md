@@ -41,8 +41,10 @@ row 7    43 oBL  44 eB  45 eB  46 eB  47 eB  48 oBR
 1. **Transparent outside.** The edge of the shape lies **8 px** (the default inset, 0 to 16 in the generator) inside the quarter on the side that faces the outside. Everything
    beyond it is fully transparent (alpha 0): no background, no border color, no blur. The red area of the template.
    - with the default inset of 8 px: top edge: rows 0 to 7 of the quarter are transparent; bottom: rows 8 to 15; left: columns 0 to 7; right: columns 8 to 15
-   - outer corner: the two outside sides are transparent (an L shape), the outline turns at the point (8, 8)
-   - inner corner: only the 8 x 8 px square in the corner of the bite is transparent (5 top left, 6 top right, 11 bottom left, 12 bottom right)
+   - outer corner: the two outside sides are transparent (an L shape), the outline turns at the point (8, 8) (hard corner; the generator
+     rounds or cuts it by the corner radius, the default is round, the quarters keep the same structure)
+   - inner corner: only the 8 x 8 px square in the corner of the bite is transparent (5 top left, 6 top right, 11 bottom left, 12 bottom right;
+     the generator rounds the tip of the square by the inner radius)
 2. **Outline crosses every quarter border at the same place**, 8 px from the outer border, so quarters join without a step.
 3. **Ground texture.** Every quarter shows the texture of its slot in the tile: slot top left = quarter 27, top right = 28, bottom left = 33,
    bottom right = 34. A quarter that sits in the left column of its tile (even column in the sheet: 13, 15, 17, 19, ...) uses the left half of the

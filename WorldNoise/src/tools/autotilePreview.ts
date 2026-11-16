@@ -79,6 +79,9 @@ const animateInput = document.querySelector<HTMLInputElement>('#animate')!;
 
 let sheet: CanvasImageSource | undefined;
 let sheetLabel = '';
+type SheetSource = 'path' | 'generated' | 'dropped';
+
+let sheetSource: SheetSource = 'path';
 let lastModified: string | null = null;
 let textures: ImageData[] = [];
 let sheetWidthPx = SHEET_WIDTH_PX;
@@ -268,8 +271,17 @@ function updateFrameControls(): void {
   if (frameCount === 1) animateInput.checked = false;
 }
 
-function showSheet(image: CanvasImageSource, width: number, height: number, label: string): void {
+function showSheet(
+  image: CanvasImageSource,
+  width: number,
+  height: number,
+  label: string,
+  source: SheetSource,
+): void {
   sheet = image;
+  sheetSource = source;
+  downloadButton.disabled = source !== 'generated';
+  guideButton.disabled = source !== 'generated';
   sheetLabel = label;
   sheetWidthPx = width;
   frameCount = Math.max(1, Math.floor(width / SHEET_WIDTH_PX));
@@ -295,14 +307,14 @@ async function loadFromPath(): Promise<void> {
       throw new Error('no image found (only files inside WorldNoise/ can be loaded)');
     lastModified = response.headers.get('last-modified');
     const bitmap = await createImageBitmap(await response.blob());
-    showSheet(bitmap, bitmap.width, bitmap.height, pathInput.value);
+    showSheet(bitmap, bitmap.width, bitmap.height, pathInput.value, 'path');
   } catch (error) {
     setStatus(`${pathInput.value}: ${(error as Error).message}`, true);
   }
 }
 
 async function reloadWhenFileChanged(): Promise<void> {
-  if (document.hidden) return;
+  if (document.hidden || sheetSource !== 'path') return;
   try {
     const response = await fetch(`${urlFromRelativePath(pathInput.value)}?t=${Date.now()}`, {
       method: 'HEAD',
@@ -342,10 +354,8 @@ function generateFromTextures(): void {
   const sheetData = generateAutotileSheet(textures, options);
   generatedSheet = canvasWith(sheetData);
   generatedGuide = canvasWith(guideFromSheet(sheetData));
-  downloadButton.disabled = false;
-  guideButton.disabled = false;
   const label = `generated from ${textures.length} texture${textures.length === 1 ? '' : 's'}`;
-  showSheet(generatedSheet, generatedSheet.width, generatedSheet.height, label);
+  showSheet(generatedSheet, generatedSheet.width, generatedSheet.height, label, 'generated');
 }
 
 function imageDataOf(bitmap: ImageBitmap): ImageData {
@@ -358,9 +368,11 @@ function imageDataOf(bitmap: ImageBitmap): ImageData {
 }
 
 async function openFiles(files: File[]): Promise<void> {
-  const opened = await Promise.all(
+  const results = await Promise.allSettled(
     files.map(async (file) => ({ file, bitmap: await createImageBitmap(file) })),
   );
+  const opened = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
+  const unreadableCount = files.length - opened.length;
   opened.sort((first, second) => first.file.name.localeCompare(second.file.name));
   const textureFiles = opened.filter(
     ({ bitmap }) => bitmap.width === TEXTURE_SIZE_PX && bitmap.height === TEXTURE_SIZE_PX,
@@ -368,9 +380,15 @@ async function openFiles(files: File[]): Promise<void> {
   if (textureFiles.length > 0) {
     textures = textureFiles.map(({ bitmap }) => imageDataOf(bitmap));
     generateFromTextures();
+    const ignoredCount = files.length - textureFiles.length;
+    if (ignoredCount > 0) {
+      statusElement.textContent += ` ${ignoredCount} file${ignoredCount === 1 ? '' : 's'} ignored (not a 32 x 32 px image).`;
+    }
   } else if (opened.length > 0) {
     const { file, bitmap } = opened[0];
-    showSheet(bitmap, bitmap.width, bitmap.height, `${file.name} (dropped, no auto reload)`);
+    showSheet(bitmap, bitmap.width, bitmap.height, `${file.name} (dropped, no auto reload)`, 'dropped');
+  } else if (unreadableCount > 0) {
+    setStatus('The dropped file is not an image.', true);
   }
 }
 

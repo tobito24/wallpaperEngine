@@ -59,7 +59,9 @@ export interface EffectiveLimits {
   rimWidthPx: number;
   maxRimWidthPx: number;
   ditherPx: number;
+  maxDitherPx: number;
   shadeWidthPx: number;
+  maxShadeWidthPx: number;
 }
 
 type GroundTest = (x: number, y: number) => boolean;
@@ -109,9 +111,16 @@ export function effectiveLimits(options: GeneratorOptions): EffectiveLimits {
   );
   const outerRoom = SIDES.map((side) => MAX_INSET_PX - insets[side] - waveAmplitudes[side]);
   const innerRoom = SIDES.map((side) => insets[side] - waveAmplitudes[side]);
-  const maxOuterCornerRadiusPx = Math.max(0, Math.min(...outerRoom));
+  const room = Math.max(0, Math.min(...outerRoom));
   const maxInnerCornerRadiusPx = Math.max(0, Math.min(...innerRoom));
-  const maxRimWidthPx = Math.max(1, Math.min(...outerRoom));
+  const maxRimWidthPx = room;
+  const maxDitherPx = Math.min(MAX_DITHER_PX, room);
+  const maxShadeWidthPx = Math.min(MAX_SHADE_WIDTH_PX, room);
+  const rimWidthPx = clamp(options.rimWidthPx, 0, maxRimWidthPx);
+  const ditherPx = clamp(options.ditherPx, 0, maxDitherPx);
+  const shadeWidthPx = clamp(options.shadeWidthPx, 0, maxShadeWidthPx);
+  const widestRingPx = Math.max(options.fillMode === 'rim' ? rimWidthPx : 0, ditherPx, shadeWidthPx);
+  const maxOuterCornerRadiusPx = Math.max(0, room - widestRingPx);
   return {
     insets,
     waveAmplitudes,
@@ -119,10 +128,12 @@ export function effectiveLimits(options: GeneratorOptions): EffectiveLimits {
     innerCornerRadiusPx: clamp(options.innerCornerRadiusPx, 0, maxInnerCornerRadiusPx),
     maxOuterCornerRadiusPx,
     maxInnerCornerRadiusPx,
-    rimWidthPx: clamp(options.rimWidthPx, 1, maxRimWidthPx),
+    rimWidthPx,
     maxRimWidthPx,
-    ditherPx: clamp(options.ditherPx, 0, MAX_DITHER_PX),
-    shadeWidthPx: clamp(options.shadeWidthPx, 0, MAX_SHADE_WIDTH_PX),
+    ditherPx,
+    maxDitherPx,
+    shadeWidthPx,
+    maxShadeWidthPx,
   };
 }
 

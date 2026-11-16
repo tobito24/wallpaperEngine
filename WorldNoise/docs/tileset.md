@@ -47,10 +47,12 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
     or 32 px) and `rough` (random bumps from a seed, roughness 0 to 4 px).
   - **Inset:** 0 to 16 px from the tile border, one value for all sides (default 8) and an optional value per side (a bigger inset
     makes the shape smaller and shows more of the ground below).
-  - **Corners:** outer and inner radius. Limits keep every corner and wave inside its 16 px quarter: outer radius at most
-    16 - inset - wave height, inner radius at most inset - wave height (the smallest of the four sides counts), wave height at most
-    the inset and 16 - inset. The page shows the used values.
-  - **Fill:** `full texture` or `rim band only` (band width 1 to 16 px, limited like the outer radius; the inside stays transparent,
+  - **Corners:** outer and inner radius. Limits keep every corner, wave and ring effect inside its 16 px quarter, because
+    anything that reaches the next quarter would break the equal quarters: wave height at most the inset and 16 - inset; room =
+    16 - inset - wave height (the smallest of the four sides counts); band width, dither and edge shade width at most the room;
+    outer radius at most the room minus the widest of band, dither and shade; inner radius at most inset - wave height. The page
+    shows the used values and the maxima. Checked with 1 500 random option sets: the equal quarters were identical in all of them.
+  - **Fill:** `full texture` or `rim band only` (band width 1 to 16 px, limited by the room; the inside stays transparent,
     the base for a cliff or foam overlay). The band width is the same on all sides.
   - **Edge look:** dither 0 to 2 px (checkerboard rings that fade the edge without semi-transparent pixels) and an edge shade
     (width 0 to 3 px, brighter or darker by a percentage; off by default).
