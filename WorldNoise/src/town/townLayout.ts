@@ -8,6 +8,9 @@ import {
   TOWN_HOUSES_PER_CHUNK,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
+import { stairsOf, tileKey } from '../road/crossingStairs';
+import { crossingsOf } from '../road/crossingTerrain';
+import { roadEdgesIn } from '../road/roadEdge';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { BUILDING_TYPES } from './townBuildings';
@@ -63,11 +66,13 @@ function computeLayout(town: Town): TownLayout {
   const height = (Math.max(...chunkYs) + 1) * CHUNK_SIZE - minY;
 
   const roads = roadTilesIn(minX, minY, width, height);
+  const stairs = stairsOf(crossingsOf(roadEdgesIn(minX, minY, width, height)));
   const free = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const isInside = townInfoAt(minX + x, minY + y)?.inside === true;
-      free[y * width + x] = isInside && roads[y * width + x] !== ROAD_TILE_MARK ? 1 : 0;
+      const isRoad = roads[y * width + x] === ROAD_TILE_MARK;
+      free[y * width + x] = isInside && !isRoad && !stairs.has(tileKey(minX + x, minY + y)) ? 1 : 0;
     }
   }
 

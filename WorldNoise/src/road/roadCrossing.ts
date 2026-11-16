@@ -160,7 +160,7 @@ function buildFailure(crossing: RoadCrossing): 'water' | 'town' | null {
   }
   for (let y = minY; y < minY + height; y++) {
     for (let x = minX; x < minX + width; x++) {
-      if (townInfoAt(x, y) !== null) return 'town';
+      if (townInfoAt(x, y)?.inside && terrainLevelAt(x, y) !== plannedLevelAt(crossing, x, y)) return 'town';
     }
   }
   return null;

@@ -29,7 +29,7 @@ it, never the steps after it. A step can be switched off on its own for testing.
    from there.
 3. **Town:** is the tile inside a town footprint? Result: the tile of the town template stamped there, and the plateau: the
    town overrides ground and height level inside its footprint (and the terrace ring around it).
-4. **Path:** is the tile on a road? Roads end at the gates of the towns and read the final level, so stairs appear where it
+4. **Path:** is the tile on a road? Roads end at the gates of the towns and read the final level (a footprint of stairs may lie on the ring and the plateau edge of a town, see roads.md), so stairs appear where it
    changes. Road on water becomes a bridge.
 5. **Decoration:** rule-based scatter (trees, rocks, flowers), never on water, path or town.
 6. **Rendering:** which sprite fits the tile and its neighbours (autotiling).
