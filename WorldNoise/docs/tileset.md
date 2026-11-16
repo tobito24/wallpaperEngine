@@ -12,30 +12,29 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   `autotileIndexFor(mask)` maps the 8-neighbour mask (N 1, NE 2, E 4, SE 8, S 16, SW 32, W 64, NW 128; a bit is set
   when the neighbour continues the ground) to the tile index. A diagonal that matters only when both adjacent edges
   are set is already folded into the table.
-- **`tileset/ground.ts`** (new) — `Ground`: the ground a tile is drawn with, the seven `BiomeGround`s of the biome table
-  plus the two `OverlayGround`s `road` and `bridge` (a road on water). `groundWithRoad(biomeGround, isRoad)` makes the
-  final ground; `fallbackColorOf(ground, biome)` is the flat color for a clone without sheets (the biome's color, or the
-  fixed color of road and bridge).
-- **`tileset/groundRank.ts`** (new) — the fixed rank of the grounds, deep water 0, shallow water 1, sand 2, grass 3,
-  dirt 4, rock 5, snow 6, road 7, bridge 8, and `continuesInto(ground, neighbour)`: a neighbour counts as set when its
-  rank is the same or higher. A ground therefore draws its own rim against lower grounds and a lower ground shows plain
-  fill next to a higher one, so there is never a rim on both sides; a road has a rim on every ground it crosses.
-- **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → autotile file) and
-  `drawGroundAutotile(ctx, ground, autotileIndex, x, y, size)`, which draws the four 16 px quarters of the tile from
-  the ground's sheet (the two halves are `floor(size / 2)` and the rest, so an odd tile size leaves no gap) and returns
-  false when there is no sheet, so the tile falls back to the biome's flat color. The sheets are the development-only
-  Essentials autotiles in `dev-assets/autotiles/` (see "Working here" in [CLAUDE.md](../CLAUDE.md)), found by `import.meta.glob`, so a clone without
-  them still builds and runs with flat colors. Mapping: deepWater `Sea deep`, shallowWater `Sea without shore`, sand
-  `Sand`, grass `Light grass`, dirt `Dirt`, rock `Gravel`, snow `White path`, road `Brick path`; the bridge has no sheet
-  yet and is a flat brown tile. The Essentials rims are painted for grass
-  as the base, so a transition against water or snow shows a grass-green rim; the replacement art is converted to the
-  same layout. Animation follows Essentials (`002_CustomTilemap.rb`): the frame count of a sheet is its width divided by
-  96, the frames lie side by side, and the frame is `floor(now / ANIMATED_AUTOTILE_FRAME_DURATION_MS) % frameCount`
-  with 250 ms (`5 * 60 / 20` game frames at 60 per second), the same frame for every tile, so the water moves as one.
-  `WorldRenderer` computes the frame from `nowMs` and hands it to `Tile.draw`; sheets that are 96 px wide have one
-  frame and never change. With the local sheets both water sheets have 8 frames (a cycle of 2 s); measured on the
-  canvas over 4.6 s: 8 distinct images, a change about every 250 ms, 76 % of the screen's pixels (the land) never
-  change.
+- **`tileset/ground.ts`** (new) — `Ground`: the ground a tile is drawn with, the 14 `BiomeId`s (every biome is its own ground)
+  plus the two `OverlayGround`s `road` and `bridge` (a road on water). `groundWithRoad(biomeId, isRoad)` makes the final ground;
+  `fallbackColorOf(ground)` is the flat color for a ground without a sheet.
+- **`tileset/groundRank.ts`** (new) — the fixed rank of the grounds, a higher rank draws its rim over a lower one. The rule: wetter
+  and warmer covers (2 x moisture band + temperature band, the warmer wins a tie), water below everything, mountain and snow peak
+  above all land: deep water 0, shallow water 1, beach 2, snow field 3, steppe 4, tundra 5, desert 6, meadow 7, snow forest 8,
+  savanna 9, forest 10, jungle 11, mountain 12, snow peak 13, road 14, bridge 15. `continuesInto(ground, neighbour)`: a
+  neighbour counts as set when its rank is the same or higher, so a ground draws its own rim against lower grounds and a lower
+  ground shows plain fill next to a higher one, never a rim on both sides; a road has a rim on every ground it crosses.
+  `underlayGround(ground, neighbours)` gives the highest lower ground among the neighbours of a quarter (its two edge neighbours
+  and its diagonal one), or none.
+- **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → file in `autotiles/`, own art:
+  beach `sand`, meadow `grass`, steppe `grass-light-wild`, mountain `gravel`, road `brick-path`, the others by their kebab-case name) and
+  `drawGroundAutotile(ctx, ground, autotileIndex, frame, x, y, size)`, which draws the four 16 px quarters of the tile from the
+  ground's sheet (the two halves are `floor(size / 2)` and the rest, so an odd tile size leaves no gap) and returns false when
+  there is no sheet, so the tile falls back to the flat color. `drawGroundUnderlay` draws, per quarter, the plain fill of the
+  lower ground below the rim first (the sheets have transparent rims, see below). The sheets are found by `import.meta.glob`,
+  so a clone without them still builds and runs with flat colors. Animation follows Essentials (`002_CustomTilemap.rb`): the
+  frame count of a sheet is its width divided by 96, the frames lie side by side, and the frame is
+  `floor(now / ANIMATED_AUTOTILE_FRAME_DURATION_MS) % frameCount` with 250 ms, the same frame for every tile, so the water moves as
+  one. `WorldRenderer` computes the frame from `nowMs` and hands it to `Tile.draw`; sheets that are 96 px wide have one frame and
+  never change (all current sheets). The sheets are generated from 32 x 32 px textures with the tool below and decorated by hand;
+  the textures for water, snow, tundra, snow forest, jungle and forest are recolored stand-ins until they are painted.
 - **`autotile-preview.html`** + **`src/tools/`** (`autotilePreview.ts` the page, `autotileControls.ts` the controls,
   `autotileGenerator.ts` the generator; new, dev tool, not part of the build output) — make and check a self-made autotile:
   `npm run dev`, open `/autotile-preview.html`. One or more 32 x 32 px textures (file input or dropped on the page; several

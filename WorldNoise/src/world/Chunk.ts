@@ -13,11 +13,34 @@ import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { groundWithRoad } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
-import { continuesInto } from '../tileset/groundRank';
+import { continuesInto, underlayGround } from '../tileset/groundRank';
 import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
 const PADDED_SIZE = CHUNK_SIZE + 2;
+
+const NEIGHBOURS_OF_QUARTER: readonly (readonly (readonly [number, number])[])[] = [
+  [
+    [0, -1],
+    [-1, 0],
+    [-1, -1],
+  ],
+  [
+    [0, -1],
+    [1, 0],
+    [1, -1],
+  ],
+  [
+    [0, 1],
+    [-1, 0],
+    [-1, 1],
+  ],
+  [
+    [0, 1],
+    [1, 0],
+    [1, 1],
+  ],
+];
 
 export class Chunk {
   readonly chunkX: number;
@@ -55,7 +78,7 @@ export class Chunk {
 
     const roads = roadTilesIn(originX - 1, originY - 1, PADDED_SIZE, PADDED_SIZE);
     const grounds: Ground[] = biomes.map((biome, index) =>
-      groundWithRoad(biome.ground, roads[index] === ROAD_TILE_MARK),
+      groundWithRoad(biome.id, roads[index] === ROAD_TILE_MARK),
     );
 
     const tiles: Tile[] = [];
@@ -83,6 +106,14 @@ export class Chunk {
           if (continuesInto(ground, grounds[index + dy * PADDED_SIZE + dx])) neighbourMask |= bit;
         }
 
+        const underlays = NEIGHBOURS_OF_QUARTER.map((quarterNeighbours) =>
+          underlayGround(
+            ground,
+            quarterNeighbours.map(([dx, dy]) => grounds[index + dy * PADDED_SIZE + dx]),
+          ),
+        );
+        const hasUnderlay = underlays.some((underlay) => underlay !== null);
+
         tiles.push(
           new Tile(
             originX + lx,
@@ -93,6 +124,7 @@ export class Chunk {
             biomes[index],
             ground,
             autotileIndexFor(neighbourMask),
+            hasUnderlay ? underlays : null,
             decoration,
           ),
         );

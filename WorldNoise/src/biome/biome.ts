@@ -8,38 +8,49 @@ import {
 } from '../config/constants';
 import { temperatureAtElevation } from '../temperature/temperatureAtElevation';
 
-export type BiomeGround = 'deepWater' | 'shallowWater' | 'sand' | 'grass' | 'dirt' | 'rock' | 'snow';
+export type BiomeId =
+  | 'deepWater'
+  | 'shallowWater'
+  | 'beach'
+  | 'snowField'
+  | 'tundra'
+  | 'snowForest'
+  | 'steppe'
+  | 'meadow'
+  | 'forest'
+  | 'desert'
+  | 'savanna'
+  | 'jungle'
+  | 'mountain'
+  | 'snowPeak';
 
 export interface Biome {
-  readonly id: string;
-  readonly ground: BiomeGround;
-  readonly color: string;
+  readonly id: BiomeId;
 }
 
-function biome(id: string, ground: BiomeGround, color: string): Biome {
-  return { id, ground, color };
+function biome(id: BiomeId): Biome {
+  return { id };
 }
 
-const DEEP_WATER = biome('deepWater', 'deepWater', '#1f4e79');
-const SHALLOW_WATER = biome('shallowWater', 'shallowWater', '#2f6fa7');
-const BEACH = biome('beach', 'sand', '#d9c88f');
+const DEEP_WATER = biome('deepWater');
+const SHALLOW_WATER = biome('shallowWater');
+const BEACH = biome('beach');
 
-const SNOW_FIELD = biome('snowField', 'snow', '#f2f2f2');
-const TUNDRA = biome('tundra', 'snow', '#d3dde3');
-const SNOW_FOREST = biome('snowForest', 'snow', '#a9bfb8');
+const SNOW_FIELD = biome('snowField');
+const TUNDRA = biome('tundra');
+const SNOW_FOREST = biome('snowForest');
 
-const STEPPE = biome('steppe', 'dirt', '#b59b5a');
-const MEADOW = biome('meadow', 'grass', '#86b85c');
+const STEPPE = biome('steppe');
+const MEADOW = biome('meadow');
 export const TOWN_BIOME = MEADOW;
-const FOREST_COLOR = '#3f7a3a';
-const FOREST = biome('forest', 'grass', FOREST_COLOR);
+const FOREST = biome('forest');
 
-const DESERT = biome('desert', 'sand', '#e6c97c');
-const SAVANNA = biome('savanna', 'dirt', '#c08a43');
-const JUNGLE = biome('jungle', 'grass', FOREST_COLOR);
+const DESERT = biome('desert');
+const SAVANNA = biome('savanna');
+const JUNGLE = biome('jungle');
 
-const MOUNTAIN = biome('mountain', 'rock', '#6b6459');
-const SNOW_PEAK = biome('snowPeak', 'snow', '#ffffff');
+const MOUNTAIN = biome('mountain');
+const SNOW_PEAK = biome('snowPeak');
 
 const COLD_BAND = 0;
 

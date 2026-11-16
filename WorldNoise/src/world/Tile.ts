@@ -6,7 +6,7 @@ import { drawOutsideTile } from '../tileset/outsideSheet';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { fallbackColorOf } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
-import { drawGroundAutotile } from '../tileset/groundSheets';
+import { drawGroundAutotile, drawGroundUnderlay } from '../tileset/groundSheets';
 
 export class Tile {
   readonly worldX: number;
@@ -17,6 +17,7 @@ export class Tile {
   readonly biome: Biome;
   readonly ground: Ground;
   readonly autotileIndex: number;
+  readonly underlays: readonly (Ground | null)[] | null;
   readonly decoration: SheetTile | null;
 
   constructor(
@@ -28,6 +29,7 @@ export class Tile {
     biome: Biome,
     ground: Ground,
     autotileIndex: number,
+    underlays: readonly (Ground | null)[] | null,
     decoration: SheetTile | null,
   ) {
     this.worldX = worldX;
@@ -38,6 +40,7 @@ export class Tile {
     this.biome = biome;
     this.ground = ground;
     this.autotileIndex = autotileIndex;
+    this.underlays = underlays;
     this.decoration = decoration;
   }
 
@@ -48,8 +51,9 @@ export class Tile {
     size: number,
     animationFrame: number,
   ): void {
+    if (this.underlays) drawGroundUnderlay(ctx, this.underlays, animationFrame, screenX, screenY, size);
     if (!drawGroundAutotile(ctx, this.ground, this.autotileIndex, animationFrame, screenX, screenY, size)) {
-      ctx.fillStyle = fallbackColorOf(this.ground, this.biome);
+      ctx.fillStyle = fallbackColorOf(this.ground);
       ctx.fillRect(screenX, screenY, size, size);
     }
 
