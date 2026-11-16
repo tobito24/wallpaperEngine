@@ -59,7 +59,7 @@ Paths and towns.
   (a tile in water has 0, a tile with nothing in reach 9); the candidate with the largest clearance wins, the lower index on a tie. The
   node area lies 16 tiles inside the cell and the radius is 8, so only the own cell is read. Cached per cell, about 1.7 ms per cell cold.
   Measured on 93 waypoint cells (13 x 13 cells, one seed): before (a random point) 21 % of all nodes lay in water and 28 % within 3 tiles of
-  a level change; now none of the waypoint nodes lies in water and 3 of 93 have a clearance of 3 or less (16 candidates: 14 of 93, so 48).
+  a level change; now none of the waypoint nodes lies in water (one would only if the whole node area were sea) and 3 of 93 have a clearance of 3 or less (16 candidates: 14 of 93, so 48).
   Stairs on the 309 edges of 1 024 x 1 024 tiles: 551 -> 571, failures of the kinds road curve 53 -> 15, no straight edge 79 -> 53, water 3 -> 1.
 - **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint;
   `straightRoadRadiusOf`: the straight radius of the town, or null for a waypoint. The road layer reads these; the town
