@@ -51,7 +51,7 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   nearest to the preferred lane first, finds the
   boundary of that lane within `CROSSING_BOUNDARY_SEARCH_TILES` (3) of the first one and counts the tiles of the footprint whose natural level
   differs from the planned one (`tilesToFlatten`); the buildable lane with the fewest wins (the lane nearest to the preferred one on a tie) and needs at most
-  `CROSSING_MAX_FLATTENED_TILES` (8 of 42), so a boundary in steps of one tile is accepted and a sliver or a slant is not. Buildable: no
+  `CROSSING_MAX_FLATTENED_TILES` (8 of 42 tiles, 8 of 48 for an east/west footprint), so a boundary in steps of one tile is accepted and a sliver or a slant is not. Buildable: no
   water within the footprint plus the clearance the water limit demands for the two levels (`waterClearanceTiles` minus 1: none for 2/1, 2 for
   3/2, 4 for 4/3) and no town tile inside the footprint. Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
   the centre, whatever the axes) are independent. Closer ones of the same axis chain into a run when the gap between their straight stretches
