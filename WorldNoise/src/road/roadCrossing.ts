@@ -1,8 +1,10 @@
 import {
   CELL_BUFFER_CHUNKS,
   CHUNK_SIZE,
+  CROSSING_BOUNDARY_SEARCH_TILES,
   CROSSING_HALF_LENGTH_TILES,
   CROSSING_HALF_WIDTH_TILES,
+  CROSSING_MAX_LANE_SHIFT_TILES,
   CROSSING_SAMPLE_STEP_TILES,
   ROAD_BEND_MAX_TILES,
 } from '../config/constants';
@@ -33,12 +35,21 @@ export interface TileRectangle {
 }
 
 const FIRST_CLIFF_LEVEL = 2;
-const SUPPORT_NEAR_BOUNDARY_TILES = 3;
-const SUPPORT_LANE_OFFSET_TILES = 3;
-const SUPPORT_LANE_OFFSETS = [-SUPPORT_LANE_OFFSET_TILES, 0, SUPPORT_LANE_OFFSET_TILES];
+const SUPPORT_DISTANCES_TILES = [2, CROSSING_HALF_LENGTH_TILES];
+const SUPPORT_LANE_OFFSETS = [-CROSSING_HALF_WIDTH_TILES, 0, CROSSING_HALF_WIDTH_TILES];
+const LANE_SHIFTS = Array.from({ length: 2 * CROSSING_MAX_LANE_SHIFT_TILES + 1 }, (_, index) =>
+  index % 2 === 0 ? index / 2 : -(index + 1) / 2,
+);
 const MAX_FOOTPRINT_REACH_TILES = CELL_BUFFER_CHUNKS * CHUNK_SIZE - ROAD_BEND_MAX_TILES;
 
-if (Math.max(CROSSING_HALF_LENGTH_TILES, CROSSING_HALF_WIDTH_TILES) >= MAX_FOOTPRINT_REACH_TILES) {
+if (
+  Math.max(
+    CROSSING_HALF_LENGTH_TILES + CROSSING_BOUNDARY_SEARCH_TILES,
+    CROSSING_HALF_WIDTH_TILES + CROSSING_MAX_LANE_SHIFT_TILES,
+  ) +
+    1 >
+  MAX_FOOTPRINT_REACH_TILES
+) {
   throw new Error('A crossing footprint must stay closer to its road than a road to the edge of its cell');
 }
 
@@ -62,15 +73,35 @@ export function terrainLevelAt(tileX: number, tileY: number): number {
   return levelWithTown(heightLevelAt(tileX, tileY, elevationNoise(tileX, tileY)), townInfoAt(tileX, tileY));
 }
 
+function levelAtLane(crossing: RoadCrossing, along: number, lane: number): number {
+  return crossing.travelAxis === 'x' ? terrainLevelAt(along, lane) : terrainLevelAt(lane, along);
+}
+
+function boundaryAtLane(crossing: RoadCrossing, lane: number): number | null {
+  const lowerFirst = crossing.upperSide === 1;
+  const firstLevel = lowerFirst ? crossing.lowerLevel : crossing.upperLevel;
+  const secondLevel = lowerFirst ? crossing.upperLevel : crossing.lowerLevel;
+  for (let offset = 0; offset <= CROSSING_BOUNDARY_SEARCH_TILES; offset++) {
+    for (const candidate of [crossing.boundary + offset, crossing.boundary - offset]) {
+      if (
+        levelAtLane(crossing, candidate - 1, lane) === firstLevel &&
+        levelAtLane(crossing, candidate, lane) === secondLevel
+      ) {
+        return candidate;
+      }
+    }
+  }
+  return null;
+}
+
 function isSupportedByTerrain(crossing: RoadCrossing): boolean {
   for (const side of [crossing.upperSide, oppositeOf(crossing.upperSide)]) {
     const expectedLevel = side === crossing.upperSide ? crossing.upperLevel : crossing.lowerLevel;
-    for (const distance of [SUPPORT_NEAR_BOUNDARY_TILES, CROSSING_HALF_LENGTH_TILES]) {
+    for (const distance of SUPPORT_DISTANCES_TILES) {
       const along = side === 1 ? crossing.boundary + distance - 1 : crossing.boundary - distance;
       for (const laneOffset of SUPPORT_LANE_OFFSETS) {
         const lane = crossing.lane + laneOffset;
-        const level = crossing.travelAxis === 'x' ? terrainLevelAt(along, lane) : terrainLevelAt(lane, along);
-        if (level !== expectedLevel) return false;
+        if (levelAtLane(crossing, along, lane) !== expectedLevel) return false;
       }
     }
   }
@@ -124,6 +155,17 @@ function crossingBetween(
   };
 }
 
+function shiftedAlongBoundary(candidate: RoadCrossing): RoadCrossing | null {
+  for (const shift of LANE_SHIFTS) {
+    const lane = candidate.lane + shift;
+    const boundary = boundaryAtLane(candidate, lane);
+    if (boundary === null) continue;
+    const shifted = { ...candidate, id: `${candidate.travelAxis}:${boundary}:${lane}`, boundary, lane };
+    if (isSupportedByTerrain(shifted) && isBuildable(shifted)) return shifted;
+  }
+  return null;
+}
+
 export function crossingCandidates(curve: readonly Point[]): RoadCrossing[] {
   const candidates: RoadCrossing[] = [];
   let previous = curve[0];
@@ -150,5 +192,5 @@ export function crossingCandidates(curve: readonly Point[]): RoadCrossing[] {
       previousLevel = currentLevel;
     }
   }
-  return candidates.filter((candidate) => isSupportedByTerrain(candidate) && isBuildable(candidate));
+  return candidates.flatMap((candidate) => shiftedAlongBoundary(candidate) ?? []);
 }
