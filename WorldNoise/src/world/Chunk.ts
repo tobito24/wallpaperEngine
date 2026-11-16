@@ -3,12 +3,14 @@ import type { Biome } from '../biome/biome';
 import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { cliffTypeOf, heightLevelAt } from '../elevation/heightLevel';
+import { LEVEL_CLEANUP_REACH_TILES, cleanHeightLevels } from '../elevation/levelCleanup';
 import { moistureNoise } from '../moisture/moistureNoise';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
 import type { Town } from '../town/townPlacement';
 import { townDecorationAt } from '../town/townLayout';
 import { levelWithTown, townInfoAt } from '../town/townTerrain';
+import type { TownTileInfo } from '../town/townTerrain';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { groundWithRoad } from '../tileset/ground';
@@ -18,6 +20,8 @@ import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
 const PADDED_SIZE = CHUNK_SIZE + 2;
+const LEVEL_BLOCK_MARGIN = 1 + LEVEL_CLEANUP_REACH_TILES;
+const LEVEL_BLOCK_SIZE = CHUNK_SIZE + 2 * LEVEL_BLOCK_MARGIN;
 
 const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, number, number, number])[] = [
   [0, -1, -1, 0, -1, -1],
@@ -39,6 +43,25 @@ export class Chunk {
 
     const originX = chunkX * CHUNK_SIZE;
     const originY = chunkY * CHUNK_SIZE;
+    const blockElevations = new Float64Array(LEVEL_BLOCK_SIZE * LEVEL_BLOCK_SIZE);
+    const blockLevels = new Uint8Array(LEVEL_BLOCK_SIZE * LEVEL_BLOCK_SIZE);
+    const blockTownInfos: (TownTileInfo | null)[] = [];
+    for (let by = 0; by < LEVEL_BLOCK_SIZE; by++) {
+      for (let bx = 0; bx < LEVEL_BLOCK_SIZE; bx++) {
+        const worldX = originX + bx - LEVEL_BLOCK_MARGIN;
+        const worldY = originY + by - LEVEL_BLOCK_MARGIN;
+        const blockIndex = by * LEVEL_BLOCK_SIZE + bx;
+        blockElevations[blockIndex] = elevationNoise(worldX, worldY);
+        const townInfo = townInfoAt(worldX, worldY);
+        blockTownInfos.push(townInfo);
+        blockLevels[blockIndex] = levelWithTown(
+          heightLevelAt(worldX, worldY, blockElevations[blockIndex]),
+          townInfo,
+        );
+      }
+    }
+    const blockCleanedLevels = cleanHeightLevels(blockLevels, LEVEL_BLOCK_SIZE);
+
     const elevations = new Float64Array(PADDED_SIZE * PADDED_SIZE);
     const levels = new Uint8Array(PADDED_SIZE * PADDED_SIZE);
     const biomes: Biome[] = [];
@@ -48,9 +71,11 @@ export class Chunk {
         const worldX = originX + px - 1;
         const worldY = originY + py - 1;
         const index = py * PADDED_SIZE + px;
-        elevations[index] = elevationNoise(worldX, worldY);
-        const townInfo = townInfoAt(worldX, worldY);
-        levels[index] = levelWithTown(heightLevelAt(worldX, worldY, elevations[index]), townInfo);
+        const blockIndex =
+          (py + LEVEL_CLEANUP_REACH_TILES) * LEVEL_BLOCK_SIZE + px + LEVEL_CLEANUP_REACH_TILES;
+        elevations[index] = blockElevations[blockIndex];
+        levels[index] = blockCleanedLevels[blockIndex];
+        const townInfo = blockTownInfos[blockIndex];
         insideTowns.push(townInfo?.inside ? townInfo.town : null);
         biomes.push(
           townInfo?.inside
