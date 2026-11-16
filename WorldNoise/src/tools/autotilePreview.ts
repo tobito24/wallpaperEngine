@@ -69,7 +69,8 @@ const styleSelect = document.querySelector<HTMLSelectElement>('#style')!;
 const insetInput = document.querySelector<HTMLInputElement>('#inset')!;
 const limitsElement = document.querySelector<HTMLSpanElement>('#limits')!;
 const guideButton = document.querySelector<HTMLButtonElement>('#guide')!;
-const radiusInput = document.querySelector<HTMLInputElement>('#radius')!;
+const outerRadiusInput = document.querySelector<HTMLInputElement>('#outerRadius')!;
+const innerRadiusInput = document.querySelector<HTMLInputElement>('#innerRadius')!;
 const amplitudeInput = document.querySelector<HTMLInputElement>('#amplitude')!;
 const periodSelect = document.querySelector<HTMLSelectElement>('#period')!;
 const amplitudeLabel = document.querySelector<HTMLLabelElement>('#amplitudeLabel')!;
@@ -319,7 +320,8 @@ function generatorOptions(): GeneratorOptions {
   return {
     style: styleSelect.value as EdgeStyle,
     insetPx: Number(insetInput.value),
-    cornerRadiusPx: Number(radiusInput.value),
+    outerCornerRadiusPx: Number(outerRadiusInput.value),
+    innerCornerRadiusPx: Number(innerRadiusInput.value),
     waveAmplitudePx: Number(amplitudeInput.value),
     wavePeriodPx: Number(periodSelect.value),
   };
@@ -332,7 +334,9 @@ function generateFromTexture(): void {
   if (!texture) return;
   const options = generatorOptions();
   const limits = effectiveLimits(options);
-  limitsElement.textContent = `Used: inset ${limits.insetPx} px, outer corner radius ${limits.outerCornerRadiusPx} px, inner corner radius ${limits.innerCornerRadiusPx} px, wave height ${limits.waveAmplitudePx} px`;
+  outerRadiusInput.max = String(limits.maxOuterCornerRadiusPx);
+  innerRadiusInput.max = String(limits.maxInnerCornerRadiusPx);
+  limitsElement.textContent = `Used: inset ${limits.insetPx} px, outer radius ${limits.outerCornerRadiusPx} (max ${limits.maxOuterCornerRadiusPx}) px, inner radius ${limits.innerCornerRadiusPx} (max ${limits.maxInnerCornerRadiusPx}) px, wave height ${limits.waveAmplitudePx} px`;
   const sheetData = generateAutotileSheet(texture, options);
   const canvas = canvasWith(sheetData);
   generatedSheet = canvas;
@@ -362,8 +366,8 @@ textureInput.addEventListener('change', () => {
   const file = textureInput.files?.[0];
   if (file) void openImage(file);
 });
-[styleSelect, insetInput, radiusInput, amplitudeInput, periodSelect].forEach((control) =>
-  control.addEventListener('input', generateFromTexture),
+[styleSelect, insetInput, outerRadiusInput, innerRadiusInput, amplitudeInput, periodSelect].forEach(
+  (control) => control.addEventListener('input', generateFromTexture),
 );
 downloadButton.addEventListener('click', () => saveCanvas(generatedSheet, 'autotile.png'));
 guideButton.addEventListener('click', () => saveCanvas(generatedGuide, 'autotile-guide.png'));

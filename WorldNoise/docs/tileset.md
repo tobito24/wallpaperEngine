@@ -41,8 +41,8 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   dropped on the page) is turned into a base sheet of 96 x 128 px: the texture in all ground quarters, an edge 8 px inside the
   border, transparent outside and no border color (the texture just stops). Options: edge style (`curve` round corners, `edge` cut
   corners, `wavy` a sine along the edge), inset 0 to 16 px (distance of the edge from the tile border, default 8: a bigger inset makes the shape smaller and shows more of the
-  ground below), corner radius, wave height and wave length 16 or 32 px (the waves repeat every 32 px at most, so the edge quarters that
-  must be equal are equal). The radius and the wave height are limited so a corner or wave stays inside its 16 px quarter (outer radius
+  ground below), outer and inner corner radius, wave height and wave length 16 or 32 px (the waves repeat every 32 px at most, so the edge quarters that
+  must be equal are equal). The radii and the wave height are limited so a corner or wave stays inside its 16 px quarter (outer radius
   16 - inset - wave height, inner radius inset - wave height, wave height at most the inset and 16 - inset); the page shows the used values.
   "Download guide" saves a red/green guide layer matching the generated sheet. Inner corners are notches with the same radius. "Download sheet" saves the PNG, which is then
   decorated in Photoshop. The page also loads a finished PNG from a relative path inside `WorldNoise/` in the form of "Copy Relative Path" (`WorldNoise\autotiles\sand.png`; own art lives in `autotiles/`) and reloads it

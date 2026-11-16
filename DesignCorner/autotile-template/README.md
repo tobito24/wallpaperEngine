@@ -77,7 +77,7 @@ a semi-transparent edge.
 2. Start `npm run dev` in `WorldNoise/`, open `/autotile-preview.html`, choose the texture (or drop it on the page). The page generates the
    base sheet (rules above) and shows it at once. Choose the edge (curve = round corners, edge = cut corners, wavy = a wave along the edge),
    the inset (0 to 16 px, how far the texture stays away from the tile border: a bigger inset makes the whole shape smaller and shows more
-   of the ground below), the corner radius and, for wavy, the wave height (0 to 4 px) and length (16 or 32 px); then "Download sheet" and
+   of the ground below), the outer and inner corner radius (the inner one cannot be larger than the inset, see docs/tileset.md) and, for wavy, the wave height (0 to 4 px) and length (16 or 32 px); then "Download sheet" and
    "Download guide" (a red/green guide layer that matches this sheet, in place of `autotile-template-1x.png` when the inset is not 8 px).
    The texture simply stops at the edge, there is no border color.
 3. Open the PNG in Photoshop with the guide (`autotile-template-1x.png` for the default inset of 8 px) as a guide layer and add the details. Keep the rules: only the 16 quarters of

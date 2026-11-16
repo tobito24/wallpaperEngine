@@ -62,7 +62,7 @@
         border-radius: 4px;
       }
       input[type='number'] {
-        width: 72px;
+        width: 84px;
       }
       input[type='text'] {
         width: 330px;
@@ -131,8 +131,12 @@
             <input id="inset" type="number" min="0" max="16" value="8" />
           </label>
           <label
-            >Corner radius px (0-16)
-            <input id="radius" type="number" min="0" max="16" value="8" />
+            >Outer corner radius px
+            <input id="outerRadius" type="number" min="0" max="16" value="8" />
+          </label>
+          <label
+            >Inner corner radius px
+            <input id="innerRadius" type="number" min="0" max="16" value="8" />
           </label>
           <label id="amplitudeLabel" hidden
             >Wave height px (0-4)

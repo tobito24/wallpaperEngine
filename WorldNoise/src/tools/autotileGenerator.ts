@@ -18,7 +18,8 @@ export type EdgeStyle = 'edge' | 'curve' | 'wavy';
 export interface GeneratorOptions {
   style: EdgeStyle;
   insetPx: number;
-  cornerRadiusPx: number;
+  outerCornerRadiusPx: number;
+  innerCornerRadiusPx: number;
   waveAmplitudePx: number;
   wavePeriodPx: number;
 }
@@ -28,6 +29,8 @@ export interface EffectiveLimits {
   waveAmplitudePx: number;
   outerCornerRadiusPx: number;
   innerCornerRadiusPx: number;
+  maxOuterCornerRadiusPx: number;
+  maxInnerCornerRadiusPx: number;
 }
 
 interface EdgeOffsets {
@@ -51,11 +54,15 @@ export function effectiveLimits(options: GeneratorOptions): EffectiveLimits {
   const insetPx = clamp(options.insetPx, 0, MAX_INSET_PX);
   const waveRoomPx = Math.min(MAX_WAVE_AMPLITUDE_PX, insetPx, MAX_INSET_PX - insetPx);
   const waveAmplitudePx = options.style === 'wavy' ? clamp(options.waveAmplitudePx, 0, waveRoomPx) : 0;
+  const maxOuterCornerRadiusPx = Math.max(0, MAX_INSET_PX - insetPx - waveAmplitudePx);
+  const maxInnerCornerRadiusPx = Math.max(0, insetPx - waveAmplitudePx);
   return {
     insetPx,
     waveAmplitudePx,
-    outerCornerRadiusPx: clamp(options.cornerRadiusPx, 0, MAX_INSET_PX - insetPx - waveAmplitudePx),
-    innerCornerRadiusPx: clamp(options.cornerRadiusPx, 0, insetPx - waveAmplitudePx),
+    outerCornerRadiusPx: clamp(options.outerCornerRadiusPx, 0, maxOuterCornerRadiusPx),
+    innerCornerRadiusPx: clamp(options.innerCornerRadiusPx, 0, maxInnerCornerRadiusPx),
+    maxOuterCornerRadiusPx,
+    maxInnerCornerRadiusPx,
   };
 }
 
