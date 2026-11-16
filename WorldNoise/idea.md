@@ -88,12 +88,10 @@ Reason for the shape: an endless world has no global view, so every decision mus
     Mart per town (a small town may have only the Center), trees and fences in what is left. Later layouts, for example a
     main street with houses on both sides, a ring road around a park or pond (the O town) or a grid, are added the same way.
     The rules are refined when the step is built.
-  - The roads of a town are the roads of the graph: the edges to the neighbouring nodes run through the town to its node,
-    kept straight as far as the farthest corner of the footprint from the node (the straight radius of the town, then a fade
-    of `TOWN_STRAIGHT_ROAD_FADE_TILES`) and bent only outside. Where they enter the footprint are the gates, where they meet
-    is the crossing. They enter at the angle of the neighbouring node, not along the axes, and in an L or T a road can cross
-    a notch and leave and enter the footprint again (this is the state today; the town gates and the street grid of the road
-    planning below replace it).
+  - The roads of a town are the roads of the graph: the edges to the neighbouring nodes end at the town gates and run straight
+    from there through the town to its node (road planning 2; before it the straight radius of the town kept the bent road
+    straight through the footprint). Where they meet is the crossing. In an L or T a road can cross a notch and leave and
+    enter the footprint again; the street grid of the layout step replaces these straight roads.
   - **Designed towns** are hand-built templates, stamped into the footprint (chosen and rotated by hash). During development
     a real town (Marmoria City) is rebuilt as the first template; the public version gets own designs instead. A template
     carries its footprint shape, its tiles and its gates. The template format is decided when the step is built.
@@ -155,8 +153,8 @@ Decisions:
    axis. The planner starts at the gate and meets the terrace ring first: ring cliffs get stairs by the normal crossing rule, as
    today. Inside the plateau the town has a street grid (the layout step of the generated towns); until that exists the road
    runs straight from the gate to the town node, as it does today, also where that line crosses a notch of an L or T shape. The
-   planner never plans inside a plateau. The straight road radius and its fade (`townNodes.ts`, `TOWN_STRAIGHT_ROAD_FADE_TILES`)
-   and the bend (`roadCurve.ts`, `ROAD_BEND_*`) go away in step 3; the 97 % land rule is not touched, the gates follow its outline.
+   planner never plans inside a plateau. The straight road radius and its fade are gone with step 2 (the bent
+   line now ends at the gate), the bend (`roadCurve.ts`, `ROAD_BEND_*`) goes away in step 3; the 97 % land rule is not touched, the gates follow its outline.
 3. **A path finder per edge replaces the bent line, the walk for crossings and the straightening.** Grid A* between the two ends
    (nodes or gates) in a box around them; state is tile, direction, run and lock. Rules, each with its reason:
    - a land step costs 1, a turn a little more, a water tile several times a land tile (a bridge is a last resort);
@@ -319,7 +317,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Path graph: cell nodes, edge hashes, degree rule, bent roads (replaced by road planning 3), bridges (waypoint nodes only, the bridge is a flat color)
 - [x] Stairs where a road crosses a level change (crossings of the bent road, see Road planning for the next stage)
 - [x] Road planning 1: waypoint nodes on the best land (largest clearance of 48 hashed candidates)
-- [ ] Road planning 2: town gates, one per side with an edge, the planner starts there (straight road to the node inside until the street grid exists)
+- [x] Road planning 2: town gates, one per side with an edge, the bent line ends there (straight road to the node inside until the street grid exists)
 - [ ] Road planning 3: grid path finder with stairs as crossing rules, replacing the bent line, the walk for crossings and the straightening
 - [ ] Road planning 4: rounded corners and gentle waves on long straights outside towns
 - [ ] Road planning 5: stairs closer together (north/south 2 tiles, east/west 4, levels must agree)

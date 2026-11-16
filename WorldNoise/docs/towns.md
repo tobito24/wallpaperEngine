@@ -7,7 +7,7 @@ Paths and towns.
 ## Constants
 
 `config/constants.ts`: `TOWN_CELL_PROBABILITY`, `TOWN_DESIGNED_SHARE`, `TOWN_MIN_LAND_SHARE`, `TOWN_RING_WIDTH_TILES`,
-`TOWN_SAMPLE_STRIDE_TILES`, `TOWN_STRAIGHT_ROAD_FADE_TILES`, `TOWN_LARGE_WEIGHT`, `TOWN_MEDIUM_WEIGHT`, `TOWN_CACHE_MAX_ENTRIES`,
+`TOWN_SAMPLE_STRIDE_TILES`, `TOWN_LARGE_WEIGHT`, `TOWN_MEDIUM_WEIGHT`, `TOWN_CACHE_MAX_ENTRIES`,
 `TOWN_OUTLINE_WOBBLE_TILES`, `TOWN_BUILDING_MARGIN_TILES`, `TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES`, `TOWN_HOUSES_PER_CHUNK`.
 `CELL_SIZE_CHUNKS` and `CELL_BUFFER_CHUNKS` are described in [roads.md](roads.md).
 
@@ -61,11 +61,17 @@ Paths and towns.
   Measured on 93 waypoint cells (13 x 13 cells, one seed): before (a random point) 21 % of all nodes lay in water and 28 % within 3 tiles of
   a level change; now none of the waypoint nodes lies in water (one would only if the whole node area were sea) and 3 of 93 have a clearance of 3 or less (16 candidates: 14 of 93, so 48).
   Stairs on the 309 edges of 1 024 x 1 024 tiles: 551 -> 571, failures of the kinds road curve 53 -> 15, no straight edge 79 -> 53, water 3 -> 1.
-- **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint;
-  `straightRoadRadiusOf`: the straight radius of the town, or null for a waypoint. The road layer reads these; the town
-  does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not built
-  yet. The roads enter a town at the angle of the neighbouring node, so the approaches are straight but not
-  axis-parallel; the layout step can improve that. Known limits the layout step has to deal with: `Chunk` hard-codes the
+- **`town/townGates.ts`** (new) — `townGate(town, side)`: the gate of a town on a side (`gateSideOf(stepX, stepY)` turns the step to the
+  neighbouring cell into east, west, south or north). Only the sides that have an edge are asked, so a town has as many gates as roads
+  (measured on 76 towns of 13 x 13 cells: 35 with 2 gates, 28 with 3, 13 with 4; every node has at least two edges). The gate is a plateau tile
+  (`townInfoAt` inside) taken from the outermost tile of every lane of the footprint's bounding box along that side; the lanes whose outermost tile
+  is within `TOWN_OUTLINE_WOBBLE_TILES` of the deepest one count as facing that way (so a notch of an L or T shape does not), the middle third of
+  them is the choice, one is picked by hash (`gate:cx:cy:side`); cached per town and side. Measured: all 206 gates lie on the plateau and have
+  no plateau tile next to them in the direction of the side.
+- **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint. The road layer reads
+  these; the town does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not
+  built yet. The road enters the plateau on a straight line from the gate to the node, not along an axis: the bent line from the
+  other node reaches the gate at the angle of the neighbour; the planned roads (road planning 3) arrive along the axis. Known limits the layout step has to deal with: `Chunk` hard-codes the
   town ground (`TOWN_BIOME` inside a footprint) and `roadTilesIn` paints roads over the whole footprint, so a layout that
   owns its ground and roads needs a town-layer call that can replace or veto both; `townInfoAt` only says inside or ring
   (a fence or stairs step also needs the distance to the footprint edge and the base level); `Tile.elevation` stays the

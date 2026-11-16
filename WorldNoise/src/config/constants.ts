@@ -38,7 +38,6 @@ export const TOWN_HOUSES_PER_CHUNK = 1.5;
 export const TOWN_OUTLINE_NOISE_FREQUENCY = 0.05;
 export const TOWN_OUTLINE_NOISE_OCTAVES = 1;
 export const TOWN_SAMPLE_STRIDE_TILES = 2;
-export const TOWN_STRAIGHT_ROAD_FADE_TILES = 16;
 export const TOWN_LARGE_WEIGHT = 0.3;
 export const TOWN_MEDIUM_WEIGHT = 0.4;
 export const ROAD_EDGE_CACHE_MAX_ENTRIES = 5000;

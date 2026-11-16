@@ -30,12 +30,12 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   order (the nodes are put in the canonical order inside, so the result never depends on the order of the call), a line
   between its two nodes bent sideways by up to `ROAD_BEND_MAX_TILES` (6) with `ROAD_BEND_CONTROL_COUNT` (3) smooth
   control offsets from hashes of the edge (zero at both nodes), cut into segments of about `ROAD_SEGMENT_LENGTH_TILES`
-  (4). The nodes come from `town/townNodes.ts`, so a road
-  ends at the centre of a town; the bend is faded out within the straight radius of a town node (the distance to the
-  farthest corner of the footprint, `Town.straightRoadRadius`, 34 to 47 tiles) and over `TOWN_STRAIGHT_ROAD_FADE_TILES`
-  (16) after it, so roads run straight through the whole footprint (measured on 32 378 road points inside footprints:
-  largest deviation from the straight line 0.0; in the ring around it at most 1.1 tiles). A road stays inside the two cells of its nodes
-  (nodes are at least 16 tiles from the cell edge, the bend is at most 6).
+  (4). The nodes come from `town/townNodes.ts`. At a town the bent
+  line ends at the gate of the town (`town/townGates.ts`, the side towards the neighbouring cell) and a straight segment
+  leads from the gate to the town node, so a road still ends at the centre of a town and runs straight inside the plateau.
+  A road stays inside the two cells of its nodes (nodes are at least 16 tiles from the cell edge, the bend is at most 6). With the gates (and without the fade of the bend near a
+  town) the stairs on the 309 edges of 1 024 x 1 024 tiles went from 571 to 559: no straight edge 53 -> 99, road curve 15 -> 33; the road meets the ring of a
+  town at the angle of the neighbour again, which the path finder of road planning 3 replaces.
 - **`road/roadEdge.ts`** (new) — `roadEdge(ax, ay, bx, by)`: the curve of an edge plus its crossings, cached per edge
   (`ROAD_EDGE_CACHE_MAX_ENTRIES`, 5 000); `roadEdgesIn(minX, minY, width, height)`: the edges of the east and south side of every cell around
   a rectangle (a road stays at least 10 tiles away from the border of its cells, so a crossing footprint, at most 10 tiles from the road
@@ -58,9 +58,8 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   it may change plateau tiles (at the plateau edge the straight boundary runs through the outline, ring tiles are raised to the plateau level, a notch of the
   outline may be lowered; 8 tiles at most, 187 plateau tiles in all on 1 024 x 1 024 tiles). The town layout (`computeLayout`) keeps the whole footprint of every
   crossing free of buildings, so no building stands on a changed tile or on a stair (measured: 0 decorated tiles in a footprint, every decorated tile lies
-  on the plateau level of its town). Known effect: the raw road is straight through a town up to the
-  `straightRoadRadius`, a crossing on the plateau edge moves the road sideways by up to the lane shift and blends it back over
-  the approach, so near such a gate the road is not on the straight line. Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
+  on the plateau level of its town). Known effect: a crossing on the plateau edge moves the road sideways by up to the lane
+  shift and blends it back over the approach, so near such a gate the road is not on the straight line from the gate to the node. Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
   the centre, whatever the axes) are independent. Closer ones of the same axis chain into a run when the gap between their straight stretches
   (`|boundary difference|` minus 6) is at least twice their lane difference; a candidate close to the last crossing of the edge therefore
   prefers the lane of that crossing and only takes lanes where the chain holds, so the road runs straight through the cliffs of a run
