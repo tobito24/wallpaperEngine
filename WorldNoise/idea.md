@@ -139,7 +139,8 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
   is the 16-pattern (one 32 px tile per piece, hand-drawn: 3 x 3 frame plus the four inner corners in columns 3 and 4, the layout of
   `OFFSETS_IN_SHEET` in `cliffTiles.ts`, one file per level, `WorldNoise/assets/cliff-assets/cliff-N.png`), the inner ring is an autotile
   of the top texture (generated like the ground sheets) over the biome ground, so the inner edge blends into the plateau. A cliff
-  may fall straight into water, but the inner ring never has water under it (its underlay is the own ground of the tile). The
+  may fall straight into water from level 2 (a level 3 plateau needs two tiles of level 2 between it and water, so both cliff sets show;
+  the natural terrain keeps this, a town caps its plateau at 2 near water), but the inner ring never has water under it (its underlay is the own ground of the tile). The
   piece lies on the higher tile, so a plateau must be at least 2 tiles wide; that is why too small
   plateaus are cleaned (`levelCleanup.ts`). Where a road meets a cliff the edge must be straight for the stairs, which changes the
   level map around the crossing (the road mask is independent of the levels today).

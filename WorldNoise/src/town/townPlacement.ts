@@ -9,7 +9,9 @@ import {
   TOWN_MEDIUM_WEIGHT,
   TOWN_MIN_LAND_SHARE,
   TOWN_RING_WIDTH_TILES,
+  TOWN_MAX_PLATEAU_LEVEL_NEAR_WATER,
   TOWN_SAMPLE_STRIDE_TILES,
+  TOWN_WATER_CLEARANCE_TILES,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import { randomValue } from '../core/keyedRandom';
@@ -57,7 +59,19 @@ function absoluteChunks(cx: number, cy: number, shape: TownShape): ChunkOffset[]
 
 interface FootprintSample {
   readonly landShare: number;
-  readonly commonLandLevel: number;
+  readonly plateauLevel: number;
+}
+
+function hasWaterNearChunk(chunkX: number, chunkY: number): boolean {
+  const minX = chunkX * CHUNK_SIZE - TOWN_WATER_CLEARANCE_TILES;
+  const minY = chunkY * CHUNK_SIZE - TOWN_WATER_CLEARANCE_TILES;
+  const size = CHUNK_SIZE + 2 * TOWN_WATER_CLEARANCE_TILES;
+  for (let y = minY; y < minY + size; y++) {
+    for (let x = minX; x < minX + size; x++) {
+      if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return true;
+    }
+  }
+  return false;
 }
 
 function sampleFootprint(chunks: readonly ChunkOffset[]): FootprintSample {
@@ -86,7 +100,11 @@ function sampleFootprint(chunks: readonly ChunkOffset[]): FootprintSample {
       commonCount = count;
     }
   }
-  return { landShare: land / total, commonLandLevel };
+  const isNearWater = chunks.some(([chunkX, chunkY]) => hasWaterNearChunk(chunkX, chunkY));
+  const plateauLevel = isNearWater
+    ? Math.min(commonLandLevel, TOWN_MAX_PLATEAU_LEVEL_NEAR_WATER)
+    : commonLandLevel;
+  return { landShare: land / total, plateauLevel };
 }
 
 function anchorCenter(chunks: readonly ChunkOffset[]): Point {
@@ -136,7 +154,7 @@ function findTown(cx: number, cy: number): Town | null {
         chunks,
         center,
         straightRoadRadius: farthestCornerDistance(center, chunks),
-        plateauLevel: sample.commonLandLevel,
+        plateauLevel: sample.plateauLevel,
         designed: randomValue(`town:${cx}:${cy}:designed`) < TOWN_DESIGNED_SHARE,
       };
     }

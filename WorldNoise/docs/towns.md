@@ -21,7 +21,10 @@ Paths and towns.
   `TOWN_MEDIUM_WEIGHT` 0.4, the rest small); the shapes of the class are tried in a hash order, a shape is taken when at
   least `TOWN_MIN_LAND_SHARE` (97 %) of its sampled tiles (every `TOWN_SAMPLE_STRIDE_TILES`, 2, tile) are land of the base
   ground; if none fits, the next smaller class is tried, otherwise the cell keeps a plain waypoint. The plateau level is
-  the most common land level of the base ground in the footprint, the node of the town is the centre of the chunk of the
+  the most common land level of the base ground in the footprint, at most `TOWN_MAX_PLATEAU_LEVEL_NEAR_WATER` (2) when
+  water lies within `TOWN_WATER_CLEARANCE_TILES` (3) of a footprint chunk (a plateau of level 3 needs two tiles of level 2 between
+  it and water for the two cliff rings; before, a coastal town of level 3 touched water directly: 154 tiles in 64 x 64 chunks, now 0,
+  and the natural terrain never has it), the node of the town is the centre of the chunk of the
   footprint nearest to its centroid (so it lies inside an L or T), and a hash makes `TOWN_DESIGNED_SHARE` (20 %) of the
   towns designed. Measured on 14 400 cells: towns in 41 % (large 542, medium 3 286, small 2 084), designed 20.4 %,
   plateau levels 1 / 2 / 3 in 799 / 1 336 / 3 777 towns (towns stand inland, where the land is high), 0.56 ms per cell.
