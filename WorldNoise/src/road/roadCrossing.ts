@@ -35,9 +35,6 @@ export interface TileRectangle {
 }
 
 const FIRST_CLIFF_LEVEL = 2;
-const LANE_SHIFTS = Array.from({ length: 2 * CROSSING_MAX_LANE_SHIFT_TILES + 1 }, (_, index) =>
-  index % 2 === 0 ? index / 2 : -(index + 1) / 2,
-);
 const MAX_FOOTPRINT_REACH_TILES = CELL_BUFFER_CHUNKS * CHUNK_SIZE - ROAD_BEND_MAX_TILES;
 
 if (
@@ -164,17 +161,29 @@ function crossingBetween(
   };
 }
 
-function bestPlacementAlongBoundary(candidate: RoadCrossing): RoadCrossing | null {
+function lanesNear(candidate: RoadCrossing, preferredLane: number): number[] {
+  const lanes = Array.from(
+    { length: 2 * CROSSING_MAX_LANE_SHIFT_TILES + 1 },
+    (_, index) => candidate.lane - CROSSING_MAX_LANE_SHIFT_TILES + index,
+  );
+  return lanes.sort((a, b) => Math.abs(a - preferredLane) - Math.abs(b - preferredLane) || a - b);
+}
+
+export function placeCrossing(
+  candidate: RoadCrossing,
+  preferredLane: number,
+  isAllowed: (placed: RoadCrossing) => boolean,
+): RoadCrossing | null {
   let best: RoadCrossing | null = null;
   let bestCost = CROSSING_MAX_FLATTENED_TILES + 1;
-  for (const shift of LANE_SHIFTS) {
-    const lane = candidate.lane + shift;
+  for (const lane of lanesNear(candidate, preferredLane)) {
     const boundary = boundaryAtLane(candidate, lane);
     if (boundary === null) continue;
-    const shifted = { ...candidate, id: `${candidate.travelAxis}:${boundary}:${lane}`, boundary, lane };
-    const cost = tilesToFlatten(shifted);
-    if (cost >= bestCost || !isBuildable(shifted)) continue;
-    best = shifted;
+    const placed = { ...candidate, id: `${candidate.travelAxis}:${boundary}:${lane}`, boundary, lane };
+    if (!isAllowed(placed)) continue;
+    const cost = tilesToFlatten(placed);
+    if (cost >= bestCost || !isBuildable(placed)) continue;
+    best = placed;
     bestCost = cost;
   }
   return best;
@@ -206,5 +215,5 @@ export function crossingCandidates(curve: readonly Point[]): RoadCrossing[] {
       previousLevel = currentLevel;
     }
   }
-  return candidates.flatMap((candidate) => bestPlacementAlongBoundary(candidate) ?? []);
+  return candidates;
 }

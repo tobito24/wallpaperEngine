@@ -2,7 +2,7 @@ import { CROSSING_HALF_LENGTH_TILES, ROAD_EDGE_CACHE_MAX_ENTRIES } from '../conf
 import { remember } from '../core/boundedCache';
 import { cellIndexOf, edgeExists, edgeKey } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
-import { centreOf, crossingCandidates } from './roadCrossing';
+import { centreOf, crossingCandidates, placeCrossing } from './roadCrossing';
 import type { RoadCrossing } from './roadCrossing';
 import { edgeCurve } from './roadCurve';
 import { CROSSING_SPACING_TILES, straightenThrough } from './roadStraightening';
@@ -37,10 +37,23 @@ function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
   let polylineBeforeLastRun = curve;
   let polyline = curve;
 
-  for (const candidate of crossingCandidates(curve)) {
+  for (const base of crossingCandidates(curve)) {
     const lastRun = runs.at(-1);
-    const earlierRuns = runs.slice(0, -1).flat();
-    if (!earlierRuns.every((other) => isDisjoint(other, candidate))) continue;
+    const previous = lastRun?.[lastRun.length - 1];
+    const accepted = runs.flat();
+    const earlier = runs.slice(0, -1).flat();
+    const chained =
+      previous !== undefined && !isDisjoint(previous, base)
+        ? placeCrossing(
+            base,
+            previous.lane,
+            (placed) => chainsOnto(previous, placed) && earlier.every((other) => isDisjoint(other, placed)),
+          )
+        : null;
+    const candidate =
+      chained ??
+      placeCrossing(base, base.lane, (placed) => accepted.every((other) => isDisjoint(other, placed)));
+    if (candidate === null) continue;
 
     if (lastRun === undefined || lastRun.every((other) => isDisjoint(other, candidate))) {
       const straightened = straightenThrough(polyline, [candidate]);
@@ -51,7 +64,6 @@ function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
       continue;
     }
 
-    if (!chainsOnto(lastRun[lastRun.length - 1], candidate)) continue;
     const extendedRun = [...lastRun, candidate];
     const straightened = straightenThrough(polylineBeforeLastRun, extendedRun);
     if (straightened === null) continue;
