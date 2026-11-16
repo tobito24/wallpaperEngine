@@ -26,8 +26,9 @@ dist-ssr
 # Playwright MCP session artifacts (screenshots, page snapshots, console logs)
 .playwright-mcp/
 
-# Development-only assets (Essentials graphics, not cleared for publishing)
-WorldNoise/dev-assets/
+# Assets (tiles, textures, sheets, sounds) are not committed, so there is no license question in the repo:
+# every project keeps them in an assets/ folder
+assets/
 
 # Material that must not be published (third-party art, maps from games): stays on this machine
 DesignCorner/private/

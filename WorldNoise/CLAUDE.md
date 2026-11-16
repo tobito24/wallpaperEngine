@@ -79,11 +79,10 @@ Same scripts as `TileGridBase`:
 - `npm run dev` — Vite dev server with HMR.
 - `npm run build` — type-checks (`tsc`) then produces `dist/`.
 - `npm run lint` / `npm run format` — ESLint / Prettier, same configs as `TileGridBase`.
-- Ground art: the autotile sheets are in `WorldNoise/autotiles/` (own art, made with `/autotile-preview.html`, see
-  [docs/tileset.md](docs/tileset.md)); a missing sheet is a flat color. Development-only assets: `InfinityWalker/img/tileset.png`
-  as `WorldNoise/dev-assets/tilesets/infinitywalker.png` (cliffs) and the Essentials `Outside` sheet as
-  `WorldNoise/dev-assets/tilesets/outside.png` (town buildings). That folder is git-ignored on purpose: these graphics are not
-  cleared for publishing, so they are replaced before any publish. A build made while the folder exists carries them in `dist/`
-  (Vite inlines files under 4 KB into the JS bundle as data URIs, larger ones are copied), and `dist/` is what Wallpaper Engine
-  loads: publish only a build made without the folder. The ground textures in `DesignCorner/private/tile-texture-32x32/` come from
-  the InfinityWalker tileset, check that before the sheets in `autotiles/` are published.
+- Assets: `WorldNoise/assets/` is git-ignored on purpose, no asset is committed (rule in [code-conventions](../docs/code-conventions.md)).
+  It holds `autotiles/` (the ground sheets, own art made with `/autotile-preview.html`, see [docs/tileset.md](docs/tileset.md); a
+  missing sheet is a flat color), `tilesets/` (`infinitywalker.png` from `InfinityWalker/img/tileset.png` for the cliffs and the
+  Essentials `Outside` sheet as `outside.png` for the town buildings; both are not cleared for publishing) and `cliffs/` (the cliff
+  pieces). The ground textures in `DesignCorner/private/tile-texture-32x32/` come from the InfinityWalker tileset too. A build made
+  while the folder exists carries the assets in `dist/` (Vite inlines files under 4 KB into the JS bundle as data URIs, larger ones are
+  copied), and `dist/` is what Wallpaper Engine loads: clear every asset before a publish, or build without the folder.

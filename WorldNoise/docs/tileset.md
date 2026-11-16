@@ -24,7 +24,7 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   `underlayGround(ground, firstEdge, secondEdge, diagonal)` gives the ground below the rim of a quarter: the higher of the lower
   edge neighbours, and only when no edge neighbour is lower the diagonal one (an inner corner), else none; so a coast keeps the
   water below it even if a higher ground touches the corner.
-- **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → file in `autotiles/`, own art:
+- **`tileset/groundSheets.ts`** (new) — the data table `SHEET_FILE_BY_GROUND` (ground → file in `assets/autotiles/`, own art:
   beach `sand`, meadow `grass`, steppe `grass-light-wild`, mountain `gravel`, road `brick-path`, the others by their kebab-case name) and
   `drawGroundAutotile(ctx, ground, autotileIndex, frame, x, y, size)`, which draws the four 16 px quarters of the tile from the
   ground's sheet (the two halves are `floor(size / 2)` and the rest, so an odd tile size leaves no gap) and returns false when
@@ -60,12 +60,12 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   "Download sheet" saves the PNG (several frames side by side, the animation frame is picked as in the game, 250 ms, and can be
   previewed), "Download guide" a red/green guide layer matching the first frame; the sheet is then decorated in Photoshop. The page
   also loads a finished PNG from a relative path inside `WorldNoise/` in the form of "Copy Relative Path"
-  (`WorldNoise\autotiles\sand.png`; own art lives in `autotiles/`) and reloads it when the file changes. It shows the sheet with the
+  (`WorldNoise\assets\autotiles\sand.png`; own sheets live in `assets/autotiles/`) and reloads it when the file changes. It shows the sheet with the
   32 px tile grid, a test shape assembled with the real `autotile.ts` tables and all 47 tiles, on a checkerboard or ground-colored
   background. The rules are in `DesignCorner/autotile-template/README.md`.
 - **`tileset/cliffTiles.ts`** (new) — `drawCliff(ctx, cliffType, heightLevel, x, y, size)` draws one of the 12 cliff pieces
   (4 edges, 4 outer and 4 inner corners) from the stone sets of `InfinityWalker/img/tileset.png` (256 x 1 920 px, 32 px
-  tiles, 8 per row), copied to `dev-assets/tilesets/infinitywalker.png` and found by `import.meta.glob`; without it the
+  tiles, 8 per row), copied to `assets/tilesets/infinitywalker.png` and found by `import.meta.glob`; without it the
   function returns false and the tile has no cliff. Each of the three stone sets is a 3 x 3 frame at columns 3 to 5 (rows
   8, 14, 20) plus the inner corners at columns 6 and 7; the set follows the level of the lower tile (1 brown, 2 grey,
   3 dark brown). The inner corners of the grey set lie mirrored in the sheet, which `tiles.js` of InfinityWalker already
