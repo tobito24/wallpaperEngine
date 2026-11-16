@@ -85,9 +85,12 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   computes the levels on a block with a margin of 9 (the reach of 3 of the layout, 2 of the level cleanup and 4 of the water
   limit), a chunk gets exactly what the whole map would get (0 differing pieces and ring indices), 1.1 ms per chunk. Stairs: at a road crossing
   of the north/south kind (the road travels along y, see [roads.md](roads.md)) the three road tiles on the higher side next to
-  the boundary carry a `NorthSouthStairs` (`road/crossingStairs.ts`: which edge piece they lie on, which of the 3 columns). `Tile.draw`
-  lays `drawNorthSouthStairs` (`tileset/stairsSheet.ts`) over the cliff piece: `assets/cliff-assets/stairs.png`, 32 px tiles, row 4 for a
+  the boundary carry a `StairsTile` (`road/crossingStairs.ts`: which edge piece they lie on, which of the 3 columns). `Tile.draw`
+  lays `drawStairs` (`tileset/stairsSheet.ts`) over the cliff piece: `assets/cliff-assets/stairs.png`, 32 px tiles, row 4 for a
   south edge piece (the road climbs northwards) and row 5 for a north edge piece, columns 0 to 2; one sheet for every cliff set, a missing
   sheet draws nothing. Measured on 72 north/south crossings of 1 024 x 1 024 tiles: all 216 stair tiles lie on a piece of the matching
-  edge and on a road tile. Not done: the east/west stairs (a crossing of that kind has no stairs yet), a road on a ring or on a piece tile
-  outside a crossing is covered by it.
+  edge and on a road tile. East/west crossings (the road travels along x): the 2 x 4 tiles of the bulge (columns boundary - 1 and boundary, rows
+  lane - 1 to lane + 2) carry a `StairsTile` of the kind `eastWest` with its column and row in the stairs; the sheet columns 0 and 1 are used
+  when the upper level lies west (the cliff on the right of the stairs), columns 2 and 3 when it lies east, rows 0 to 3. The stairs are drawn
+  over any tile of the bulge that has a cliff sheet, also the two without a piece (the inner ring is below, the overlay is opaque there).
+  Not done: a road on a ring or on a piece tile outside a crossing is covered by it.

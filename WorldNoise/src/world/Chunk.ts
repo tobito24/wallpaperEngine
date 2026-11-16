@@ -11,7 +11,7 @@ import {
   limitLevelsNearWater,
 } from '../elevation/levelCleanup';
 import { moistureNoise } from '../moisture/moistureNoise';
-import { northSouthStairsOf, tileKey } from '../road/crossingStairs';
+import { stairsOf, tileKey } from '../road/crossingStairs';
 import { crossingsOf, flattenCrossings } from '../road/crossingTerrain';
 import { roadEdgesIn } from '../road/roadEdge';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
@@ -75,7 +75,7 @@ export class Chunk {
     const blockMinY = originY - LEVEL_BLOCK_MARGIN;
     const crossings = crossingsOf(roadEdgesIn(blockMinX, blockMinY, LEVEL_BLOCK_SIZE, LEVEL_BLOCK_SIZE));
     flattenCrossings(blockLevels, blockMinX, blockMinY, LEVEL_BLOCK_SIZE, crossings);
-    const stairs = northSouthStairsOf(crossings);
+    const stairs = stairsOf(crossings);
     const blockCleanedLevels = cleanHeightLevels(
       limitLevelsNearWater(blockLevels, LEVEL_BLOCK_SIZE),
       LEVEL_BLOCK_SIZE,

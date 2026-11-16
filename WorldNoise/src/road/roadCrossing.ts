@@ -3,7 +3,9 @@ import {
   CHUNK_SIZE,
   CROSSING_BOUNDARY_SEARCH_TILES,
   CROSSING_HALF_LENGTH_TILES,
-  CROSSING_HALF_WIDTH_TILES,
+  CROSSING_EAST_WEST_EXTRA_LANES_AFTER_TILES,
+  CROSSING_LANES_AFTER_TILES,
+  CROSSING_LANES_BEFORE_TILES,
   CROSSING_MAX_FLATTENED_TILES,
   CROSSING_MAX_LANE_SHIFT_TILES,
   CROSSING_SAMPLE_STEP_TILES,
@@ -35,12 +37,14 @@ export interface TileRectangle {
 }
 
 const FIRST_CLIFF_LEVEL = 2;
+export const EAST_WEST_STAIRS_ROWS = 4;
+export const EAST_WEST_STAIRS_FIRST_ROW_OFFSET_TILES = -1;
 const MAX_FOOTPRINT_REACH_TILES = CELL_BUFFER_CHUNKS * CHUNK_SIZE - ROAD_BEND_MAX_TILES;
 
 if (
   Math.max(
     CROSSING_HALF_LENGTH_TILES + CROSSING_BOUNDARY_SEARCH_TILES,
-    CROSSING_HALF_WIDTH_TILES + CROSSING_MAX_LANE_SHIFT_TILES,
+    CROSSING_LANES_AFTER_TILES + CROSSING_EAST_WEST_EXTRA_LANES_AFTER_TILES + CROSSING_MAX_LANE_SHIFT_TILES,
   ) +
     1 >
   MAX_FOOTPRINT_REACH_TILES
@@ -56,9 +60,12 @@ export function centreOf(crossing: RoadCrossing): { readonly x: number; readonly
 
 export function footprintOf(crossing: RoadCrossing): TileRectangle {
   const alongTravel = crossing.boundary - CROSSING_HALF_LENGTH_TILES;
-  const alongLane = crossing.lane - CROSSING_HALF_WIDTH_TILES;
+  const alongLane = crossing.lane - CROSSING_LANES_BEFORE_TILES;
   const lengthTiles = 2 * CROSSING_HALF_LENGTH_TILES;
-  const widthTiles = 2 * CROSSING_HALF_WIDTH_TILES + 1;
+  const lanesAfter =
+    CROSSING_LANES_AFTER_TILES +
+    (crossing.travelAxis === 'x' ? CROSSING_EAST_WEST_EXTRA_LANES_AFTER_TILES : 0);
+  const widthTiles = CROSSING_LANES_BEFORE_TILES + lanesAfter + 1;
   return crossing.travelAxis === 'x'
     ? { minX: alongTravel, minY: alongLane, width: lengthTiles, height: widthTiles }
     : { minX: alongLane, minY: alongTravel, width: widthTiles, height: lengthTiles };
@@ -89,10 +96,27 @@ function boundaryAtLane(crossing: RoadCrossing, lane: number): number | null {
   return null;
 }
 
-export function plannedLevelAt(crossing: RoadCrossing, tileX: number, tileY: number): number {
+export function lowerSideLaneOffsetTiles(crossing: RoadCrossing): number {
+  return crossing.travelAxis === 'x' ? 1 : 0;
+}
+
+export function bulgeColumnOf(crossing: RoadCrossing): number {
+  return crossing.upperSide === -1 ? crossing.boundary : crossing.boundary - 1;
+}
+
+function straightLevelAt(crossing: RoadCrossing, tileX: number, tileY: number): number {
   const along = crossing.travelAxis === 'x' ? tileX : tileY;
   const side: Side = along >= crossing.boundary ? 1 : -1;
   return side === crossing.upperSide ? crossing.upperLevel : crossing.lowerLevel;
+}
+
+export function plannedLevelAt(crossing: RoadCrossing, tileX: number, tileY: number): number {
+  const inBulge =
+    crossing.travelAxis === 'x' &&
+    tileX === bulgeColumnOf(crossing) &&
+    tileY >= crossing.lane + EAST_WEST_STAIRS_FIRST_ROW_OFFSET_TILES &&
+    tileY < crossing.lane + EAST_WEST_STAIRS_FIRST_ROW_OFFSET_TILES + EAST_WEST_STAIRS_ROWS;
+  return inBulge ? crossing.upperLevel : straightLevelAt(crossing, tileX, tileY);
 }
 
 function tilesToFlatten(crossing: RoadCrossing): number {
@@ -100,7 +124,7 @@ function tilesToFlatten(crossing: RoadCrossing): number {
   let count = 0;
   for (let y = minY; y < minY + height; y++) {
     for (let x = minX; x < minX + width; x++) {
-      if (terrainLevelAt(x, y) !== plannedLevelAt(crossing, x, y)) count++;
+      if (terrainLevelAt(x, y) !== straightLevelAt(crossing, x, y)) count++;
     }
   }
   return count;

@@ -1,9 +1,11 @@
 import { CLIFF_SHEET_TILE_SIZE_PX } from '../config/constants';
-import type { NorthSouthStairs } from '../road/crossingStairs';
+import type { StairsTile } from '../road/crossingStairs';
 
 const SHEET_URL_KEY = '../../assets/cliff-assets/stairs.png';
 const SOUTH_EDGE_ROW = 4;
 const NORTH_EDGE_ROW = 5;
+const EAST_WEST_UPPER_WEST_FIRST_COLUMN = 0;
+const EAST_WEST_UPPER_EAST_FIRST_COLUMN = 2;
 
 const stairsUrls = import.meta.glob<string>('../../assets/cliff-assets/stairs.png', {
   eager: true,
@@ -21,18 +23,31 @@ function loadSheet(): HTMLImageElement | undefined {
 
 const stairsSheet = loadSheet();
 
-export function drawNorthSouthStairs(
+function sheetPositionOf(stairs: StairsTile): { readonly column: number; readonly row: number } {
+  if (stairs.kind === 'northSouth') {
+    return {
+      column: stairs.widthIndex,
+      row: stairs.edge === 'southEdge' ? SOUTH_EDGE_ROW : NORTH_EDGE_ROW,
+    };
+  }
+  const firstColumn =
+    stairs.upperSide === -1 ? EAST_WEST_UPPER_WEST_FIRST_COLUMN : EAST_WEST_UPPER_EAST_FIRST_COLUMN;
+  return { column: firstColumn + stairs.columnIndex, row: stairs.rowIndex };
+}
+
+export function drawStairs(
   ctx: CanvasRenderingContext2D,
-  stairs: NorthSouthStairs,
+  stairs: StairsTile,
   screenX: number,
   screenY: number,
   size: number,
 ): void {
   if (!stairsSheet || !stairsSheet.complete || stairsSheet.naturalWidth === 0) return;
+  const { column, row } = sheetPositionOf(stairs);
   ctx.drawImage(
     stairsSheet,
-    stairs.widthIndex * CLIFF_SHEET_TILE_SIZE_PX,
-    (stairs.edge === 'southEdge' ? SOUTH_EDGE_ROW : NORTH_EDGE_ROW) * CLIFF_SHEET_TILE_SIZE_PX,
+    column * CLIFF_SHEET_TILE_SIZE_PX,
+    row * CLIFF_SHEET_TILE_SIZE_PX,
     CLIFF_SHEET_TILE_SIZE_PX,
     CLIFF_SHEET_TILE_SIZE_PX,
     screenX,

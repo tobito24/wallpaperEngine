@@ -6,7 +6,8 @@ import {
   CROSSING_STRAIGHTENING_STEP_TILES,
 } from '../config/constants';
 import type { Point } from '../skeleton/cellGrid';
-import type { RoadCrossing } from './roadCrossing';
+import { lowerSideLaneOffsetTiles } from './roadCrossing';
+import type { RoadCrossing, Side } from './roadCrossing';
 
 const WINDOW_HALF_LENGTH_TILES = CROSSING_HALF_LENGTH_TILES + CROSSING_APPROACH_TILES;
 const MAX_LANE_DISTANCE_TO_CROSSING_TILES =
@@ -55,39 +56,75 @@ function indexOfSegmentThroughBoundary(polyline: readonly Point[], crossing: Roa
   return best;
 }
 
-function blendedLane(
-  progress: number,
-  rawLane: number,
-  crossingProgresses: readonly number[],
-  crossingLanes: readonly number[],
-): number {
+interface CrossingInRun {
+  readonly progress: number;
+  readonly laneBefore: number;
+  readonly laneAfter: number;
+}
+
+interface Sample {
+  readonly progress: number;
+  readonly isAfterBoundary: boolean;
+}
+
+function laneOnSide(crossing: RoadCrossing, side: Side): number {
+  const upperLane = crossing.lane + 0.5;
+  return side === crossing.upperSide ? upperLane : upperLane + lowerSideLaneOffsetTiles(crossing);
+}
+
+function crossingInRun(crossing: RoadCrossing, anchor: RoadCrossing, direction: number): CrossingInRun {
+  const sideBeforeBoundary: Side = direction === 1 ? -1 : 1;
+  return {
+    progress: direction * (crossing.boundary - anchor.boundary),
+    laneBefore: laneOnSide(crossing, sideBeforeBoundary),
+    laneAfter: laneOnSide(crossing, direction === 1 ? 1 : -1),
+  };
+}
+
+function targetLane(crossing: CrossingInRun, sample: Sample): number {
+  if (sample.progress === crossing.progress) {
+    return sample.isAfterBoundary ? crossing.laneAfter : crossing.laneBefore;
+  }
+  return sample.progress < crossing.progress ? crossing.laneBefore : crossing.laneAfter;
+}
+
+function blendedLane(sample: Sample, rawLane: number, crossings: readonly CrossingInRun[]): number {
   let untouched = 1;
   let sharpenedSum = 0;
   let sharpenedLaneSum = 0;
-  for (let index = 0; index < crossingProgresses.length; index++) {
-    const weight = weightAt(Math.abs(progress - crossingProgresses[index]));
-    if (weight === 1) return crossingLanes[index];
+  for (const crossing of crossings) {
+    const weight = weightAt(Math.abs(sample.progress - crossing.progress));
+    const lane = targetLane(crossing, sample);
+    if (weight === 1) return lane;
     untouched *= 1 - weight;
     const sharpened = weight / (1 - weight);
     sharpenedSum += sharpened;
-    sharpenedLaneSum += sharpened * crossingLanes[index];
+    sharpenedLaneSum += sharpened * lane;
   }
   if (sharpenedSum === 0) return rawLane;
   return rawLane * untouched + (sharpenedLaneSum / sharpenedSum) * (1 - untouched);
 }
 
-function sampleProgresses(crossingProgresses: readonly number[]): number[] {
-  const first = crossingProgresses[0] - WINDOW_HALF_LENGTH_TILES;
-  const last = crossingProgresses[crossingProgresses.length - 1] + WINDOW_HALF_LENGTH_TILES;
-  const samples = new Set<number>([last]);
+function samplesOf(crossings: readonly CrossingInRun[]): Sample[] {
+  const first = crossings[0].progress - WINDOW_HALF_LENGTH_TILES;
+  const last = crossings[crossings.length - 1].progress + WINDOW_HALF_LENGTH_TILES;
+  const samples = new Map<string, Sample>();
+  const add = (progress: number, isAfterBoundary: boolean): void => {
+    samples.set(`${progress}:${isAfterBoundary}`, { progress, isAfterBoundary });
+  };
+  add(last, false);
   for (let progress = first; progress < last; progress += CROSSING_STRAIGHTENING_STEP_TILES) {
-    samples.add(progress);
+    add(progress, false);
   }
-  for (const crossingProgress of crossingProgresses) {
-    samples.add(crossingProgress - CROSSING_HALF_LENGTH_TILES);
-    samples.add(crossingProgress + CROSSING_HALF_LENGTH_TILES);
+  for (const crossing of crossings) {
+    add(crossing.progress - CROSSING_HALF_LENGTH_TILES, false);
+    add(crossing.progress + CROSSING_HALF_LENGTH_TILES, false);
+    add(crossing.progress, false);
+    if (crossing.laneBefore !== crossing.laneAfter) add(crossing.progress, true);
   }
-  return [...samples].sort((a, b) => a - b);
+  return [...samples.values()].sort(
+    (a, b) => a.progress - b.progress || Number(a.isAfterBoundary) - Number(b.isAfterBoundary),
+  );
 }
 
 export function straightenThrough(
@@ -103,13 +140,12 @@ export function straightenThrough(
   );
   const progressOf = (index: number): number =>
     direction * (alongTravel(polyline[index], anchor) - anchor.boundary);
-  const crossingProgresses = run.map((crossing) => direction * (crossing.boundary - anchor.boundary));
-  const crossingLanes = run.map((crossing) => crossing.lane + 0.5);
-  for (let index = 1; index < crossingProgresses.length; index++) {
-    if (crossingProgresses[index] <= crossingProgresses[index - 1]) return null;
+  const crossings = run.map((crossing) => crossingInRun(crossing, anchor, direction));
+  for (let index = 1; index < crossings.length; index++) {
+    if (crossings[index].progress <= crossings[index - 1].progress) return null;
   }
-  const windowStart = crossingProgresses[0] - WINDOW_HALF_LENGTH_TILES;
-  const windowEnd = crossingProgresses[crossingProgresses.length - 1] + WINDOW_HALF_LENGTH_TILES;
+  const windowStart = crossings[0].progress - WINDOW_HALF_LENGTH_TILES;
+  const windowEnd = crossings[crossings.length - 1].progress + WINDOW_HALF_LENGTH_TILES;
 
   let firstOutside = throughIndex;
   while (progressOf(firstOutside) >= windowStart) {
@@ -132,9 +168,9 @@ export function straightenThrough(
   };
 
   const straightened: Point[] = polyline.slice(0, firstOutside + 1);
-  for (const progress of sampleProgresses(crossingProgresses)) {
-    const lane = blendedLane(progress, rawLaneAtProgress(progress), crossingProgresses, crossingLanes);
-    straightened.push(pointAt(anchor.boundary + direction * progress, lane, anchor));
+  for (const sample of samplesOf(crossings)) {
+    const lane = blendedLane(sample, rawLaneAtProgress(sample.progress), crossings);
+    straightened.push(pointAt(anchor.boundary + direction * sample.progress, lane, anchor));
   }
   straightened.push(...polyline.slice(lastOutside));
   return straightened;
