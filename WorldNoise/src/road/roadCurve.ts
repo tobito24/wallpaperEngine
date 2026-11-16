@@ -1,11 +1,9 @@
 import {
   ROAD_BEND_CONTROL_COUNT,
   ROAD_BEND_MAX_TILES,
-  ROAD_POLYLINE_CACHE_MAX_ENTRIES,
   ROAD_SEGMENT_LENGTH_TILES,
   TOWN_STRAIGHT_ROAD_FADE_TILES,
 } from '../config/constants';
-import { remember } from '../core/boundedCache';
 import { randomValue } from '../core/keyedRandom';
 import { edgeKey, isEdgeOrdered } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
@@ -15,8 +13,6 @@ interface RoadEnd {
   readonly position: Point;
   readonly straightRadius: number | null;
 }
-
-const polylineCache = new Map<string, readonly Point[]>();
 
 function smoothBetween(from: number, to: number, t: number): number {
   const eased = (1 - Math.cos(t * Math.PI)) / 2;
@@ -69,12 +65,10 @@ function roadEnd(cx: number, cy: number): RoadEnd {
   return { position: nodePosition(cx, cy), straightRadius: straightRoadRadiusOf(cx, cy) };
 }
 
-export function edgePolyline(ax: number, ay: number, bx: number, by: number): readonly Point[] {
+export function edgeCurve(ax: number, ay: number, bx: number, by: number): readonly Point[] {
   const key = edgeKey(ax, ay, bx, by);
-  return remember(polylineCache, ROAD_POLYLINE_CACHE_MAX_ENTRIES, key, () => {
-    const ordered = isEdgeOrdered(ax, ay, bx, by);
-    const start = ordered ? roadEnd(ax, ay) : roadEnd(bx, by);
-    const end = ordered ? roadEnd(bx, by) : roadEnd(ax, ay);
-    return buildPolyline(key, start, end);
-  });
+  const ordered = isEdgeOrdered(ax, ay, bx, by);
+  const start = ordered ? roadEnd(ax, ay) : roadEnd(bx, by);
+  const end = ordered ? roadEnd(bx, by) : roadEnd(ax, ay);
+  return buildPolyline(key, start, end);
 }

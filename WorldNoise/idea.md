@@ -143,9 +143,16 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
   may fall straight into water from level 2 (a level 3 plateau needs two tiles of level 2 between it and water, so both cliff sets show;
   the natural terrain keeps this, a town caps its plateau at 2 near water), but the inner ring never has water under it (its underlay is the own ground of the tile). The
   piece lies on the higher tile, so a plateau must be at least 2 tiles wide; that is why too small
-  plateaus are cleaned (`levelCleanup.ts`). Where a road meets a cliff the edge must be straight for the stairs, which changes the
-  level map around the crossing (the road mask is independent of the levels today).
+  plateaus are cleaned (`levelCleanup.ts`). Where a road meets a cliff the edge must be straight for the stairs, so the road
+  changes the level map around the crossing (a "road crossing", see Stairs below).
 - Roads cross a level change on stairs. A town footprint is flattened by the plateau override (see Paths and towns).
+- **Stairs (plan, in three steps):** the art is `assets/cliff-assets/stairs.png` (4 x 6 tiles of 32 px, described in `stairs.md`), an overlay
+  that works over every cliff set. North/south stairs are 3 x 1 tiles on the straight cliff piece, the road is 3 tiles wide and goes
+  straight through. East/west stairs are 2 x 4 tiles and too steep for one tile, so the cliff gets a bulge: the higher level grows one
+  tile into the lower one for 4 rows, the stairs lie over it, the road below is shifted one row south of the road above (both
+  variants, the stairs are drawn diagonally) and both ends of the road finish straight at the stairs. A road may end at a cliff or go around it when no stairs fit.
+  Step 1 (built): a *crossing* is where a road passes a level change; the road is straightened around it and the level map
+  flattened to a straight edge; step 2: the north/south overlay; step 3: the east/west bulge, overlay and road shift. Bridges later.
   Decoration is never placed on a wall.
 - **Terrain scale:** the elevation and the level field use base frequency 0.01, features of about 100 tiles, so that a
   town of 2 x 2 to 3 x 3 chunks fits inside a landmass (at 0.02 hardly any footprint is mostly land). The measured values
@@ -258,8 +265,8 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Plateaus and lower land at least 2 tiles wide (`elevation/levelCleanup.ts`), the base for the 16-pattern cliff pieces
 - [x] Cliffs, outer ring: 16-pattern pieces on the higher tile, from `assets/cliff-assets/cliff-N.png`, the lower neighbour under the corners
 - [x] Cliffs, inner ring: a top-texture autotile over the biome ground (`cliff-autotile-N.png`), never water under it
-- [ ] A straight cliff edge where a road meets a cliff, then stairs
-- [ ] Stairs where a road crosses a cliff
+- [x] A straight cliff edge where a road meets a cliff (road crossings: road straightened, level map flattened)
+- [ ] Stairs where a road crosses a cliff: north/south overlay, then east/west with the bulge and the road shift
 - [ ] Rule-based decoration
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
 - [x] A ground per biome: one ground per biome (rank order, sheet table into `assets/autotiles/`), flat color where a sheet is missing

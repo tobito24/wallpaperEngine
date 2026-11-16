@@ -1,14 +1,8 @@
 import { ROAD_HALF_WIDTH_TILES } from '../config/constants';
-import { cellIndexOf, edgeExists } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
-import { edgePolyline } from './roadCurve';
+import { roadEdgesIn } from './roadEdge';
 
 export const ROAD_TILE_MARK = 1;
-
-const EDGE_DIRECTIONS: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [0, 1],
-];
 
 function distanceToSegment(px: number, py: number, from: Point, to: Point): number {
   const dx = to.x - from.x;
@@ -49,20 +43,8 @@ function markPolyline(
 
 export function roadTilesIn(minX: number, minY: number, width: number, height: number): Uint8Array {
   const mask = new Uint8Array(width * height);
-  const firstCellX = cellIndexOf(minX) - 1;
-  const lastCellX = cellIndexOf(minX + width - 1) + 1;
-  const firstCellY = cellIndexOf(minY) - 1;
-  const lastCellY = cellIndexOf(minY + height - 1) + 1;
-
-  for (let cy = firstCellY; cy <= lastCellY; cy++) {
-    for (let cx = firstCellX; cx <= lastCellX; cx++) {
-      for (const [dx, dy] of EDGE_DIRECTIONS) {
-        const nx = cx + dx;
-        const ny = cy + dy;
-        if (!edgeExists(cx, cy, nx, ny)) continue;
-        markPolyline(mask, edgePolyline(cx, cy, nx, ny), minX, minY, width, height);
-      }
-    }
+  for (const edge of roadEdgesIn(minX, minY, width, height)) {
+    markPolyline(mask, edge.polyline, minX, minY, width, height);
   }
   return mask;
 }

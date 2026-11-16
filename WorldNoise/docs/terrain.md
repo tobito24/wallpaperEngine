@@ -89,7 +89,8 @@ each have octaves, base frequency, persistence, lacunarity, raw range low/high a
   level is 1 + the number of masks a land tile is in; water stays water. The operators are monotone, so level 3 stays inside
   level 2; that neighbouring land levels still differ by one step at most is not guaranteed by the filter (on a random field it
   can fail): the natural terrain, the water limit and the taper of the town ring are one step Lipschitz, which is why it holds
-  on the real terrain. `Chunk` computes a block with a margin of 9 tiles (the layout reach 3, the filter reach 2 and the water
+  on the real terrain. Before both steps `Chunk` flattens the footprints of the road crossings on the block (`road/crossingTerrain.ts`, see [roads.md](roads.md)).
+  `Chunk` computes a block with a margin of 9 tiles (the layout reach 3, the filter reach 2 and the water
   limit reach 4) of the level after the town override and crops it, so a chunk gets exactly the levels the whole map would get.
   Measured on 1 024 x 1 024 tiles with four levels: 0 tiles of level 3 or 4 closer to water than their clearance, 0 jumps of two
   among land, 0 jumps of more than two between land and water, 1 tile that is not in a 2 x 2 block of its plateau, chunk
