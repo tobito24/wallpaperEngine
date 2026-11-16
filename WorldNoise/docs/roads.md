@@ -55,8 +55,11 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   water within the footprint plus the clearance the water limit demands for the two levels (`waterClearanceTiles` minus 1: none for 2/1, 2 for
   3/2, 4 for 4/3) and no tile of a town (the plateau, `inside`) whose level the footprint would change: the footprint may lie on the terrace ring
   of a town and on its plateau, so stairs lead into a town; at the plateau edge the straight boundary lies where the outline is, the ring tiles
-  outside it are raised to the plateau level, the plateau itself is never touched (no decoration lies under a stair: measured on all 328 crossings
-  inside 1 024 x 1 024 tiles). Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
+  outside it are raised to the plateau level, the plateau itself is never touched. The town layout leaves the tiles of every stair (`stairsOf`) free of buildings, an east/west
+  stair has two tiles next to the road that are no road tiles. Known effect: the raw road is straight through a town up to the
+  `straightRoadRadius`, a crossing on the plateau edge moves the road sideways by up to the lane shift and blends it back over
+  `CROSSING_APPROACH_TILES`, so near such a gate the road is not on the straight line (measured on 25 crossings that touch a plateau: 0 to 56,
+  mostly 10 to 40 plateau road tiles differ from the raw road). Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
   the centre, whatever the axes) are independent. Closer ones of the same axis chain into a run when the gap between their straight stretches
   (`|boundary difference|` minus 6) is at least twice their lane difference; a candidate close to the last crossing of the edge therefore
   prefers the lane of that crossing and only takes lanes where the chain holds, so the road runs straight through the cliffs of a run
