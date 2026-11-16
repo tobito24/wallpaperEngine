@@ -9,14 +9,12 @@ import {
   TOWN_MEDIUM_WEIGHT,
   TOWN_MIN_LAND_SHARE,
   TOWN_RING_WIDTH_TILES,
-  TOWN_MAX_PLATEAU_LEVEL_NEAR_WATER,
   TOWN_SAMPLE_STRIDE_TILES,
-  TOWN_WATER_CLEARANCE_TILES,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import { randomValue } from '../core/keyedRandom';
 import { elevationNoise } from '../elevation/elevationNoise';
-import { WATER_LEVEL, heightLevelAt } from '../elevation/heightLevel';
+import { WATER_LEVEL, heightLevelAt, waterClearanceTiles } from '../elevation/heightLevel';
 import type { Point } from '../skeleton/cellGrid';
 import { TOWN_SHAPES } from './townShapes';
 import type { ChunkOffset, TownShape, TownSizeClass } from './townShapes';
@@ -62,16 +60,27 @@ interface FootprintSample {
   readonly plateauLevel: number;
 }
 
-function hasWaterNearChunk(chunkX: number, chunkY: number): boolean {
-  const minX = chunkX * CHUNK_SIZE - TOWN_WATER_CLEARANCE_TILES;
-  const minY = chunkY * CHUNK_SIZE - TOWN_WATER_CLEARANCE_TILES;
-  const size = CHUNK_SIZE + 2 * TOWN_WATER_CLEARANCE_TILES;
+function hasWaterNearChunk(chunkX: number, chunkY: number, clearanceTiles: number): boolean {
+  const minX = chunkX * CHUNK_SIZE - clearanceTiles;
+  const minY = chunkY * CHUNK_SIZE - clearanceTiles;
+  const size = CHUNK_SIZE + 2 * clearanceTiles;
   for (let y = minY; y < minY + size; y++) {
     for (let x = minX; x < minX + size; x++) {
       if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return true;
     }
   }
   return false;
+}
+
+function plateauLevelWithWaterClearance(commonLandLevel: number, chunks: readonly ChunkOffset[]): number {
+  let level = commonLandLevel;
+  while (
+    waterClearanceTiles(level) > 0 &&
+    chunks.some(([chunkX, chunkY]) => hasWaterNearChunk(chunkX, chunkY, waterClearanceTiles(level)))
+  ) {
+    level--;
+  }
+  return level;
 }
 
 function sampleFootprint(chunks: readonly ChunkOffset[]): FootprintSample {
@@ -100,10 +109,7 @@ function sampleFootprint(chunks: readonly ChunkOffset[]): FootprintSample {
       commonCount = count;
     }
   }
-  const isNearWater = chunks.some(([chunkX, chunkY]) => hasWaterNearChunk(chunkX, chunkY));
-  const plateauLevel = isNearWater
-    ? Math.min(commonLandLevel, TOWN_MAX_PLATEAU_LEVEL_NEAR_WATER)
-    : commonLandLevel;
+  const plateauLevel = plateauLevelWithWaterClearance(commonLandLevel, chunks);
   return { landShare: land / total, plateauLevel };
 }
 

@@ -30,6 +30,7 @@ export const TOWN_CELL_PROBABILITY = 0.7;
 export const TOWN_DESIGNED_SHARE = 0.2;
 export const TOWN_MIN_LAND_SHARE = 0.97;
 export const TOWN_RING_WIDTH_TILES = 8;
+export const TOWN_RING_TERRACE_STEP_TILES = 2;
 export const TOWN_OUTLINE_WOBBLE_TILES = 4;
 export const TOWN_BUILDING_MARGIN_TILES = 1;
 export const TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES = 4;
@@ -37,8 +38,6 @@ export const TOWN_HOUSES_PER_CHUNK = 1.5;
 export const TOWN_OUTLINE_NOISE_FREQUENCY = 0.05;
 export const TOWN_OUTLINE_NOISE_OCTAVES = 1;
 export const TOWN_SAMPLE_STRIDE_TILES = 2;
-export const TOWN_WATER_CLEARANCE_TILES = 3;
-export const TOWN_MAX_PLATEAU_LEVEL_NEAR_WATER = 2;
 export const TOWN_STRAIGHT_ROAD_FADE_TILES = 16;
 export const TOWN_LARGE_WEIGHT = 0.3;
 export const TOWN_MEDIUM_WEIGHT = 0.4;
@@ -58,7 +57,7 @@ export const ELEVATION_BEACH_LEVEL = 0.27;
 export const ELEVATION_ROCK_LEVEL = 0.85;
 
 export const HEIGHT_LEVEL_OCTAVES = 2;
-export const HEIGHT_LEVEL_THRESHOLDS: readonly number[] = [0.55, 0.8];
+export const HEIGHT_LEVEL_THRESHOLDS: readonly number[] = [0.52, 0.75, 0.9];
 
 export const MOISTURE_OCTAVES = 4;
 export const MOISTURE_BASE_FREQUENCY = 0.005;

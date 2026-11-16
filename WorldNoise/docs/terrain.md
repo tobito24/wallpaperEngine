@@ -69,26 +69,30 @@ each have octaves, base frequency, persistence, lacunarity, raw range low/high a
   correlated. `cliffTypeOf(level, neighbours)` gives the cliff piece of a tile at level 2 or higher that has a *lower*
   neighbour, water included (the piece lies on the higher tile; two orthogonal lower neighbours make an outer corner, one makes an edge
   named by the side it goes down to, only a lower diagonal makes an inner corner, null without a lower neighbour). Level 1 has no
-  piece: its border with water is a ground transition, a shore. A cliff may fall straight into water. Neighbouring land levels differ by at most one step (checked on 1 000 000
-  tiles with the thresholds 0.55 and 0.8; with all 4 octaves a few jumps of two appeared). Why smoothed and not a
+  piece: its border with water is a ground transition, a shore. A cliff may fall straight into water from level 2; a level above 2 keeps a clearance to water (see
+  `levelCleanup.ts`). Neighbouring land levels differ by at most one step in the natural terrain (checked on 1 000 000 tiles; with
+  all 4 octaves a few jumps of two appeared); around a town the terrace ring keeps it. There are four land levels, cut at
+  `HEIGHT_LEVEL_THRESHOLDS` 0.52, 0.75 and 0.9 (before, three levels at 0.55 and 0.8). Why smoothed and not a
   filter: a 5 x 5 majority filter on the levels was measured and made it worse (tiny interior plateaus 16 to 198 in
   600 x 600 tiles at the old terrain scale), because it breaks the narrow middle band into pieces. Both noises use
   `ELEVATION_BASE_FREQUENCY` (0.01, features of about 100 tiles; the reason is in [idea.md](../idea.md), Paths and towns). Measured
-  on one seed and one area of 1 000 000 tiles (about 10 x 10 base features, so read the numbers as an order of
-  magnitude): water 24 % of the tiles, land split 36 / 28 / 36 % over levels 1 to 3, cliff edges (old four-side rule) on 6 % of the land
-  tiles, 227 plateaus, 22 tiny ones (under 16 tiles) of which 3 inside the land and the rest at the shore, no level jump
-  of two.
-- **`elevation/levelCleanup.ts`** (new) — `cleanHeightLevels(levels, size)`: no plateau and no lower land is thinner than
+  on one seed and 1 024 x 1 024 tiles (read the numbers as an order of magnitude): water 24 % of the tiles, land 25.6 / 19.9 /
+  17.9 / 12.6 % over levels 1 to 4 (the three levels before: 36 / 28 / 36 %).
+- **`elevation/levelCleanup.ts`** (new) — two steps on the level block of a chunk. `limitLevelsNearWater(levels, size)`: a level
+  above 2 needs a clearance to water, 3 tiles for level 3 and 5 for level 4 (`waterClearanceTiles`, 1 + 2 per level above 2 in
+  `heightLevel.ts`; `maxLevelAtWaterDistance` is the inverse), so between a level 3 plateau and water lie two tiles of level 2 and
+  both cliff sets show; the level of a tile is the lower of its own and what the distance to the nearest water allows (Chebyshev
+  distance, searched up to `WATER_LIMIT_REACH_TILES`, 4). `cleanHeightLevels(levels, size)`: no plateau and no lower land is thinner than
   2 tiles, because the 16-pattern cliff pieces (one 32 px tile per edge and corner) cannot draw a 1 tile wide ridge, peninsula or
   gap. For each level k from 2 up the mask `level >= k` gets a morphological opening and then a closing with a 2 x 2 block
   (every plateau tile lies in a 2 x 2 block of plateau, every lower tile next to it in one of lower land or water), and the new
   level is 1 + the number of masks a land tile is in; water stays water. The operators are monotone, so level 3 stays inside
-  level 2; that neighbouring land levels still differ by one step at most is not guaranteed (on a random field it can fail), but it
-  held on the real terrain: 0 jumps of two in 565 504 tiles. `Chunk` computes a block with a margin of 3 tiles (the padding of 1 plus
-  the reach of 2 of the filter) of the level after the town override and crops it, so a chunk gets exactly the levels the whole
-  map would get (checked on 768 x 768 tiles: 0 differing tiles). Measured on that area: tiles that are not in a 2 x 2 block of
-  plateau 66 before, 0 after; thin lower land next to a plateau 52 before, 0 after; 116 of 565 504 tiles changed; chunk generation
-  about 0.7 ms. A plateau can still touch water directly (about 1 100 tile edges on that area, the level is cut from a smoothed
-  field, the water from the raw elevation); a wall against water is not decided yet.
+  level 2; that neighbouring land levels still differ by one step at most is not guaranteed by the filter (on a random field it
+  can fail): the natural terrain, the water limit and the taper of the town ring are one step Lipschitz, which is why it holds
+  on the real terrain. `Chunk` computes a block with a margin of 9 tiles (the layout reach 3, the filter reach 2 and the water
+  limit reach 4) of the level after the town override and crops it, so a chunk gets exactly the levels the whole map would get.
+  Measured on 1 024 x 1 024 tiles with four levels: 0 tiles of level 3 or 4 closer to water than their clearance, 0 jumps of two
+  among land, 0 jumps of more than two between land and water, 1 tile that is not in a 2 x 2 block of its plateau, chunk
+  generation about 1.1 ms.
 - **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`), which the
   cliff art replaces. The ground comes from the biome.

@@ -4,7 +4,12 @@ import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { CLIFF_LAYOUT_REACH_TILES, NO_INNER_RING, layoutCliffs } from '../elevation/cliffLayout';
 import { heightLevelAt } from '../elevation/heightLevel';
-import { LEVEL_CLEANUP_REACH_TILES, cleanHeightLevels } from '../elevation/levelCleanup';
+import {
+  LEVEL_CLEANUP_REACH_TILES,
+  WATER_LIMIT_REACH_TILES,
+  cleanHeightLevels,
+  limitLevelsNearWater,
+} from '../elevation/levelCleanup';
 import { moistureNoise } from '../moisture/moistureNoise';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
@@ -22,7 +27,7 @@ import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
 const PADDED_SIZE = CHUNK_SIZE + 2;
-const LEVEL_BLOCK_MARGIN = CLIFF_LAYOUT_REACH_TILES + LEVEL_CLEANUP_REACH_TILES;
+const LEVEL_BLOCK_MARGIN = CLIFF_LAYOUT_REACH_TILES + LEVEL_CLEANUP_REACH_TILES + WATER_LIMIT_REACH_TILES;
 const PADDING = 1;
 const LEVEL_BLOCK_SIZE = CHUNK_SIZE + 2 * LEVEL_BLOCK_MARGIN;
 
@@ -63,7 +68,10 @@ export class Chunk {
         );
       }
     }
-    const blockCleanedLevels = cleanHeightLevels(blockLevels, LEVEL_BLOCK_SIZE);
+    const blockCleanedLevels = cleanHeightLevels(
+      limitLevelsNearWater(blockLevels, LEVEL_BLOCK_SIZE),
+      LEVEL_BLOCK_SIZE,
+    );
     const cliffLayout = layoutCliffs(blockCleanedLevels, LEVEL_BLOCK_SIZE);
 
     const elevations = new Float64Array(PADDED_SIZE * PADDED_SIZE);

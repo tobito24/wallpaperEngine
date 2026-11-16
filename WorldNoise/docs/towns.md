@@ -21,16 +21,19 @@ Paths and towns.
   `TOWN_MEDIUM_WEIGHT` 0.4, the rest small); the shapes of the class are tried in a hash order, a shape is taken when at
   least `TOWN_MIN_LAND_SHARE` (97 %) of its sampled tiles (every `TOWN_SAMPLE_STRIDE_TILES`, 2, tile) are land of the base
   ground; if none fits, the next smaller class is tried, otherwise the cell keeps a plain waypoint. The plateau level is
-  the most common land level of the base ground in the footprint, at most `TOWN_MAX_PLATEAU_LEVEL_NEAR_WATER` (2) when
-  water lies within `TOWN_WATER_CLEARANCE_TILES` (3) of a footprint chunk (a plateau of level 3 needs two tiles of level 2 between
-  it and water for the two cliff rings; before, a coastal town of level 3 touched water directly: 154 tiles in 64 x 64 chunks, now 0,
-  and the natural terrain never has it), the node of the town is the centre of the chunk of the
+  the most common land level of the base ground in the footprint, at most the level whose water
+  clearance (`waterClearanceTiles`, 3 tiles for level 3, 5 for level 4) is free of water around the footprint chunks, so a coastal town
+  is level 2 (a level 3 plateau needs two tiles of level 2 between it and water for the two cliff rings; before, a coastal town of
+  level 3 touched water directly: 154 tiles in 64 x 64 chunks, now 0, and the natural terrain never has it), the node of the town is the centre of the chunk of the
   footprint nearest to its centroid (so it lies inside an L or T), and a hash makes `TOWN_DESIGNED_SHARE` (20 %) of the
   towns designed. Measured on 14 400 cells: towns in 41 % (large 542, medium 3 286, small 2 084), designed 20.4 %,
-  plateau levels 1 / 2 / 3 in 799 / 1 336 / 3 777 towns (towns stand inland, where the land is high), 0.56 ms per cell.
+  plateau levels 1 / 2 / 3 in 799 / 1 336 / 3 777 towns with three levels (towns stand inland, where the land is high; with four levels
+  and the clearance on 4 096 chunks: 7 / 46 / 10 / 6 of 69 towns), 0.56 ms per cell.
 - **`town/townTerrain.ts`** (new) — `townInfoAt(x, y)` (inside the footprint, or in the ring of `TOWN_RING_WIDTH_TILES` (8)
   around it, looked up in the tile's own cell only) and `levelWithTown(baseLevel, info)`: inside the level is the plateau
-  level, in the ring a land level is limited to the plateau level minus one up to plus one, water stays water. `Chunk`
+  level, in the ring a land level is limited to the plateau level minus up to plus `1 + floor(ringDistance / TOWN_RING_TERRACE_STEP_TILES)`
+  (2 tiles per step, so the limit widens by one step every two tiles and neighbouring ring tiles never differ by more than one level),
+  water stays water. `Chunk`
   uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`; a higher ground next to a town, like forest or jungle, draws its rim over it, water in the footprint
   becomes land). The outline is wavy: a tile of the chunk footprint is inside only when its distance to the nearest
   non-town chunk is larger than a stepped noise value of 0 to `TOWN_OUTLINE_WOBBLE_TILES` (4, `outlineNoise`, frequency
