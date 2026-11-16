@@ -7,8 +7,9 @@ delay, tick interval range) live in `config/constants.ts` unchanged from `TileGr
 - **`world/Tile.ts`** — one grid cell, owns its own `draw()`. Holds an `elevation: number` (0-1, kept as its own
   value), a `heightLevel`, its `cliffType`, its `biome`, its final `ground` (the biome, or road or bridge),
   its `autotileIndex`, its `underlays` (the lower ground that shows through the transparent rim, per quarter, or none) and its
-  `cliffUnderlays` (the lower neighbour under the corners of a cliff piece; all set at construction), draws the underlay quarters,
-  then the ground (autotile, else the flat color of the ground), the cliff underlay quarters, the cliff piece and the level shade — this is exactly the extension point
+  `cliffUnderlays` (the lower neighbour under the corners of a cliff piece) and its `cliffTopAutotileIndex` (set on a tile of the inner
+  ring of a cliff; all set at construction), draws the underlay quarters, then the ground (autotile, else the flat color of the
+  ground), then either the cliff underlay quarters and the cliff piece or the inner ring autotile, and the level shade — this is exactly the extension point
   `TileGridBase/CLAUDE.md` describes this file as, and mirrors how `ColorWar`'s `Tile.ts` draws from its own
   simulation color.
 - **`world/Chunk.ts`** — `CHUNK_SIZE × CHUNK_SIZE` block of tiles, built eagerly on construction. Imports

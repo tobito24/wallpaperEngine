@@ -135,7 +135,7 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
   the terrace ring enforces it.
 - A cliff wall is a drawing rule of the render layer, using the cliff blocks of the sheet (brown walls and wooden stairs in
   column 1, snowy ones in 1.12 to 1.17). Its layout is still to be verified like the grounds.
-- **Cliff pieces (decided 2026-11-16, the outer ring is built).** A cliff is a band of at least 2 tiles on the higher land: the outer ring
+- **Cliff pieces (decided 2026-11-16, both rings are built).** A cliff is a band of at least 2 tiles on the higher land: the outer ring
   is the 16-pattern (one 32 px tile per piece, hand-drawn: 3 x 3 frame plus the four inner corners in columns 3 and 4, the layout of
   `OFFSETS_IN_SHEET` in `cliffTiles.ts`, one file per level, `WorldNoise/assets/cliff-assets/cliff-N.png`), the inner ring is an autotile
   of the top texture (generated like the ground sheets) over the biome ground, so the inner edge blends into the plateau. A cliff
@@ -255,7 +255,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Cliffs redone with the 12 stone pieces of `InfinityWalker/img/tileset.png` (edges, outer and inner corners, one set per level); the Outside rim pieces did not fit together
 - [x] Plateaus and lower land at least 2 tiles wide (`elevation/levelCleanup.ts`), the base for the 16-pattern cliff pieces
 - [x] Cliffs, outer ring: 16-pattern pieces on the higher tile, from `assets/cliff-assets/cliff-N.png`, the lower neighbour under the corners
-- [ ] Cliffs, inner ring: a top-texture autotile over the biome ground (`cliff-autotile-N.png`), never water under it
+- [x] Cliffs, inner ring: a top-texture autotile over the biome ground (`cliff-autotile-N.png`), never water under it
 - [ ] A straight cliff edge where a road meets a cliff, then stairs
 - [ ] Stairs where a road crosses a cliff
 - [ ] Rule-based decoration
