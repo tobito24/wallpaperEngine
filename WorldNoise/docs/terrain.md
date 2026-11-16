@@ -53,14 +53,12 @@ each have octaves, base frequency, persistence, lacunarity, raw range low/high a
   tiles above the rock limit are snow peak for 27 % of them and rock for the rest, and lower down such a region stays
   steppe, savanna or desert. Only the base temperature noise is called hot or cold here; the band of a tile uses
   the temperature after the drop.
-- **`biome/biome.ts`** (new) — `biomeAt(elevation, moisture, temperature)` returns a `Biome` (`id`, `ground`, flat
-  `color`). Water, beach and mountain follow the elevation (`ELEVATION_DEEP_WATER_LEVEL`, `_SEA_LEVEL`, `_BEACH_LEVEL`,
+- **`biome/biome.ts`** (new) — `biomeAt(elevation, moisture, temperature)` returns a `Biome` (its `id`, which is also its
+  ground). Water, beach and mountain follow the elevation (`ELEVATION_DEEP_WATER_LEVEL`, `_SEA_LEVEL`, `_BEACH_LEVEL`,
   `_ROCK_LEVEL`), land is a 3 x 3 table by temperature band (cold, mild, hot, from `temperatureAtElevation`) and moisture
   band (dry, normal, wet), both cut at one third and two thirds: snow field, tundra, snow forest / steppe, meadow,
   forest / desert, savanna, jungle. Above the rock limit the tile is snow peak if its temperature band is cold, else
-  mountain. `jungle` is a stand-in with the forest's color until jungle art exists; steppe and savanna are `dirt`.
-  `Ground` (deep water, shallow water, sand, grass, dirt, rock, snow) is the type the autotile step will key on; forest
-  and meadow only differ by decoration later. Measured on 1 440 000 tiles: the nine land biomes are 5.4 to 7.8 % each,
+  mountain. Every biome is its own ground with its own autotile sheet ([tileset.md](tileset.md)). Measured on 1 440 000 tiles: the nine land biomes are 5.4 to 7.8 % each,
   deep and shallow water 12.5 and 11.4 %, beach 5.8 %, snow peak 11.6 %, mountain 3.4 %. Mountain tiles together are
   15 % of the world (above the rock limit 0.85); with the first limit 0.72 they were 31 % and mostly snow, the
   `InfinityWalker` mountain problem again.
@@ -81,4 +79,4 @@ each have octaves, base frequency, persistence, lacunarity, raw range low/high a
   tiles, 227 plateaus, 22 tiny ones (under 16 tiles) of which 3 inside the land and the rest at the shore, no level jump
   of two.
 - **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`), which the
-  cliff art replaces. The ground color comes from the biome.
+  cliff art replaces. The ground comes from the biome.

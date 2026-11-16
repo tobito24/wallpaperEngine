@@ -13,11 +13,18 @@ import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { groundWithRoad } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
-import { continuesInto } from '../tileset/groundRank';
+import { continuesInto, underlayGround } from '../tileset/groundRank';
 import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
 const PADDED_SIZE = CHUNK_SIZE + 2;
+
+const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, number, number, number])[] = [
+  [0, -1, -1, 0, -1, -1],
+  [0, -1, 1, 0, 1, -1],
+  [0, 1, -1, 0, -1, 1],
+  [0, 1, 1, 0, 1, 1],
+];
 
 export class Chunk {
   readonly chunkX: number;
@@ -55,7 +62,7 @@ export class Chunk {
 
     const roads = roadTilesIn(originX - 1, originY - 1, PADDED_SIZE, PADDED_SIZE);
     const grounds: Ground[] = biomes.map((biome, index) =>
-      groundWithRoad(biome.ground, roads[index] === ROAD_TILE_MARK),
+      groundWithRoad(biome.id, roads[index] === ROAD_TILE_MARK),
     );
 
     const tiles: Tile[] = [];
@@ -83,6 +90,21 @@ export class Chunk {
           if (continuesInto(ground, grounds[index + dy * PADDED_SIZE + dx])) neighbourMask |= bit;
         }
 
+        let underlays: (Ground | null)[] | null = null;
+        QUARTER_NEIGHBOUR_OFFSETS.forEach(
+          ([verticalDx, verticalDy, horizontalDx, horizontalDy, diagonalDx, diagonalDy], quarter) => {
+            const underlay = underlayGround(
+              ground,
+              grounds[index + verticalDy * PADDED_SIZE + verticalDx],
+              grounds[index + horizontalDy * PADDED_SIZE + horizontalDx],
+              grounds[index + diagonalDy * PADDED_SIZE + diagonalDx],
+            );
+            if (underlay === null) return;
+            underlays ??= [null, null, null, null];
+            underlays[quarter] = underlay;
+          },
+        );
+
         tiles.push(
           new Tile(
             originX + lx,
@@ -93,6 +115,7 @@ export class Chunk {
             biomes[index],
             ground,
             autotileIndexFor(neighbourMask),
+            underlays,
             decoration,
           ),
         );

@@ -176,6 +176,11 @@ rule on `(seed, x, y)` is consistent across chunk borders without extra work, wh
   (the preview page, `src/tools/autotileGenerator.ts`) and decorated in Photoshop. Its edges are transparent, so the ground below shows
   through (the renderer has to draw that ground first). The edge bumps repeat every 32 px, which is what lets quarters be reused; a random
   variant within one ground is not planned. The rules and the template are in `DesignCorner/autotile-template/`.
+- **A ground per biome (decided and built 2026-11-16).** With own generated sheets, every biome has its own ground and sheet
+  instead of the seven shared grounds (Steppe `grass-light-wild`, Savanna from `grassDry`, Meadow `grass`, Beach `sand`, Desert
+  `desert`); the rank order is wetter and warmer covers (`groundRank.ts`). Later, each biome gets a second ground, a bare one (dirt) beside its
+  natural cover (meadow with dirt patches), which also allows small secret paths inside a biome that do not belong to the world path
+  graph. First pair: `grass` and `dirt`.
 - **Animated water:** a ground can have several frames (the Essentials way, frames side by side). The renderer picks the frame
   from the time, the same for all tiles, so the sea moves as one. The frame count and speed are constants.
 - Until the art exists, the renderer draws flat colors with placeholder masks, so the pipeline can be tested without assets.
@@ -196,8 +201,7 @@ Source: the inventory of `DesignCorner/private/dewbuse-*.png` (cells `column.row
 
 - **Grounds, first guess of the rank order:** deep water (2.6), water (2.5), sand (2.0), grass (base), dirt (2.2), rock (2.7),
   snow (from 2.13). Because the rim is baked in, grass is the base and the others lie on it as overlays.
-- **During development** the same grounds come from the Essentials autotiles (`Sand`, `Dirt`, `Light grass`, `Sea`, `Sea deep`,
-  `Gravel`, `Brick path`, among others), which are already in the XP layout.
+- **During development** the grounds came from the Essentials autotiles; they are replaced by own sheets in `autotiles/`.
 - **Roads:** cobblestone (0.8 to 0.10 on the sheet).
 - **Cliffs:** brown walls with wooden stairs (column 1, 1.0 to 1.11), snowy ones (1.12 to 1.17).
 - **Trees:** conifers (3.0 to 3.4), broadleaf (3.7 to 3.10), snowy conifers (3.14 to 3.16), birches (3.17, 3.18).
@@ -245,7 +249,9 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Stairs where a road crosses a cliff
 - [ ] Rule-based decoration
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
-- [ ] Draw the lower ground under a tile with a transparent autotile rim (`Tile.draw`), so own sheets show the neighbour and no background
+- [x] A ground per biome: one ground per biome (rank order, sheet table into `autotiles/`), flat color where a sheet is missing
+- [ ] Second ground per biome (bare earth beside the natural cover) and small secret paths inside a biome
+- [x] Draw the lower ground under a tile with a transparent autotile rim (`Tile.draw`), so own sheets show the neighbour and no background
 - [ ] First own ground (grass) decorated in Photoshop and checked in the preview, then the other grounds
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)

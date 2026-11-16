@@ -79,11 +79,11 @@ Same scripts as `TileGridBase`:
 - `npm run dev` — Vite dev server with HMR.
 - `npm run build` — type-checks (`tsc`) then produces `dist/`.
 - `npm run lint` / `npm run format` — ESLint / Prettier, same configs as `TileGridBase`.
-- Development assets: copy `sea-deep`, `sea-without-shore`, `sand`, `light-grass`, `dirt`, `gravel`, `white-path` and
-  `brick-path` (all `.png`; from the Essentials v19.1 `Graphics/Autotiles/`: `Sea deep`, `Sea without shore`, `Sand`,
-  `Light grass`, `Dirt`, `Gravel`, `White path`, `Brick path`) into `WorldNoise/dev-assets/autotiles/`, and
-  `InfinityWalker/img/tileset.png` as `WorldNoise/dev-assets/tilesets/infinitywalker.png`. The folder is git-ignored on purpose: these
-  graphics come from Nintendo games and are not cleared for publishing, so they are replaced before any publish. A
-  build made while the folder exists carries them in `dist/` (Vite inlines files under 4 KB into the JS bundle as data
-  URIs, larger ones are copied), and `dist/` is what Wallpaper Engine loads: publish only a build made without the
-  folder.
+- Ground art: the autotile sheets are in `WorldNoise/autotiles/` (own art, made with `/autotile-preview.html`, see
+  [docs/tileset.md](docs/tileset.md)); a missing sheet is a flat color. Development-only assets: `InfinityWalker/img/tileset.png`
+  as `WorldNoise/dev-assets/tilesets/infinitywalker.png` (cliffs) and the Essentials `Outside` sheet as
+  `WorldNoise/dev-assets/tilesets/outside.png` (town buildings). That folder is git-ignored on purpose: these graphics are not
+  cleared for publishing, so they are replaced before any publish. A build made while the folder exists carries them in `dist/`
+  (Vite inlines files under 4 KB into the JS bundle as data URIs, larger ones are copied), and `dist/` is what Wallpaper Engine
+  loads: publish only a build made without the folder. The ground textures in `DesignCorner/private/tile-texture-32x32/` come from
+  the InfinityWalker tileset, check that before the sheets in `autotiles/` are published.
