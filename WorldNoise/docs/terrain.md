@@ -78,5 +78,17 @@ each have octaves, base frequency, persistence, lacunarity, raw range low/high a
   magnitude): water 24 % of the tiles, land split 36 / 28 / 36 % over levels 1 to 3, cliff edges (old four-side rule) on 6 % of the land
   tiles, 227 plateaus, 22 tiny ones (under 16 tiles) of which 3 inside the land and the rest at the shore, no level jump
   of two.
+- **`elevation/levelCleanup.ts`** (new) — `cleanHeightLevels(levels, size)`: no plateau and no lower land is thinner than
+  2 tiles, because the 16-pattern cliff pieces (one 32 px tile per edge and corner) cannot draw a 1 tile wide ridge, peninsula or
+  gap. For each level k from 2 up the mask `level >= k` gets a morphological opening and then a closing with a 2 x 2 block
+  (every plateau tile lies in a 2 x 2 block of plateau, every lower tile next to it in one of lower land or water), and the new
+  level is 1 + the number of masks a land tile is in; water stays water. The operators are monotone, so level 3 stays inside
+  level 2; that neighbouring land levels still differ by one step at most is not guaranteed (on a random field it can fail), but it
+  held on the real terrain: 0 jumps of two in 565 504 tiles. `Chunk` computes a block with a margin of 3 tiles (the padding of 1 plus
+  the reach of 2 of the filter) of the level after the town override and crops it, so a chunk gets exactly the levels the whole
+  map would get (checked on 768 x 768 tiles: 0 differing tiles). Measured on that area: tiles that are not in a 2 x 2 block of
+  plateau 66 before, 0 after; thin lower land next to a plateau 52 before, 0 after; 116 of 565 504 tiles changed; chunk generation
+  about 0.7 ms. A plateau can still touch water directly (about 1 100 tile edges on that area, the level is cut from a smoothed
+  field, the water from the raw elevation); a wall against water is not decided yet.
 - **`elevation/color.ts`** (new) — the temporary flat-band look of the height levels (`shadeForHeightLevel`), which the
   cliff art replaces. The ground comes from the biome.

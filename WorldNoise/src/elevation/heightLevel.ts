@@ -11,6 +11,7 @@ import { ELEVATION_SEED } from './elevationNoise';
 import { redistributeElevation } from './redistribute';
 
 export const WATER_LEVEL = 0;
+export const MAX_HEIGHT_LEVEL = WATER_LEVEL + 1 + HEIGHT_LEVEL_THRESHOLDS.length;
 
 const smoothedElevationNoise = createFractalNoise2D(
   ELEVATION_SEED,
