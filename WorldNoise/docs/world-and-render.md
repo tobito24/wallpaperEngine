@@ -21,9 +21,8 @@ delay, tick interval range) live in `config/constants.ts` unchanged from `TileGr
   chunk-boundary handling in `InfinityWalker`).
 - **`render/WorldRenderer.ts`** — per-frame orchestrator: visible bounds → sync chunks → draw each tile. With the debug mode (`r`) it also
   draws the chunk borders with the chunk coordinates (`x,y`, top left of each chunk) and `render/crossingDebug.ts`: a colored square on every place where a road changes its level, by what
-  became of it (`RoadEdge.candidateOutcomes`), and a legend in the HUD: green stairs, grey no straight edge within reach, red too close
-  to a stair (the footprints would overlap), orange more than `CROSSING_MAX_FLATTENED_TILES` to flatten, blue water near,
-  pink the road curve cannot be straightened there. The square sits on the raw place of the road, not on the shifted crossing.
+  became of it (`RoadEdge.candidateOutcomes`), and a legend in the HUD: green stairs, red a level change without stairs (the planner
+  found no stairs there). The square sits on the boundary (stairs: the centre of the crossing, east/west ones at the upper lane).
   Unchanged from `TileGridBase`.
 - **`we/propertyListener.ts`** / **`public/project.json`** — two WE properties so far, `slider_tilesize` and
   `slider_tickrate`. Edited by hand in both places, not derived from each other (see [wallpaper-engine-integration](../../docs/wallpaper-engine-integration.md)). Unchanged
