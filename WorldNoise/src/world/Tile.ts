@@ -1,12 +1,14 @@
 import type { Biome } from '../biome/biome';
 import { shadeForHeightLevel } from '../elevation/color';
 import type { CliffType } from '../elevation/heightLevel';
+import type { NorthSouthStairs } from '../road/crossingStairs';
 import { drawCliff, drawCliffTop, hasCliffSheet } from '../tileset/cliffTiles';
 import { drawOutsideTile } from '../tileset/outsideSheet';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { fallbackColorOf } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { drawGroundAutotile, drawGroundUnderlay } from '../tileset/groundSheets';
+import { drawNorthSouthStairs } from '../tileset/stairsSheet';
 
 export class Tile {
   readonly worldX: number;
@@ -20,6 +22,7 @@ export class Tile {
   readonly underlays: readonly (Ground | null)[] | null;
   readonly cliffUnderlays: readonly (Ground | null)[] | null;
   readonly cliffTopAutotileIndex: number | null;
+  readonly stairs: NorthSouthStairs | null;
   readonly decoration: SheetTile | null;
 
   constructor(
@@ -34,6 +37,7 @@ export class Tile {
     underlays: readonly (Ground | null)[] | null,
     cliffUnderlays: readonly (Ground | null)[] | null,
     cliffTopAutotileIndex: number | null,
+    stairs: NorthSouthStairs | null,
     decoration: SheetTile | null,
   ) {
     this.worldX = worldX;
@@ -47,6 +51,7 @@ export class Tile {
     this.underlays = underlays;
     this.cliffUnderlays = cliffUnderlays;
     this.cliffTopAutotileIndex = cliffTopAutotileIndex;
+    this.stairs = stairs;
     this.decoration = decoration;
   }
 
@@ -67,6 +72,7 @@ export class Tile {
       if (this.cliffUnderlays)
         drawGroundUnderlay(ctx, this.cliffUnderlays, animationFrame, screenX, screenY, size);
       drawCliff(ctx, this.cliffType, this.heightLevel, screenX, screenY, size);
+      if (this.stairs) drawNorthSouthStairs(ctx, this.stairs, screenX, screenY, size);
     } else if (this.cliffTopAutotileIndex !== null) {
       drawCliffTop(ctx, this.heightLevel, this.cliffTopAutotileIndex, screenX, screenY, size);
     }

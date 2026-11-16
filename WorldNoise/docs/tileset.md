@@ -83,5 +83,11 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   two tiles wide, the piece and the ring; a plateau of four tiles has no biome ground left inside. A ring tile never has a lower
   neighbour, so there is never water below its rim (measured on 1 024 x 1 024 tiles: 0 ring tiles next to water). `Chunk`
   computes the levels on a block with a margin of 9 (the reach of 3 of the layout, 2 of the level cleanup and 4 of the water
-  limit), a chunk gets exactly what the whole map would get (0 differing pieces and ring indices), 1.1 ms per chunk. Not done: stairs where a road crosses
-  a cliff, a straight edge at a road (a road on a ring or piece tile is covered by it).
+  limit), a chunk gets exactly what the whole map would get (0 differing pieces and ring indices), 1.1 ms per chunk. Stairs: at a road crossing
+  of the north/south kind (the road travels along y, see [roads.md](roads.md)) the three road tiles on the higher side next to
+  the boundary carry a `NorthSouthStairs` (`road/crossingStairs.ts`: which edge piece they lie on, which of the 3 columns). `Tile.draw`
+  lays `drawNorthSouthStairs` (`tileset/stairsSheet.ts`) over the cliff piece: `assets/cliff-assets/stairs.png`, 32 px tiles, row 4 for a
+  south edge piece (the road climbs northwards) and row 5 for a north edge piece, columns 0 to 2; one sheet for every cliff set, a missing
+  sheet draws nothing. Measured on 72 north/south crossings of 1 024 x 1 024 tiles: all 216 stair tiles lie on a piece of the matching
+  edge and on a road tile. Not done: the east/west stairs (a crossing of that kind has no stairs yet), a road on a ring or on a piece tile
+  outside a crossing is covered by it.
