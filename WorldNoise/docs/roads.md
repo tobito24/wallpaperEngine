@@ -53,13 +53,13 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   differs from the planned one (`tilesToFlatten`); the buildable lane with the fewest wins (the lane nearest to the preferred one on a tie) and needs at most
   `CROSSING_MAX_FLATTENED_TILES` (8 of 42 tiles, 8 of 48 for an east/west footprint), so a boundary in steps of one tile is accepted and a sliver or a slant is not. Buildable: no
   water within the footprint plus the clearance the water limit demands for the two levels (`waterClearanceTiles` minus 1: none for 2/1, 2 for
-  3/2, 4 for 4/3) and no tile of a town (the plateau, `inside`) whose level the footprint would change: the footprint may lie on the terrace ring
-  of a town and on its plateau, so stairs lead into a town; at the plateau edge the straight boundary lies where the outline is, the ring tiles
-  outside it are raised to the plateau level, the plateau itself is never touched. The town layout leaves the tiles of every stair (`stairsOf`) free of buildings, an east/west
-  stair has two tiles next to the road that are no road tiles. Known effect: the raw road is straight through a town up to the
+  3/2, 4 for 4/3). Towns are no exclusion: a footprint may lie on the terrace ring and on the plateau of a town, so stairs lead into a town, and
+  it may change plateau tiles (at the plateau edge the straight boundary runs through the outline, ring tiles are raised to the plateau level, a notch of the
+  outline may be lowered; 8 tiles at most, 187 plateau tiles in all on 1 024 x 1 024 tiles). The town layout (`computeLayout`) keeps the whole footprint of every
+  crossing free of buildings, so no building stands on a changed tile or on a stair (measured: 0 decorated tiles in a footprint, every decorated tile lies
+  on the plateau level of its town). Known effect: the raw road is straight through a town up to the
   `straightRoadRadius`, a crossing on the plateau edge moves the road sideways by up to the lane shift and blends it back over
-  `CROSSING_APPROACH_TILES`, so near such a gate the road is not on the straight line (measured on 25 crossings that touch a plateau: 0 to 56,
-  mostly 10 to 40 plateau road tiles differ from the raw road). Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
+  the approach, so near such a gate the road is not on the straight line. Crossings of one edge that are far apart (`CROSSING_SPACING_TILES`, 23 in x and y of
   the centre, whatever the axes) are independent. Closer ones of the same axis chain into a run when the gap between their straight stretches
   (`|boundary difference|` minus 6) is at least twice their lane difference; a candidate close to the last crossing of the edge therefore
   prefers the lane of that crossing and only takes lanes where the chain holds, so the road runs straight through the cliffs of a run
@@ -68,8 +68,10 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   blending to the curve on the outer sides, so the road goes sideways to a shifted lane over those 8 tiles; between two crossings the lane
   blends from one to the other: each crossing has the weight 1 on its straight stretch and a cosine fade outside, the lane is the
   curve mixed with the average of the lanes weighted by weight / (1 - weight), which is exactly the lane of the crossing on its stretch).
-  A run where the curve is not monotone along the axis in the window is not built. Crossings of different edges whose footprints touch
-  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 427 crossings with towns, 301 before they were allowed (176 of them
+  A run where the curve is not monotone along the axis in the window is not built. Where the curve ends inside the window (the road end at a
+  town node can lie only a few tiles behind a crossing at the plateau edge) the approach on that side shrinks to the distance left (at least
+  `CROSSING_MIN_APPROACH_TILES`, 2), so the road is the raw one again at its end; before, 159 of 1 330 places failed as `curve`, 67 of them near a town. Crossings of different edges whose footprints touch
+  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 551 crossings with the towns open, 301 before (176 of them
   north/south, 125 east/west; 334 before the east/west bulge, which costs lanes), of 227 whole footprints 0 differ after the cleanup, 4.8 tiles changed on
   average and 12 at most (an east/west footprint has 6 x 8 tiles), no jump of two levels
   among land, the road in the lane exactly 3 tiles wide. History: 12 x 11 footprint with the support check at distance 3 gave 48 crossings (148
@@ -86,11 +88,11 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   by one row in the middle of the stairs and both roads end straight at the stairs (measured: the road tiles next to the stairs are
   exactly rows lane - 1 to lane + 1 on the upper side and lane to lane + 2 on the lower side in all of them). `chainsOnto` adds that offset to the
   lane difference.
-  `placeCrossing` returns the placement or the reason it failed (`noBoundary`, `overlap`, `tooExpensive`, `water`, `town`; the reason of the
+  `placeCrossing` returns the placement or the reason it failed (`noBoundary`, `overlap`, `tooExpensive`, `water`; the reason of the
   furthest stage any lane reached), `buildEdge` adds `curve` where the straightening fails and `stairs` where a crossing was built;
   these are kept per edge as `candidateOutcomes` for the debug overlay (see [world-and-render.md](world-and-render.md)). Measured on
-  309 edges in 1 024 x 1 024 tiles, 1 330 places where a road changes its level: 427 stairs, 303 too close to a stair, 248 too much to flatten,
-  159 road curve, 79 no straight edge, 58 town, 4 water (before the stairs led into towns: 301 stairs, 298 town) (a place is counted once per crossing of the curve, so a road that wiggles over a cliff counts
+  309 edges in 1 024 x 1 024 tiles, 1 278 places where a road changes its level: 551 stairs, 362 too close to a stair, 230 too much to flatten,
+  79 no straight edge, 53 road curve, 3 water (with the towns excluded: 301 stairs, 298 town, 92 road curve) (a place is counted once per crossing of the curve, so a road that wiggles over a cliff counts
   several times).
 - **`road/crossingTerrain.ts`** (new) — `crossingsOf(edges)`, `flattenCrossings(levels, minX, minY, size, crossings)`: sets every tile of
   a footprint to the upper or the lower level of the crossing, a straight edge. `Chunk` does this on its level block before the

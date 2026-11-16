@@ -8,8 +8,8 @@ import {
   TOWN_HOUSES_PER_CHUNK,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
-import { stairsOf, tileKey } from '../road/crossingStairs';
 import { crossingsOf } from '../road/crossingTerrain';
+import { footprintOf } from '../road/roadCrossing';
 import { roadEdgesIn } from '../road/roadEdge';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import type { SheetTile } from '../tileset/outsideSheet';
@@ -66,13 +66,27 @@ function computeLayout(town: Town): TownLayout {
   const height = (Math.max(...chunkYs) + 1) * CHUNK_SIZE - minY;
 
   const roads = roadTilesIn(minX, minY, width, height);
-  const stairs = stairsOf(crossingsOf(roadEdgesIn(minX, minY, width, height)));
   const free = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const isInside = townInfoAt(minX + x, minY + y)?.inside === true;
-      const isRoad = roads[y * width + x] === ROAD_TILE_MARK;
-      free[y * width + x] = isInside && !isRoad && !stairs.has(tileKey(minX + x, minY + y)) ? 1 : 0;
+      free[y * width + x] = isInside && roads[y * width + x] !== ROAD_TILE_MARK ? 1 : 0;
+    }
+  }
+  for (const crossing of crossingsOf(roadEdgesIn(minX, minY, width, height))) {
+    const footprint = footprintOf(crossing);
+    for (
+      let y = Math.max(footprint.minY, minY);
+      y < Math.min(footprint.minY + footprint.height, minY + height);
+      y++
+    ) {
+      for (
+        let x = Math.max(footprint.minX, minX);
+        x < Math.min(footprint.minX + footprint.width, minX + width);
+        x++
+      ) {
+        free[(y - minY) * width + (x - minX)] = 0;
+      }
     }
   }
 

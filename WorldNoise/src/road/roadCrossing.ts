@@ -29,9 +29,8 @@ export interface RoadCrossing {
   readonly lowerLevel: number;
 }
 
-export type CrossingOutcome =
-  'stairs' | 'noBoundary' | 'overlap' | 'tooExpensive' | 'water' | 'town' | 'curve';
-export type PlacementFailure = 'noBoundary' | 'overlap' | 'tooExpensive' | 'water' | 'town';
+export type CrossingOutcome = 'stairs' | 'noBoundary' | 'overlap' | 'tooExpensive' | 'water' | 'curve';
+export type PlacementFailure = 'noBoundary' | 'overlap' | 'tooExpensive' | 'water';
 export type Placement = { readonly placed: RoadCrossing } | { readonly failure: PlacementFailure };
 
 export interface TileRectangle {
@@ -47,7 +46,6 @@ const FAILURE_STAGE: Readonly<Record<PlacementFailure, number>> = {
   overlap: 1,
   tooExpensive: 2,
   water: 3,
-  town: 3,
 };
 export const EAST_WEST_STAIRS_ROWS = 4;
 export const EAST_WEST_STAIRS_FIRST_ROW_OFFSET_TILES = -1;
@@ -150,20 +148,15 @@ function waterReachTiles(crossing: RoadCrossing): number {
   return Math.max(0, clearance - 1);
 }
 
-function buildFailure(crossing: RoadCrossing): 'water' | 'town' | null {
+function hasWaterNear(crossing: RoadCrossing): boolean {
   const { minX, minY, width, height } = footprintOf(crossing);
   const reach = waterReachTiles(crossing);
   for (let y = minY - reach; y < minY + height + reach; y++) {
     for (let x = minX - reach; x < minX + width + reach; x++) {
-      if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return 'water';
+      if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return true;
     }
   }
-  for (let y = minY; y < minY + height; y++) {
-    for (let x = minX; x < minX + width; x++) {
-      if (townInfoAt(x, y)?.inside && terrainLevelAt(x, y) !== plannedLevelAt(crossing, x, y)) return 'town';
-    }
-  }
-  return null;
+  return false;
 }
 
 function oppositeOf(side: Side): Side {
@@ -230,9 +223,8 @@ export function placeCrossing(
       continue;
     }
     if (cost >= bestCost) continue;
-    const blocked = buildFailure(placed);
-    if (blocked !== null) {
-      fail(blocked);
+    if (hasWaterNear(placed)) {
+      fail('water');
       continue;
     }
     best = placed;
