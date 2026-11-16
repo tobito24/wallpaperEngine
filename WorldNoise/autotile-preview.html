@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Autotile preview</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font: 14px sans-serif;
+        background: #1c1f24;
+        color: #e6e6e6;
+      }
+      #controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: stretch;
+        margin-bottom: 16px;
+      }
+      fieldset {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 0;
+        padding: 10px 14px 14px;
+        border: 1px solid #3a3f47;
+        border-radius: 6px;
+      }
+      legend {
+        padding: 0 6px;
+        font-weight: bold;
+        color: #9aa4b2;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+        color: #9aa4b2;
+      }
+      label[hidden] {
+        display: none;
+      }
+      input,
+      select,
+      button {
+        box-sizing: border-box;
+        height: 28px;
+        padding: 0 8px;
+        font: 14px sans-serif;
+        color: #e6e6e6;
+        background: #2a2e35;
+        border: 1px solid #4a505a;
+        border-radius: 4px;
+      }
+      input[type='number'] {
+        width: 72px;
+      }
+      input[type='text'] {
+        width: 330px;
+      }
+      input[type='file'] {
+        padding: 3px 4px;
+        width: 220px;
+      }
+      button:enabled {
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.45;
+      }
+      .hint {
+        font-size: 12px;
+        color: #9aa4b2;
+      }
+      #status {
+        margin-bottom: 12px;
+        color: #9aa4b2;
+      }
+      #status.error {
+        color: #ff8080;
+      }
+      #views {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: flex-start;
+      }
+      canvas {
+        image-rendering: pixelated;
+        outline: 1px solid #444;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <fieldset>
+        <legend>Check a sheet</legend>
+        <label
+          >Relative path in WorldNoise/ (Copy Relative Path)
+          <input id="path" type="text" value="WorldNoise\autotiles\grass.png" />
+        </label>
+        <span class="hint">or drop a 96 x 128 px PNG on the page</span>
+      </fieldset>
+
+      <fieldset>
+        <legend>Make a sheet from a texture</legend>
+        <div class="row">
+          <label
+            >Texture, 32 x 32 px (or drop it)
+            <input id="texture" type="file" accept="image/png" />
+          </label>
+          <label
+            >Edge
+            <select id="style">
+              <option value="curve" selected>curve (round corners)</option>
+              <option value="edge">edge (cut corners)</option>
+              <option value="wavy">wavy</option>
+            </select>
+          </label>
+          <label
+            >Inset px (0-16)
+            <input id="inset" type="number" min="0" max="16" value="8" />
+          </label>
+          <label
+            >Corner radius px (0-16)
+            <input id="radius" type="number" min="0" max="16" value="8" />
+          </label>
+          <label id="amplitudeLabel" hidden
+            >Wave height px (0-4)
+            <input id="amplitude" type="number" min="0" max="4" value="2" />
+          </label>
+          <label id="periodLabel" hidden
+            >Wave length px
+            <select id="period">
+              <option>16</option>
+              <option selected>32</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button id="download" type="button" disabled>Download sheet</button>
+          <button id="guide" type="button" disabled>Download guide</button>
+          <span id="limits" class="hint"></span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>View</legend>
+        <div class="row">
+          <label
+            >Background
+            <select id="background">
+              <option value="checker">checkerboard</option>
+              <option value="#8fd17a">grass</option>
+              <option value="#3f7fd0">water</option>
+              <option value="#d9c27a">sand</option>
+              <option value="#555555">grey</option>
+            </select>
+          </label>
+          <label
+            >Scale
+            <select id="scale">
+              <option>2</option>
+              <option selected>3</option>
+              <option>4</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+    </div>
+    <div id="status"></div>
+    <div id="views">
+      <canvas id="sheet"></canvas>
+      <canvas id="map"></canvas>
+      <canvas id="gallery"></canvas>
+    </div>
+    <script type="module" src="/src/tools/autotilePreview.ts"></script>
+  </body>
+</html>

@@ -36,6 +36,18 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   frame and never change. With the local sheets both water sheets have 8 frames (a cycle of 2 s); measured on the
   canvas over 4.6 s: 8 distinct images, a change about every 250 ms, 76 % of the screen's pixels (the land) never
   change.
+- **`autotile-preview.html`** + **`src/tools/autotilePreview.ts`**, **`autotileGenerator.ts`** (new, dev tool, not part of the build
+  output) — make and check a self-made autotile: `npm run dev`, open `/autotile-preview.html`. A 32 x 32 px texture (file input or
+  dropped on the page) is turned into a base sheet of 96 x 128 px: the texture in all ground quarters, an edge 8 px inside the
+  border, transparent outside and no border color (the texture just stops). Options: edge style (`curve` round corners, `edge` cut
+  corners, `wavy` a sine along the edge), inset 0 to 16 px (distance of the edge from the tile border, default 8: a bigger inset makes the shape smaller and shows more of the
+  ground below), corner radius, wave height and wave length 16 or 32 px (the waves repeat every 32 px at most, so the edge quarters that
+  must be equal are equal). The radius and the wave height are limited so a corner or wave stays inside its 16 px quarter (outer radius
+  16 - inset - wave height, inner radius inset - wave height, wave height at most the inset and 16 - inset); the page shows the used values.
+  "Download guide" saves a red/green guide layer matching the generated sheet. Inner corners are notches with the same radius. "Download sheet" saves the PNG, which is then
+  decorated in Photoshop. The page also loads a finished PNG from a relative path inside `WorldNoise/` in the form of "Copy Relative Path" (`WorldNoise\autotiles\sand.png`; own art lives in `autotiles/`) and reloads it
+  when the file changes. It shows the sheet with the 32 px tile grid, a test shape assembled with the real `autotile.ts` tables and
+  all 47 tiles, on a checkerboard or ground-colored background. The rules are in `DesignCorner/autotile-template/README.md`.
 - **`tileset/cliffTiles.ts`** (new) — `drawCliff(ctx, cliffType, heightLevel, x, y, size)` draws one of the 12 cliff pieces
   (4 edges, 4 outer and 4 inner corners) from the stone sets of `InfinityWalker/img/tileset.png` (256 x 1 920 px, 32 px
   tiles, 8 per row), copied to `dev-assets/tilesets/infinitywalker.png` and found by `import.meta.glob`; without it the
