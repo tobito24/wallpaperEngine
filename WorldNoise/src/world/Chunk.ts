@@ -11,6 +11,8 @@ import {
   limitLevelsNearWater,
 } from '../elevation/levelCleanup';
 import { moistureNoise } from '../moisture/moistureNoise';
+import { crossingsOf, flattenCrossings } from '../road/crossingTerrain';
+import { roadEdgesIn } from '../road/roadEdge';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
 import type { Town } from '../town/townPlacement';
@@ -68,6 +70,15 @@ export class Chunk {
         );
       }
     }
+    const blockMinX = originX - LEVEL_BLOCK_MARGIN;
+    const blockMinY = originY - LEVEL_BLOCK_MARGIN;
+    flattenCrossings(
+      blockLevels,
+      blockMinX,
+      blockMinY,
+      LEVEL_BLOCK_SIZE,
+      crossingsOf(roadEdgesIn(blockMinX, blockMinY, LEVEL_BLOCK_SIZE, LEVEL_BLOCK_SIZE)),
+    );
     const blockCleanedLevels = cleanHeightLevels(
       limitLevelsNearWater(blockLevels, LEVEL_BLOCK_SIZE),
       LEVEL_BLOCK_SIZE,
