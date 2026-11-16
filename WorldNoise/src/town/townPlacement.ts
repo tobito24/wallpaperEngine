@@ -25,7 +25,6 @@ export interface Town {
   readonly shape: TownShape;
   readonly chunks: readonly ChunkOffset[];
   readonly center: Point;
-  readonly straightRoadRadius: number;
   readonly plateauLevel: number;
   readonly designed: boolean;
 }
@@ -128,18 +127,6 @@ function anchorCenter(chunks: readonly ChunkOffset[]): Point {
   return { x: best[0] * CHUNK_SIZE + CHUNK_SIZE / 2, y: best[1] * CHUNK_SIZE + CHUNK_SIZE / 2 };
 }
 
-function farthestCornerDistance(center: Point, chunks: readonly ChunkOffset[]): number {
-  let farthest = 0;
-  for (const [chunkX, chunkY] of chunks) {
-    for (const cornerX of [chunkX * CHUNK_SIZE, (chunkX + 1) * CHUNK_SIZE]) {
-      for (const cornerY of [chunkY * CHUNK_SIZE, (chunkY + 1) * CHUNK_SIZE]) {
-        farthest = Math.max(farthest, Math.hypot(cornerX - center.x, cornerY - center.y));
-      }
-    }
-  }
-  return farthest;
-}
-
 function findTown(cx: number, cy: number): Town | null {
   if (randomValue(`town:${cx}:${cy}:wants`) >= TOWN_CELL_PROBABILITY) return null;
 
@@ -159,7 +146,6 @@ function findTown(cx: number, cy: number): Town | null {
         shape,
         chunks,
         center,
-        straightRoadRadius: farthestCornerDistance(center, chunks),
         plateauLevel: sample.plateauLevel,
         designed: randomValue(`town:${cx}:${cy}:designed`) < TOWN_DESIGNED_SHARE,
       };
