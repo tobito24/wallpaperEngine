@@ -177,9 +177,15 @@ export function straightenThrough(
   for (let index = 1; index < crossings.length; index++) {
     if (crossings[index].progress <= crossings[index - 1].progress) return null;
   }
-  const windowStart = crossings[0].progress - CROSSING_HALF_LENGTH_TILES - crossings[0].approachBefore;
+  const windowStart = Math.max(
+    curveStartProgress,
+    crossings[0].progress - CROSSING_HALF_LENGTH_TILES - crossings[0].approachBefore,
+  );
   const lastCrossing = crossings[crossings.length - 1];
-  const windowEnd = lastCrossing.progress + CROSSING_HALF_LENGTH_TILES + lastCrossing.approachAfter;
+  const windowEnd = Math.min(
+    curveEndProgress,
+    lastCrossing.progress + CROSSING_HALF_LENGTH_TILES + lastCrossing.approachAfter,
+  );
 
   let firstOutside = throughIndex;
   while (progressOf(firstOutside) >= windowStart) {
@@ -202,7 +208,7 @@ export function straightenThrough(
 
   const rawLaneAtProgress = (progress: number): number => {
     let index = Math.max(firstOutside, 0);
-    while (progressOf(index + 1) < progress) index++;
+    while (index < polyline.length - 2 && progressOf(index + 1) < progress) index++;
     const from = progressOf(index);
     const t = (progress - from) / (progressOf(index + 1) - from);
     return laneBetween(polyline[index], polyline[index + 1], t, anchor);
