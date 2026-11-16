@@ -1,11 +1,11 @@
-import { ROAD_EDGE_CACHE_MAX_ENTRIES } from '../config/constants';
+import { CROSSING_HALF_LENGTH_TILES, ROAD_EDGE_CACHE_MAX_ENTRIES } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import { cellIndexOf, edgeExists, edgeKey } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
 import { centreOf, crossingCandidates } from './roadCrossing';
 import type { RoadCrossing } from './roadCrossing';
 import { edgeCurve } from './roadCurve';
-import { CROSSING_SPACING_TILES, straightenAt } from './roadStraightening';
+import { CROSSING_SPACING_TILES, straightenThrough } from './roadStraightening';
 
 export interface RoadEdge {
   readonly polyline: readonly Point[];
@@ -19,29 +19,46 @@ const EDGE_DIRECTIONS: readonly (readonly [number, number])[] = [
 
 const edgeCache = new Map<string, RoadEdge>();
 
-function isFarFromAll(candidate: RoadCrossing, accepted: readonly RoadCrossing[]): boolean {
-  const centre = centreOf(candidate);
-  return accepted.every((other) => {
-    const otherCentre = centreOf(other);
-    return (
-      Math.max(Math.abs(centre.x - otherCentre.x), Math.abs(centre.y - otherCentre.y)) >=
-      CROSSING_SPACING_TILES
-    );
-  });
+function isDisjoint(a: RoadCrossing, b: RoadCrossing): boolean {
+  const first = centreOf(a);
+  const second = centreOf(b);
+  return Math.max(Math.abs(first.x - second.x), Math.abs(first.y - second.y)) >= CROSSING_SPACING_TILES;
+}
+
+function chainsOnto(previous: RoadCrossing, next: RoadCrossing): boolean {
+  if (previous.travelAxis !== next.travelAxis) return false;
+  const gapTiles = Math.abs(next.boundary - previous.boundary) - 2 * CROSSING_HALF_LENGTH_TILES;
+  return gapTiles >= 2 * Math.abs(next.lane - previous.lane);
 }
 
 function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
   const curve = edgeCurve(ax, ay, bx, by);
+  const runs: RoadCrossing[][] = [];
+  let polylineBeforeLastRun = curve;
   let polyline = curve;
-  const crossings: RoadCrossing[] = [];
+
   for (const candidate of crossingCandidates(curve)) {
-    if (!isFarFromAll(candidate, crossings)) continue;
-    const straightened = straightenAt(polyline, candidate);
+    const lastRun = runs.at(-1);
+    const earlierRuns = runs.slice(0, -1).flat();
+    if (!earlierRuns.every((other) => isDisjoint(other, candidate))) continue;
+
+    if (lastRun === undefined || lastRun.every((other) => isDisjoint(other, candidate))) {
+      const straightened = straightenThrough(polyline, [candidate]);
+      if (straightened === null) continue;
+      polylineBeforeLastRun = polyline;
+      polyline = straightened;
+      runs.push([candidate]);
+      continue;
+    }
+
+    if (!chainsOnto(lastRun[lastRun.length - 1], candidate)) continue;
+    const extendedRun = [...lastRun, candidate];
+    const straightened = straightenThrough(polylineBeforeLastRun, extendedRun);
     if (straightened === null) continue;
     polyline = straightened;
-    crossings.push(candidate);
+    runs[runs.length - 1] = extendedRun;
   }
-  return { polyline, crossings };
+  return { polyline, crossings: runs.flat() };
 }
 
 export function roadEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {

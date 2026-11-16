@@ -4,13 +4,13 @@ import {
   CROSSING_BOUNDARY_SEARCH_TILES,
   CROSSING_HALF_LENGTH_TILES,
   CROSSING_HALF_WIDTH_TILES,
+  CROSSING_MAX_FLATTENED_TILES,
   CROSSING_MAX_LANE_SHIFT_TILES,
   CROSSING_SAMPLE_STEP_TILES,
   ROAD_BEND_MAX_TILES,
 } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
-import { WATER_LEVEL, heightLevelAt } from '../elevation/heightLevel';
-import { WATER_LIMIT_REACH_TILES } from '../elevation/levelCleanup';
+import { WATER_LEVEL, heightLevelAt, waterClearanceTiles } from '../elevation/heightLevel';
 import type { Point } from '../skeleton/cellGrid';
 import { levelWithTown, townInfoAt } from '../town/townTerrain';
 
@@ -35,8 +35,6 @@ export interface TileRectangle {
 }
 
 const FIRST_CLIFF_LEVEL = 2;
-const SUPPORT_DISTANCES_TILES = [2, CROSSING_HALF_LENGTH_TILES];
-const SUPPORT_LANE_OFFSETS = [-CROSSING_HALF_WIDTH_TILES, 0, CROSSING_HALF_WIDTH_TILES];
 const LANE_SHIFTS = Array.from({ length: 2 * CROSSING_MAX_LANE_SHIFT_TILES + 1 }, (_, index) =>
   index % 2 === 0 ? index / 2 : -(index + 1) / 2,
 );
@@ -94,23 +92,34 @@ function boundaryAtLane(crossing: RoadCrossing, lane: number): number | null {
   return null;
 }
 
-function isSupportedByTerrain(crossing: RoadCrossing): boolean {
-  for (const side of [crossing.upperSide, oppositeOf(crossing.upperSide)]) {
-    const expectedLevel = side === crossing.upperSide ? crossing.upperLevel : crossing.lowerLevel;
-    for (const distance of SUPPORT_DISTANCES_TILES) {
-      const along = side === 1 ? crossing.boundary + distance - 1 : crossing.boundary - distance;
-      for (const laneOffset of SUPPORT_LANE_OFFSETS) {
-        const lane = crossing.lane + laneOffset;
-        if (levelAtLane(crossing, along, lane) !== expectedLevel) return false;
-      }
+export function plannedLevelAt(crossing: RoadCrossing, tileX: number, tileY: number): number {
+  const along = crossing.travelAxis === 'x' ? tileX : tileY;
+  const side: Side = along >= crossing.boundary ? 1 : -1;
+  return side === crossing.upperSide ? crossing.upperLevel : crossing.lowerLevel;
+}
+
+function tilesToFlatten(crossing: RoadCrossing): number {
+  const { minX, minY, width, height } = footprintOf(crossing);
+  let count = 0;
+  for (let y = minY; y < minY + height; y++) {
+    for (let x = minX; x < minX + width; x++) {
+      if (terrainLevelAt(x, y) !== plannedLevelAt(crossing, x, y)) count++;
     }
   }
-  return true;
+  return count;
+}
+
+function waterReachTiles(crossing: RoadCrossing): number {
+  const clearance = Math.max(
+    waterClearanceTiles(crossing.upperLevel),
+    waterClearanceTiles(crossing.lowerLevel),
+  );
+  return Math.max(0, clearance - 1);
 }
 
 function isBuildable(crossing: RoadCrossing): boolean {
   const { minX, minY, width, height } = footprintOf(crossing);
-  const reach = WATER_LIMIT_REACH_TILES;
+  const reach = waterReachTiles(crossing);
   for (let y = minY - reach; y < minY + height + reach; y++) {
     for (let x = minX - reach; x < minX + width + reach; x++) {
       if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return false;
@@ -155,15 +164,20 @@ function crossingBetween(
   };
 }
 
-function shiftedAlongBoundary(candidate: RoadCrossing): RoadCrossing | null {
+function bestPlacementAlongBoundary(candidate: RoadCrossing): RoadCrossing | null {
+  let best: RoadCrossing | null = null;
+  let bestCost = CROSSING_MAX_FLATTENED_TILES + 1;
   for (const shift of LANE_SHIFTS) {
     const lane = candidate.lane + shift;
     const boundary = boundaryAtLane(candidate, lane);
     if (boundary === null) continue;
     const shifted = { ...candidate, id: `${candidate.travelAxis}:${boundary}:${lane}`, boundary, lane };
-    if (isSupportedByTerrain(shifted) && isBuildable(shifted)) return shifted;
+    const cost = tilesToFlatten(shifted);
+    if (cost >= bestCost || !isBuildable(shifted)) continue;
+    best = shifted;
+    bestCost = cost;
   }
-  return null;
+  return best;
 }
 
 export function crossingCandidates(curve: readonly Point[]): RoadCrossing[] {
@@ -192,5 +206,5 @@ export function crossingCandidates(curve: readonly Point[]): RoadCrossing[] {
       previousLevel = currentLevel;
     }
   }
-  return candidates.flatMap((candidate) => shiftedAlongBoundary(candidate) ?? []);
+  return candidates.flatMap((candidate) => bestPlacementAlongBoundary(candidate) ?? []);
 }
