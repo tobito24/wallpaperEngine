@@ -39,4 +39,6 @@ A base like `TileGridBase` is developed only for what every clone needs; idea-sp
 
 - `CLAUDE.md` of a project holds its architecture and decisions, not a backlog and not what the base already documents (link to
   `TileGridBase/CLAUDE.md` instead of repeating it).
+  When it outgrows one topic it is split into `<project>/docs/<topic>.md` and the `CLAUDE.md` becomes a lookup table of
+  task and doc, like the root `CLAUDE.md` (`WorldNoise/` is the example).
 - A rule that applies to every project lives in the root `docs/`, not in a project file.
