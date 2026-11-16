@@ -1,8 +1,8 @@
 import { OUTSIDE_SHEET_TILE_SIZE_PX } from '../config/constants';
 
-const SHEET_KEY = '../../dev-assets/tilesets/outside.png';
+const SHEET_KEY = '../../assets/tilesets/outside.png';
 
-const sheetUrls = import.meta.glob<string>('../../dev-assets/tilesets/*.png', {
+const sheetUrls = import.meta.glob<string>('../../assets/tilesets/*.png', {
   eager: true,
   query: '?url',
   import: 'default',

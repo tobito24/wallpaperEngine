@@ -137,7 +137,7 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
   column 1, snowy ones in 1.12 to 1.17). Its layout is still to be verified like the grounds.
 - **Cliff pieces (decided 2026-11-16, not built yet).** A cliff is a band of at least 2 tiles on the higher land: the outer ring
   is the 16-pattern (one 32 px tile per piece, hand-drawn: 3 x 3 frame plus the four inner corners in columns 3 and 4, the layout of
-  `OFFSETS_IN_GROUP` in `cliffTiles.ts`, one file per level, `WorldNoise/cliff-assets/cliff-N.png`), the inner ring is an autotile
+  `OFFSETS_IN_GROUP` in `cliffTiles.ts`, one file per level, `WorldNoise/assets/cliffs/cliff-N.png`), the inner ring is an autotile
   of the top texture (generated like the ground sheets) over the biome ground, so the inner edge blends into the plateau. The
   piece lies on the higher tile (today on the lower one), so a plateau must be at least 2 tiles wide; that is why too small
   plateaus are cleaned (`levelCleanup.ts`). Where a road meets a cliff the edge must be straight for the stairs, which changes the
@@ -198,9 +198,8 @@ rule on `(seed, x, y)` is consistent across chunk borders without extra work, wh
   look at the world quickly. The origin of its tilesets is not credited in its `Credits.txt` and the art comes from Nintendo games.
 - **Publish:** before anything is published, every such asset is replaced by one with a clear license (for example the Alienor
   tileset with credit, or own art). The data table below makes that a swap of table rows, not a change of the engine.
-- **Not in git:** the repo has a GitHub remote, so development-only assets stay out of it (a git-ignored asset folder inside
-  `WorldNoise/`). Only assets cleared for publishing are committed. The Alienor sheet stays untracked until its terms are copied
-  into `publishing.md`.
+- **Not in git:** the repo has a GitHub remote and no asset is committed at all, cleared or not (rule 2026-11-16): everything lives in
+  the git-ignored `WorldNoise/assets/`, so the repo has no license question. The user clears what a publish embeds.
 
 ### First content and extensibility
 
@@ -208,7 +207,7 @@ Source: the inventory of `DesignCorner/private/dewbuse-*.png` (cells `column.row
 
 - **Grounds, first guess of the rank order:** deep water (2.6), water (2.5), sand (2.0), grass (base), dirt (2.2), rock (2.7),
   snow (from 2.13). Because the rim is baked in, grass is the base and the others lie on it as overlays.
-- **During development** the grounds came from the Essentials autotiles; they are replaced by own sheets in `autotiles/`.
+- **During development** the grounds came from the Essentials autotiles; they are replaced by own sheets in `assets/autotiles/`.
 - **Roads:** cobblestone (0.8 to 0.10 on the sheet).
 - **Cliffs:** brown walls with wooden stairs (column 1, 1.0 to 1.11), snowy ones (1.12 to 1.17).
 - **Trees:** conifers (3.0 to 3.4), broadleaf (3.7 to 3.10), snowy conifers (3.14 to 3.16), birches (3.17, 3.18).
@@ -259,12 +258,12 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Stairs where a road crosses a cliff
 - [ ] Rule-based decoration
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
-- [x] A ground per biome: one ground per biome (rank order, sheet table into `autotiles/`), flat color where a sheet is missing
+- [x] A ground per biome: one ground per biome (rank order, sheet table into `assets/autotiles/`), flat color where a sheet is missing
 - [ ] Second ground per biome (bare earth beside the natural cover) and small secret paths inside a biome
 - [x] Draw the lower ground under a tile with a transparent autotile rim (`Tile.draw`), so own sheets show the neighbour and no background
 - [ ] First own ground (grass) decorated in Photoshop and checked in the preview, then the other grounds
 - [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
-- [ ] Replace every development-only asset by a cleared one, and own town templates; check the repo contains no development assets and that `dist/` was built without `dev-assets/` (it embeds them otherwise)
+- [ ] Replace every development-only asset by a cleared one, and own town templates; check that `dist/` embeds only cleared assets (it embeds everything in `assets/`; no asset is committed)
 - [ ] Wallpaper Engine properties (at least the seed)
 - [ ] Preview, `publishing.md` text, publish
 

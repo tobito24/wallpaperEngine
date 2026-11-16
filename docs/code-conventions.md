@@ -15,6 +15,9 @@
 - **Owns its appearance:** a tile draws itself (`Tile.draw()`); callers never read tile fields to decide how to render it.
 - **Determinism:** generation is a pure function of seed and world coordinates, never `Math.random()`, so a world looks the same after
   a reload and nothing needs to be stored.
-- **Assets:** tile art lives in each project's `img/`; Photoshop sources live in `DesignCorner/`.
+- **Assets:** art (tiles, textures, sheets, sounds) is not committed. A project keeps it in a git-ignored `assets/` folder, so the
+  repo carries no license question; what a build embeds is cleared by the user before a publish. Photoshop sources stay in
+  `DesignCorner/`. The art that older projects already committed (`WorldGenerator/img`, `InfinityWalker/img`, `FirstTestStuff/img`,
+  the `.psd` files) stays as it is; tool aids that are not art (the guide images of `DesignCorner/autotile-template/`) are fine.
 - **Changing existing code:** change the definition and every caller in the same change; no adapter, optional parameter or fallback
   to keep an old shape alive.

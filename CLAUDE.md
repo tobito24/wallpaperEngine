@@ -36,7 +36,7 @@ Each folder is one idea and stands alone; there is no shared code between them (
 | `ColorWar/` | Done for now, published | Fork of `TileGridBase`: a 7-color cyclic-dominance tile automaton. Two Workshop listings, "ColorWar" and "ColorWar: Rainbow". |
 | `WorldNoise/` | Active | Fork of `TileGridBase`: noise/biome terrain generation (elevation, moisture, temperature, biome table). |
 | `FirstTestStuff/` | Legacy | Early canvas experiments. Ignore unless asked. |
-| `DesignCorner/` | Assets | Photoshop sources for the tilesets, the autotile template (`autotile-template/`) and the 32 x 32 px ground textures live in `private/tile-texture-32x32/` (extracted from the InfinityWalker tileset, not cleared for publishing). `DesignCorner/private/` is git-ignored: third-party art and game maps that must not be published stay there. |
+| `DesignCorner/` | Assets | Photoshop sources for the tilesets, the autotile template (`autotile-template/`); the 32 x 32 px ground textures live in `private/tile-texture-32x32/` (extracted from the InfinityWalker tileset, not cleared for publishing). `DesignCorner/private/` is git-ignored: third-party art and game maps that must not be published stay there. |
 
 Lineage: `WorldGenerator` → `InfinityWalker` → `TileGridBase` → `ColorWar`, `WorldNoise`.
 
@@ -54,6 +54,8 @@ projects use `notes.txt`) and `publishing.md` (Workshop texts) as far as it appl
 - **Agents never publish.** Publishing to the Workshop is done by the user in the Wallpaper Engine editor.
 - **Never commit what the user has not finished.** Uncommitted changes in the working tree belong to the user; stage only the files
   of your own task, by path.
+- **No assets in git.** Tiles, textures, sheets and sounds stay in a git-ignored `assets/` folder of the project, never in a commit
+  ([code-conventions.md](docs/code-conventions.md)); the user clears what a publish embeds.
 - **Keyboard input does not reach an applied wallpaper, only mouse input and properties do.** Design interactivity around
   mouse/touch and `project.json` properties; keyboard is a development convenience only
   ([wallpaper-engine-integration.md](docs/wallpaper-engine-integration.md)).

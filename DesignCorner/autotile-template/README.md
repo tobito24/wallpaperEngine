@@ -68,7 +68,7 @@ row 7    43 oBL  44 eB  45 eB  46 eB  47 eB  48 oBR
 
 ## Check
 
-Save the sheet into `WorldNoise/autotiles/`, run `npm run dev` in `WorldNoise/` and open `/autotile-preview.html`: it shows the sheet,
+Save the sheet into `WorldNoise/assets/autotiles/`, run `npm run dev` in `WorldNoise/` and open `/autotile-preview.html`: it shows the sheet,
 a test shape and all 47 tiles, on a checkerboard or on ground colors, and reloads when the file changes
 ([docs/tileset.md](../../WorldNoise/docs/tileset.md)). Look for steps or holes in the edge, a texture that jumps at a quarter border and
 a semi-transparent edge.
@@ -85,7 +85,7 @@ a semi-transparent edge.
 3. Open the PNG in Photoshop with the guide (`autotile-template-1x.png` for the default inset of 8 px) as a guide layer and add the details.
    Keep the rules: only the 16 quarters of rule 5 are drawn by hand, copy the equal ones (rule 4), keep the edge on the red/green border,
    no semi-transparent pixels.
-4. Save the sheet into `WorldNoise/autotiles/`, paste its relative path (Copy Relative Path, `WorldNoise\autotiles\sand.png`) into the
+4. Save the sheet into `WorldNoise/assets/autotiles/`, paste its relative path (Copy Relative Path, `WorldNoise\assets\autotiles\sand.png`) into the
    preview and look at it again after every save.
 
 An image-generation AI was tried for the whole sheet and dropped: it does not keep the quarter grid, repeats nothing every 32 px and draws

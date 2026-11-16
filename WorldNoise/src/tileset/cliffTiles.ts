@@ -1,9 +1,9 @@
 import { CLIFF_SHEET_TILE_SIZE_PX } from '../config/constants';
 import type { CliffType } from '../elevation/heightLevel';
 
-const SHEET_KEY = '../../dev-assets/tilesets/infinitywalker.png';
+const SHEET_KEY = '../../assets/tilesets/infinitywalker.png';
 
-const sheetUrls = import.meta.glob<string>('../../dev-assets/tilesets/*.png', {
+const sheetUrls = import.meta.glob<string>('../../assets/tilesets/*.png', {
   eager: true,
   query: '?url',
   import: 'default',

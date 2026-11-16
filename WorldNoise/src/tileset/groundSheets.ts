@@ -3,7 +3,7 @@ import { AUTOTILE_QUARTER_IDS } from './autotile';
 import { fallbackColorOf } from './ground';
 import type { Ground } from './ground';
 
-const SHEET_DIRECTORY = '../../autotiles/';
+const SHEET_DIRECTORY = '../../assets/autotiles/';
 const FRAME_WIDTH_PX = AUTOTILE_QUARTER_COLUMNS * AUTOTILE_QUARTER_SIZE_PX;
 const PLAIN_GROUND_AUTOTILE_INDEX = 0;
 
@@ -26,7 +26,7 @@ const SHEET_FILE_BY_GROUND: Readonly<Record<Ground, string>> = {
   bridge: 'bridge.png',
 };
 
-const sheetUrls = import.meta.glob<string>('../../autotiles/*.png', {
+const sheetUrls = import.meta.glob<string>('../../assets/autotiles/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
