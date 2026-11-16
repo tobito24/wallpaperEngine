@@ -2,7 +2,8 @@ import { TOWN_BIOME, biomeAt } from '../biome/biome';
 import type { Biome } from '../biome/biome';
 import { CHUNK_SIZE } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
-import { cliffTypeOf, heightLevelAt } from '../elevation/heightLevel';
+import { CLIFF_LAYOUT_REACH_TILES, NO_INNER_RING, layoutCliffs } from '../elevation/cliffLayout';
+import { heightLevelAt } from '../elevation/heightLevel';
 import { LEVEL_CLEANUP_REACH_TILES, cleanHeightLevels } from '../elevation/levelCleanup';
 import { moistureNoise } from '../moisture/moistureNoise';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
@@ -21,7 +22,8 @@ import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
 const PADDED_SIZE = CHUNK_SIZE + 2;
-const LEVEL_BLOCK_MARGIN = 1 + LEVEL_CLEANUP_REACH_TILES;
+const LEVEL_BLOCK_MARGIN = CLIFF_LAYOUT_REACH_TILES + LEVEL_CLEANUP_REACH_TILES;
+const PADDING = 1;
 const LEVEL_BLOCK_SIZE = CHUNK_SIZE + 2 * LEVEL_BLOCK_MARGIN;
 
 const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, number, number, number])[] = [
@@ -62,6 +64,7 @@ export class Chunk {
       }
     }
     const blockCleanedLevels = cleanHeightLevels(blockLevels, LEVEL_BLOCK_SIZE);
+    const cliffLayout = layoutCliffs(blockCleanedLevels, LEVEL_BLOCK_SIZE);
 
     const elevations = new Float64Array(PADDED_SIZE * PADDED_SIZE);
     const levels = new Uint8Array(PADDED_SIZE * PADDED_SIZE);
@@ -73,7 +76,7 @@ export class Chunk {
         const worldY = originY + py - 1;
         const index = py * PADDED_SIZE + px;
         const blockIndex =
-          (py + LEVEL_CLEANUP_REACH_TILES) * LEVEL_BLOCK_SIZE + px + LEVEL_CLEANUP_REACH_TILES;
+          (py + LEVEL_BLOCK_MARGIN - PADDING) * LEVEL_BLOCK_SIZE + px + LEVEL_BLOCK_MARGIN - PADDING;
         elevations[index] = blockElevations[blockIndex];
         levels[index] = blockCleanedLevels[blockIndex];
         const townInfo = blockTownInfos[blockIndex];
@@ -96,16 +99,9 @@ export class Chunk {
       for (let lx = 0; lx < CHUNK_SIZE; lx++) {
         const index = (ly + 1) * PADDED_SIZE + (lx + 1);
         const level = levels[index];
-        const cliffType = cliffTypeOf(level, {
-          north: levels[index - PADDED_SIZE],
-          northEast: levels[index - PADDED_SIZE + 1],
-          east: levels[index + 1],
-          southEast: levels[index + PADDED_SIZE + 1],
-          south: levels[index + PADDED_SIZE],
-          southWest: levels[index + PADDED_SIZE - 1],
-          west: levels[index - 1],
-          northWest: levels[index - PADDED_SIZE - 1],
-        });
+        const layoutIndex = (ly + LEVEL_BLOCK_MARGIN) * LEVEL_BLOCK_SIZE + lx + LEVEL_BLOCK_MARGIN;
+        const cliffType = cliffLayout.cliffTypes[layoutIndex];
+        const innerRingIndex = cliffLayout.innerRingIndices[layoutIndex];
 
         const town = insideTowns[index];
         const decoration: SheetTile | null = town ? townDecorationAt(town, originX + lx, originY + ly) : null;
@@ -165,6 +161,7 @@ export class Chunk {
             autotileIndexFor(neighbourMask),
             underlays,
             cliffUnderlays,
+            innerRingIndex === NO_INNER_RING ? null : innerRingIndex,
             decoration,
           ),
         );

@@ -1,19 +1,27 @@
 import { CLIFF_SHEET_TILE_SIZE_PX } from '../config/constants';
+import { AUTOTILE_QUARTER_IDS } from './autotile';
+import { drawSheetQuarters } from './groundSheets';
 import type { CliffType } from '../elevation/heightLevel';
 
 const SHEET_DIRECTORY = '../../assets/cliff-assets/';
 const LOWEST_CLIFF_LEVEL = 2;
 const CLIFF_SET_COUNT = 3;
 
-const sheetUrls = import.meta.glob<string>('../../assets/cliff-assets/cliff-?.png', {
+const cliffUrls = import.meta.glob<string>('../../assets/cliff-assets/cliff-?.png', {
   eager: true,
   query: '?url',
   import: 'default',
 });
 
-function loadSheets(): (HTMLImageElement | undefined)[] {
+const topUrls = import.meta.glob<string>('../../assets/cliff-assets/cliff-autotile-?.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+function loadSheets(urls: Record<string, string>, prefix: string): (HTMLImageElement | undefined)[] {
   return Array.from({ length: CLIFF_SET_COUNT }, (_, set) => {
-    const url = sheetUrls[`${SHEET_DIRECTORY}cliff-${set}.png`];
+    const url = urls[`${SHEET_DIRECTORY}${prefix}-${set}.png`];
     if (!url) return undefined;
     const image = new Image();
     image.src = url;
@@ -21,7 +29,8 @@ function loadSheets(): (HTMLImageElement | undefined)[] {
   });
 }
 
-const cliffSheets = loadSheets();
+const cliffSheets = loadSheets(cliffUrls, 'cliff');
+const topSheets = loadSheets(topUrls, 'cliff-autotile');
 
 interface SheetPosition {
   readonly column: number;
@@ -43,10 +52,17 @@ const OFFSETS_IN_SHEET: Record<CliffType, SheetPosition> = {
   northWestInner: { column: 4, row: 1 },
 };
 
-function sheetForLevel(heightLevel: number): HTMLImageElement | undefined {
+function usableSheet(
+  sheets: (HTMLImageElement | undefined)[],
+  heightLevel: number,
+): HTMLImageElement | undefined {
   const set = Math.min(Math.max(heightLevel - LOWEST_CLIFF_LEVEL, 0), CLIFF_SET_COUNT - 1);
-  const sheet = cliffSheets[set];
+  const sheet = sheets[set];
   return sheet && sheet.complete && sheet.naturalWidth > 0 ? sheet : undefined;
+}
+
+function sheetForLevel(heightLevel: number): HTMLImageElement | undefined {
+  return usableSheet(cliffSheets, heightLevel);
 }
 
 export function hasCliffSheet(heightLevel: number): boolean {
@@ -76,5 +92,19 @@ export function drawCliff(
     size,
     size,
   );
+  return true;
+}
+
+export function drawCliffTop(
+  ctx: CanvasRenderingContext2D,
+  heightLevel: number,
+  autotileIndex: number,
+  screenX: number,
+  screenY: number,
+  size: number,
+): boolean {
+  const sheet = usableSheet(topSheets, heightLevel);
+  if (!sheet) return false;
+  drawSheetQuarters(ctx, sheet, AUTOTILE_QUARTER_IDS[autotileIndex], 0, screenX, screenY, size);
   return true;
 }

@@ -74,5 +74,14 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   before the level shade. Earlier tried and dropped: pieces cut from the Essentials `Outside` rock kit (no corners) and the stone
   sets of `InfinityWalker/img/tileset.png` (pieces on the lower tile). Measured on 768 x 768 tiles: 36 550 cliff tiles, all 12
   types used, none with lower neighbours on opposite sides or on three sides, 3 with two lower diagonals and no lower edge
-  (they show one inner corner), 818 next to water. Not done: the inner ring (autotile of the top texture), stairs where a road
-  crosses a cliff, a straight edge at a road.
+  (they show one inner corner), 818 next to water. The inner ring: `drawCliffTop(ctx, heightLevel, autotileIndex, x, y, size)`
+  draws the top texture as an autotile (`cliff-autotile-0.png` to `-2.png`, 96 x 128 px, the same set rule as the pieces) over the
+  own ground of the tile, so the transparent rim shows the biome ground and the inner edge of the band is irregular.
+  `elevation/cliffLayout.ts` (`layoutCliffs(levels, size)`) decides: an inner ring tile is a tile of level 2 or higher without a
+  piece of its own that has a piece of its own level among its eight neighbours; its autotile index comes from the usual
+  eight-neighbour mask where a neighbour counts as set when it is a piece or an inner ring tile of the same level. So a cliff is
+  two tiles wide, the piece and the ring; a plateau of four tiles has no biome ground left inside. A ring tile never has a lower
+  neighbour, so there is never water below its rim (measured on 768 x 768 tiles: 34 738 ring tiles, 0 next to water). `Chunk`
+  computes the levels on a block with a margin of 5 (the reach of 3 of the layout plus 2 of the level cleanup), a chunk gets
+  exactly what the whole map would get (0 differing tiles in 565 504), 0.8 ms per chunk. Not done: stairs where a road crosses
+  a cliff, a straight edge at a road (a road on a ring or piece tile is covered by it).

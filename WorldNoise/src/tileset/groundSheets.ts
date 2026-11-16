@@ -86,15 +86,10 @@ export function drawGroundAutotile(
   screenY: number,
   size: number,
 ): boolean {
-  return drawQuarters(
-    ctx,
-    ground,
-    AUTOTILE_QUARTER_IDS[autotileIndex],
-    animationFrame,
-    screenX,
-    screenY,
-    size,
-  );
+  const sheet = usableSheet(ground);
+  if (!sheet) return false;
+  drawSheetQuarters(ctx, sheet, AUTOTILE_QUARTER_IDS[autotileIndex], animationFrame, screenX, screenY, size);
+  return true;
 }
 
 export function drawGroundUnderlay(
@@ -127,17 +122,15 @@ export function drawGroundUnderlay(
   }
 }
 
-function drawQuarters(
+export function drawSheetQuarters(
   ctx: CanvasRenderingContext2D,
-  ground: Ground,
+  sheet: HTMLImageElement,
   quarterIds: readonly number[],
   animationFrame: number,
   screenX: number,
   screenY: number,
   size: number,
-): boolean {
-  const sheet = usableSheet(ground);
-  if (!sheet) return false;
+): void {
   const firstHalf = Math.floor(size / 2);
   const secondHalf = size - firstHalf;
   for (let quarter = 0; quarter < quarterIds.length; quarter++) {
@@ -154,5 +147,4 @@ function drawQuarters(
       isBottom ? secondHalf : firstHalf,
     );
   }
-  return true;
 }
