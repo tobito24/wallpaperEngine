@@ -49,6 +49,10 @@ function sheetForLevel(heightLevel: number): HTMLImageElement | undefined {
   return sheet && sheet.complete && sheet.naturalWidth > 0 ? sheet : undefined;
 }
 
+export function hasCliffSheet(heightLevel: number): boolean {
+  return sheetForLevel(heightLevel) !== undefined;
+}
+
 export function drawCliff(
   ctx: CanvasRenderingContext2D,
   cliffType: CliffType,

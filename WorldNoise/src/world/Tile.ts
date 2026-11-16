@@ -1,7 +1,7 @@
 import type { Biome } from '../biome/biome';
 import { shadeForHeightLevel } from '../elevation/color';
 import type { CliffType } from '../elevation/heightLevel';
-import { drawCliff } from '../tileset/cliffTiles';
+import { drawCliff, hasCliffSheet } from '../tileset/cliffTiles';
 import { drawOutsideTile } from '../tileset/outsideSheet';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { fallbackColorOf } from '../tileset/ground';
@@ -60,7 +60,7 @@ export class Tile {
       ctx.fillRect(screenX, screenY, size, size);
     }
 
-    if (this.cliffType) {
+    if (this.cliffType && hasCliffSheet(this.heightLevel)) {
       if (this.cliffUnderlays)
         drawGroundUnderlay(ctx, this.cliffUnderlays, animationFrame, screenX, screenY, size);
       drawCliff(ctx, this.cliffType, this.heightLevel, screenX, screenY, size);

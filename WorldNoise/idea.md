@@ -137,7 +137,7 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
   column 1, snowy ones in 1.12 to 1.17). Its layout is still to be verified like the grounds.
 - **Cliff pieces (decided 2026-11-16, the outer ring is built).** A cliff is a band of at least 2 tiles on the higher land: the outer ring
   is the 16-pattern (one 32 px tile per piece, hand-drawn: 3 x 3 frame plus the four inner corners in columns 3 and 4, the layout of
-  `OFFSETS_IN_GROUP` in `cliffTiles.ts`, one file per level, `WorldNoise/assets/cliff-assets/cliff-N.png`), the inner ring is an autotile
+  `OFFSETS_IN_SHEET` in `cliffTiles.ts`, one file per level, `WorldNoise/assets/cliff-assets/cliff-N.png`), the inner ring is an autotile
   of the top texture (generated like the ground sheets) over the biome ground, so the inner edge blends into the plateau. A cliff
   may fall straight into water, but the inner ring never has water under it (its underlay is the own ground of the tile). The
   piece lies on the higher tile, so a plateau must be at least 2 tiles wide; that is why too small
