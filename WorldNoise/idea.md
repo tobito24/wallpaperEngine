@@ -108,10 +108,11 @@ Reason for the shape: an endless world has no global view, so every decision mus
 - **The terrace ring** keeps every cliff one step high where the plateau meets terrain that is two levels away (with three
   levels, plateau 3 next to terrain 1, or the other way round). Around the footprint lies a ring of about 8 tiles (width
   judged by eye). Inside the footprint the level is the plateau level P. Inside the ring the level of a land tile is the base
-  terrain level t limited to P - 1 .. P + 1; water tiles stay water (the ring rule is for land only, so a shore stays a shore
+  terrain level t limited to P - d .. P + d, d = 1 + floor(distance / 2) widening from the footprint outwards (with three levels a fixed
+  d = 1 was enough; with four a fixed one left jumps of two at the outer edge of the ring); water tiles stay water (the ring rule is for land only, so a shore stays a shore
   and the limit never turns water into land next to a high land tile). Then the plateau and the ring differ by at most one
-  step, and the ring and the terrain behind it differ by at most one step, because the limit moves a land level by at most
-  one step and no land level lies beyond it (with more than three land levels this must be looked at again). So the "one step
+  step, and the ring and the terrain behind it differ by at most one step, because the widening limit is one step Lipschitz and beyond the ring
+  no land level is changed any more. So the "one step
   only" rule of the height levels holds around a town, and where the terrain is close to P the ring is the terrain itself,
   so it only shows as a terrace where it is needed.
 - **Open and fenced edges:** on the town side a wall stands only where the plateau and the ring differ. Natural cliffs of the
@@ -125,7 +126,7 @@ Reason for the shape: an endless world has no global view, so every decision mus
 
 Discrete height levels belong to the Pokemon look, so they are part of the plan, not a later extra.
 
-- The redistributed elevation is cut into a few land levels (start: 3) plus water. Cliff walls are drawn where two neighbouring
+- The redistributed elevation is cut into a few land levels (four) plus water. Cliff walls are drawn where two neighbouring
   tiles have different levels.
 - Known risk, from `InfinityWalker` (`CLAUDE.md`: "very mountain-heavy landscapes, not visually pleasing"): cutting noise into
   levels gives speckle (tiny plateaus) and cliffs everywhere. Countermeasures to build and judge by eye: low frequency for the

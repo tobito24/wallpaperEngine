@@ -1,6 +1,7 @@
-import { MAX_HEIGHT_LEVEL, WATER_LEVEL } from './heightLevel';
+import { MAX_HEIGHT_LEVEL, WATER_LEVEL, maxLevelAtWaterDistance, waterClearanceTiles } from './heightLevel';
 
 export const LEVEL_CLEANUP_REACH_TILES = 2;
+export const WATER_LIMIT_REACH_TILES = waterClearanceTiles(MAX_HEIGHT_LEVEL) - 1;
 
 function erode(mask: Uint8Array, size: number): Uint8Array {
   const result = new Uint8Array(mask.length);
@@ -46,4 +47,26 @@ export function cleanHeightLevels(levels: Uint8Array, size: number): Uint8Array 
     }
   }
   return cleaned;
+}
+
+export function limitLevelsNearWater(levels: Uint8Array, size: number): Uint8Array {
+  const limited = levels.slice();
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const index = y * size + x;
+      if (levels[index] <= maxLevelAtWaterDistance(1)) continue;
+      let nearestWater = WATER_LIMIT_REACH_TILES + 1;
+      for (let dy = -WATER_LIMIT_REACH_TILES; dy <= WATER_LIMIT_REACH_TILES; dy++) {
+        for (let dx = -WATER_LIMIT_REACH_TILES; dx <= WATER_LIMIT_REACH_TILES; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+          if (levels[ny * size + nx] === WATER_LEVEL)
+            nearestWater = Math.min(nearestWater, Math.max(Math.abs(dx), Math.abs(dy)));
+        }
+      }
+      limited[index] = Math.min(levels[index], maxLevelAtWaterDistance(nearestWater));
+    }
+  }
+  return limited;
 }

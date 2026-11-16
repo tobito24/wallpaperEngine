@@ -13,6 +13,20 @@ import { redistributeElevation } from './redistribute';
 export const WATER_LEVEL = 0;
 export const MAX_HEIGHT_LEVEL = WATER_LEVEL + 1 + HEIGHT_LEVEL_THRESHOLDS.length;
 
+const FIRST_LEVEL_WITH_WATER_CLEARANCE = 3;
+const WATER_CLEARANCE_PER_LEVEL_TILES = 2;
+
+export function waterClearanceTiles(level: number): number {
+  if (level < FIRST_LEVEL_WITH_WATER_CLEARANCE) return 0;
+  return 1 + WATER_CLEARANCE_PER_LEVEL_TILES * (level - FIRST_LEVEL_WITH_WATER_CLEARANCE + 1);
+}
+
+export function maxLevelAtWaterDistance(distanceTiles: number): number {
+  let level = WATER_LEVEL + 1;
+  while (level < MAX_HEIGHT_LEVEL && waterClearanceTiles(level + 1) <= distanceTiles) level++;
+  return level;
+}
+
 const smoothedElevationNoise = createFractalNoise2D(
   ELEVATION_SEED,
   HEIGHT_LEVEL_OCTAVES,
