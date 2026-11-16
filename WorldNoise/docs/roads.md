@@ -62,13 +62,13 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES
   blends from one to the other: each crossing has the weight 1 on its straight stretch and a cosine fade outside, the lane is the
   curve mixed with the average of the lanes weighted by weight / (1 - weight), which is exactly the lane of the crossing on its stretch).
   A run where the curve is not monotone along the axis in the window is not built. Crossings of different edges whose footprints touch
-  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 333 crossings (175 of them
+  are not resolved (sorted by id, the later one flattens last). Measured on 309 edges in 1 024 x 1 024 tiles: 334 crossings (176 of them
   north/south), of 253 whole footprints 0 differ after the cleanup, 3.1 of 42 tiles changed on average and 8 at most, no jump of two levels
   among land, the road in the lane exactly 3 tiles wide. History: 12 x 11 footprint with the support check at distance 3 gave 48 crossings (148
   without any check, which left box-shaped plateaus and 56 jumps of two levels at their rims), 6 x 7 with a stricter check 180; before the chain
   rule roughly half of the candidates that passed the terrain checks were lost to the spacing of 23; with the chain rule 62 of the 201
   dropped placements overlapped an accepted crossing (cliffs less than 6 tiles apart, no room for two stairs) and 89 could not chain
-  because the lanes of their straight places were too far apart, the case the preferred lane addresses (268 -> 333 crossings).
+  because the lanes of their straight places were too far apart, the case the preferred lane addresses (268 -> 334 crossings).
 - **`road/crossingTerrain.ts`** (new) — `crossingsOf(edges)`, `flattenCrossings(levels, minX, minY, size, crossings)`: sets every tile of
   a footprint to the upper or the lower level of the crossing, a straight edge. `Chunk` does this on its level block before the
   water limit and the cleanup (measured: all 253 footprints inside 1 024 x 1 024 tiles carry exactly their levels after the cleanup; 1.3 ms per chunk).
