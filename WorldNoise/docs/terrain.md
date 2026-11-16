@@ -66,10 +66,10 @@ each have octaves, base frequency, persistence, lacunarity, raw range low/high a
   `ELEVATION_SEA_LEVEL`), land gets level 1..N from a *smoothed* elevation, i.e. the same seed with only
   `HEIGHT_LEVEL_OCTAVES` (2) octaves, redistributed like the full elevation and cut at `HEIGHT_LEVEL_THRESHOLDS`.
   Same seed means the smoothed field is the low-frequency part of the full one, so levels and ground stay
-  correlated. `cliffTypeOf(level, neighbours)` gives the cliff piece of a land tile that has a *higher* neighbour (InfinityWalker's
-  `getCliffType`: the piece lies on the lower tile; two orthogonal higher neighbours at a right angle make an inner
-  corner, otherwise the first higher side makes an edge named by the side it goes down to, only a diagonal one makes an outer corner; null without a
-  higher neighbour). Water is never a cliff, a shore is a ground transition. Neighbouring land levels differ by at most one step (checked on 1 000 000
+  correlated. `cliffTypeOf(level, neighbours)` gives the cliff piece of a tile at level 2 or higher that has a *lower*
+  neighbour, water included (the piece lies on the higher tile; two orthogonal lower neighbours make an outer corner, one makes an edge
+  named by the side it goes down to, only a lower diagonal makes an inner corner, null without a lower neighbour). Level 1 has no
+  piece: its border with water is a ground transition, a shore. A cliff may fall straight into water. Neighbouring land levels differ by at most one step (checked on 1 000 000
   tiles with the thresholds 0.55 and 0.8; with all 4 octaves a few jumps of two appeared). Why smoothed and not a
   filter: a 5 x 5 majority filter on the levels was measured and made it worse (tiny interior plateaus 16 to 198 in
   600 x 600 tiles at the old terrain scale), because it breaks the narrow middle band into pieces. Both noises use

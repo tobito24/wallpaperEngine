@@ -135,11 +135,12 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
   the terrace ring enforces it.
 - A cliff wall is a drawing rule of the render layer, using the cliff blocks of the sheet (brown walls and wooden stairs in
   column 1, snowy ones in 1.12 to 1.17). Its layout is still to be verified like the grounds.
-- **Cliff pieces (decided 2026-11-16, not built yet).** A cliff is a band of at least 2 tiles on the higher land: the outer ring
+- **Cliff pieces (decided 2026-11-16, the outer ring is built).** A cliff is a band of at least 2 tiles on the higher land: the outer ring
   is the 16-pattern (one 32 px tile per piece, hand-drawn: 3 x 3 frame plus the four inner corners in columns 3 and 4, the layout of
-  `OFFSETS_IN_GROUP` in `cliffTiles.ts`, one file per level, `WorldNoise/assets/cliffs/cliff-N.png`), the inner ring is an autotile
-  of the top texture (generated like the ground sheets) over the biome ground, so the inner edge blends into the plateau. The
-  piece lies on the higher tile (today on the lower one), so a plateau must be at least 2 tiles wide; that is why too small
+  `OFFSETS_IN_GROUP` in `cliffTiles.ts`, one file per level, `WorldNoise/assets/cliff-assets/cliff-N.png`), the inner ring is an autotile
+  of the top texture (generated like the ground sheets) over the biome ground, so the inner edge blends into the plateau. A cliff
+  may fall straight into water, but the inner ring never has water under it (its underlay is the own ground of the tile). The
+  piece lies on the higher tile, so a plateau must be at least 2 tiles wide; that is why too small
   plateaus are cleaned (`levelCleanup.ts`). Where a road meets a cliff the edge must be straight for the stairs, which changes the
   level map around the crossing (the road mask is independent of the levels today).
 - Roads cross a level change on stairs. A town footprint is flattened by the plateau override (see Paths and towns).
@@ -253,7 +254,8 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Cliff pieces for the east, west and north side from the rock kit of the private `Outside` tileset; corners by laying two pieces over each other
 - [x] Cliffs redone with the 12 stone pieces of `InfinityWalker/img/tileset.png` (edges, outer and inner corners, one set per level); the Outside rim pieces did not fit together
 - [x] Plateaus and lower land at least 2 tiles wide (`elevation/levelCleanup.ts`), the base for the 16-pattern cliff pieces
-- [ ] Cliffs as a band: 16-pattern pieces on the higher tile (outer ring) and a top-texture autotile over the biome ground (inner ring)
+- [x] Cliffs, outer ring: 16-pattern pieces on the higher tile, from `assets/cliff-assets/cliff-N.png`, the lower neighbour under the corners
+- [ ] Cliffs, inner ring: a top-texture autotile over the biome ground (`cliff-autotile-N.png`), never water under it
 - [ ] A straight cliff edge where a road meets a cliff, then stairs
 - [ ] Stairs where a road crosses a cliff
 - [ ] Rule-based decoration

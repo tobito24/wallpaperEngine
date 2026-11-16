@@ -18,6 +18,7 @@ export class Tile {
   readonly ground: Ground;
   readonly autotileIndex: number;
   readonly underlays: readonly (Ground | null)[] | null;
+  readonly cliffUnderlays: readonly (Ground | null)[] | null;
   readonly decoration: SheetTile | null;
 
   constructor(
@@ -30,6 +31,7 @@ export class Tile {
     ground: Ground,
     autotileIndex: number,
     underlays: readonly (Ground | null)[] | null,
+    cliffUnderlays: readonly (Ground | null)[] | null,
     decoration: SheetTile | null,
   ) {
     this.worldX = worldX;
@@ -41,6 +43,7 @@ export class Tile {
     this.ground = ground;
     this.autotileIndex = autotileIndex;
     this.underlays = underlays;
+    this.cliffUnderlays = cliffUnderlays;
     this.decoration = decoration;
   }
 
@@ -57,7 +60,11 @@ export class Tile {
       ctx.fillRect(screenX, screenY, size, size);
     }
 
-    if (this.cliffType) drawCliff(ctx, this.cliffType, this.heightLevel, screenX, screenY, size);
+    if (this.cliffType) {
+      if (this.cliffUnderlays)
+        drawGroundUnderlay(ctx, this.cliffUnderlays, animationFrame, screenX, screenY, size);
+      drawCliff(ctx, this.cliffType, this.heightLevel, screenX, screenY, size);
+    }
 
     if (this.decoration) drawOutsideTile(ctx, this.decoration, screenX, screenY, size);
 
