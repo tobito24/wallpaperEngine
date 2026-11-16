@@ -3,6 +3,7 @@ import {
   CROSSING_BOUNDARY_SEARCH_TILES,
   CROSSING_HALF_LENGTH_TILES,
   CROSSING_MAX_LANE_SHIFT_TILES,
+  CROSSING_MIN_APPROACH_TILES,
   CROSSING_STRAIGHTENING_STEP_TILES,
 } from '../config/constants';
 import type { Point } from '../skeleton/cellGrid';
@@ -27,8 +28,8 @@ function pointAt(travel: number, lane: number, crossing: RoadCrossing): Point {
   return crossing.travelAxis === 'x' ? { x: travel, y: lane } : { x: lane, y: travel };
 }
 
-function weightAt(distanceFromBoundary: number): number {
-  const fade = (distanceFromBoundary - CROSSING_HALF_LENGTH_TILES) / CROSSING_APPROACH_TILES;
+function weightAt(distanceFromBoundary: number, approachTiles: number): number {
+  const fade = (distanceFromBoundary - CROSSING_HALF_LENGTH_TILES) / approachTiles;
   if (fade <= 0) return 1;
   return (1 + Math.cos(Math.min(1, fade) * Math.PI)) / 2;
 }
@@ -60,6 +61,8 @@ interface CrossingInRun {
   readonly progress: number;
   readonly laneBefore: number;
   readonly laneAfter: number;
+  readonly approachBefore: number;
+  readonly approachAfter: number;
 }
 
 interface Sample {
@@ -72,12 +75,32 @@ function laneOnSide(crossing: RoadCrossing, side: Side): number {
   return side === crossing.upperSide ? upperLane : upperLane + lowerSideLaneOffsetTiles(crossing);
 }
 
-function crossingInRun(crossing: RoadCrossing, anchor: RoadCrossing, direction: number): CrossingInRun {
+function crossingInRun(
+  crossing: RoadCrossing,
+  anchor: RoadCrossing,
+  direction: number,
+  curveStartProgress: number,
+  curveEndProgress: number,
+): CrossingInRun | null {
   const sideBeforeBoundary: Side = direction === 1 ? -1 : 1;
+  const progress = direction * (crossing.boundary - anchor.boundary);
+  const approachBefore = Math.min(
+    CROSSING_APPROACH_TILES,
+    progress - CROSSING_HALF_LENGTH_TILES - curveStartProgress,
+  );
+  const approachAfter = Math.min(
+    CROSSING_APPROACH_TILES,
+    curveEndProgress - progress - CROSSING_HALF_LENGTH_TILES,
+  );
+  if (approachBefore < CROSSING_MIN_APPROACH_TILES || approachAfter < CROSSING_MIN_APPROACH_TILES) {
+    return null;
+  }
   return {
-    progress: direction * (crossing.boundary - anchor.boundary),
+    progress,
     laneBefore: laneOnSide(crossing, sideBeforeBoundary),
     laneAfter: laneOnSide(crossing, direction === 1 ? 1 : -1),
+    approachBefore,
+    approachAfter,
   };
 }
 
@@ -93,7 +116,8 @@ function blendedLane(sample: Sample, rawLane: number, crossings: readonly Crossi
   let sharpenedSum = 0;
   let sharpenedLaneSum = 0;
   for (const crossing of crossings) {
-    const weight = weightAt(Math.abs(sample.progress - crossing.progress));
+    const approach = sample.progress < crossing.progress ? crossing.approachBefore : crossing.approachAfter;
+    const weight = weightAt(Math.abs(sample.progress - crossing.progress), approach);
     const lane = targetLane(crossing, sample);
     if (weight === 1) return lane;
     untouched *= 1 - weight;
@@ -106,8 +130,10 @@ function blendedLane(sample: Sample, rawLane: number, crossings: readonly Crossi
 }
 
 function samplesOf(crossings: readonly CrossingInRun[]): Sample[] {
-  const first = crossings[0].progress - WINDOW_HALF_LENGTH_TILES;
-  const last = crossings[crossings.length - 1].progress + WINDOW_HALF_LENGTH_TILES;
+  const firstCrossing = crossings[0];
+  const lastCrossing = crossings[crossings.length - 1];
+  const first = firstCrossing.progress - CROSSING_HALF_LENGTH_TILES - firstCrossing.approachBefore;
+  const last = lastCrossing.progress + CROSSING_HALF_LENGTH_TILES + lastCrossing.approachAfter;
   const samples = new Map<string, Sample>();
   const add = (progress: number, isAfterBoundary: boolean): void => {
     samples.set(`${progress}:${isAfterBoundary}`, { progress, isAfterBoundary });
@@ -140,27 +166,42 @@ export function straightenThrough(
   );
   const progressOf = (index: number): number =>
     direction * (alongTravel(polyline[index], anchor) - anchor.boundary);
-  const crossings = run.map((crossing) => crossingInRun(crossing, anchor, direction));
+  const curveStartProgress = progressOf(0);
+  const curveEndProgress = progressOf(polyline.length - 1);
+  const crossings: CrossingInRun[] = [];
+  for (const crossing of run) {
+    const inRun = crossingInRun(crossing, anchor, direction, curveStartProgress, curveEndProgress);
+    if (inRun === null) return null;
+    crossings.push(inRun);
+  }
   for (let index = 1; index < crossings.length; index++) {
     if (crossings[index].progress <= crossings[index - 1].progress) return null;
   }
-  const windowStart = crossings[0].progress - WINDOW_HALF_LENGTH_TILES;
-  const windowEnd = crossings[crossings.length - 1].progress + WINDOW_HALF_LENGTH_TILES;
+  const windowStart = crossings[0].progress - CROSSING_HALF_LENGTH_TILES - crossings[0].approachBefore;
+  const lastCrossing = crossings[crossings.length - 1];
+  const windowEnd = lastCrossing.progress + CROSSING_HALF_LENGTH_TILES + lastCrossing.approachAfter;
 
   let firstOutside = throughIndex;
   while (progressOf(firstOutside) >= windowStart) {
-    if (firstOutside === 0 || progressOf(firstOutside - 1) >= progressOf(firstOutside)) return null;
+    if (firstOutside === 0) {
+      firstOutside = -1;
+      break;
+    }
+    if (progressOf(firstOutside - 1) >= progressOf(firstOutside)) return null;
     firstOutside--;
   }
   let lastOutside = throughIndex + 1;
   while (progressOf(lastOutside) <= windowEnd) {
-    if (lastOutside === polyline.length - 1 || progressOf(lastOutside + 1) <= progressOf(lastOutside))
-      return null;
+    if (lastOutside === polyline.length - 1) {
+      lastOutside = polyline.length;
+      break;
+    }
+    if (progressOf(lastOutside + 1) <= progressOf(lastOutside)) return null;
     lastOutside++;
   }
 
   const rawLaneAtProgress = (progress: number): number => {
-    let index = firstOutside;
+    let index = Math.max(firstOutside, 0);
     while (progressOf(index + 1) < progress) index++;
     const from = progressOf(index);
     const t = (progress - from) / (progressOf(index + 1) - from);

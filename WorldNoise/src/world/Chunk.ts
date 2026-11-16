@@ -29,6 +29,9 @@ import { continuesInto, underlayGround } from '../tileset/groundRank';
 import { Tile } from './Tile';
 
 const BORDER_COLOR = '#ffcc00';
+const CHUNK_LABEL_FONT = '12px monospace';
+const CHUNK_LABEL_OFFSET_PX = 4;
+const CHUNK_LABEL_BASELINE_PX = 14;
 const PADDED_SIZE = CHUNK_SIZE + 2;
 const LEVEL_BLOCK_MARGIN = CLIFF_LAYOUT_REACH_TILES + LEVEL_CLEANUP_REACH_TILES + WATER_LIMIT_REACH_TILES;
 const PADDING = 1;
@@ -191,5 +194,12 @@ export class Chunk {
     ctx.strokeStyle = BORDER_COLOR;
     ctx.lineWidth = 1;
     ctx.strokeRect(screenX + 0.5, screenY + 0.5, sizePx - 1, sizePx - 1);
+    ctx.font = CHUNK_LABEL_FONT;
+    ctx.fillStyle = BORDER_COLOR;
+    ctx.fillText(
+      `${this.chunkX},${this.chunkY}`,
+      screenX + CHUNK_LABEL_OFFSET_PX,
+      screenY + CHUNK_LABEL_BASELINE_PX,
+    );
   }
 }

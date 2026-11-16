@@ -8,7 +8,6 @@ const MARKER_COLORS: Readonly<Record<CrossingOutcome, string>> = {
   overlap: '#ff3b30',
   tooExpensive: '#ff9500',
   water: '#0a84ff',
-  town: '#bf5af2',
   curve: '#ff2d92',
 };
 
@@ -18,7 +17,6 @@ const OUTCOME_LABELS: Readonly<Record<CrossingOutcome, string>> = {
   overlap: 'too close to a stair',
   tooExpensive: 'too much to flatten',
   water: 'water near',
-  town: 'town',
   curve: 'road curve',
 };
 
