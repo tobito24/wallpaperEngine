@@ -33,7 +33,9 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   (4). The nodes come from `town/townNodes.ts`. At a town the bent
   line ends at the gate of the town (`town/townGates.ts`, the side towards the neighbouring cell) and a straight segment
   leads from the gate to the town node, so a road still ends at the centre of a town and runs straight inside the plateau.
-  A road stays inside the two cells of its nodes (nodes are at least 16 tiles from the cell edge, the bend is at most 6).
+  A road stays inside the two cells of its nodes (nodes are at least 16 tiles from the cell edge, the bend is at most 6). With the gates (and without the fade of the bend near a
+  town) the stairs on the 309 edges of 1 024 x 1 024 tiles went from 571 to 559: no straight edge 53 -> 99, road curve 15 -> 33; the road meets the ring of a
+  town at the angle of the neighbour again, which the path finder of road planning 3 replaces.
 - **`road/roadEdge.ts`** (new) — `roadEdge(ax, ay, bx, by)`: the curve of an edge plus its crossings, cached per edge
   (`ROAD_EDGE_CACHE_MAX_ENTRIES`, 5 000); `roadEdgesIn(minX, minY, width, height)`: the edges of the east and south side of every cell around
   a rectangle (a road stays at least 10 tiles away from the border of its cells, so a crossing footprint, at most 10 tiles from the road
