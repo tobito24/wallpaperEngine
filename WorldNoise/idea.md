@@ -46,8 +46,8 @@ Reason for the shape: an endless world has no global view, so every decision mus
   two towns of neighbouring cells are at least 32 tiles apart (more if they are smaller or sit off centre), the 8 tile terrace
   ring around a town stays inside its cell, and no two plateaus can touch. Longer roads between towns are wanted. Each cell
   has one node.
-- A node is either a **town candidate** or a plain **waypoint**. The position of a waypoint is jittered by
-  `hash(seed, cx, cy)`; the node of a town is the centre of the footprint chunk nearest to the centroid of the footprint
+- A node is either a **town candidate** or a plain **waypoint**. The position of a waypoint is the best land of 48 hashed
+  candidates in its cell (road planning 1; before it was one hashed point); the node of a town is the centre of the footprint chunk nearest to the centroid of the footprint
   (for an L or T this lies inside the town; for an even sized shape it is 8 tiles off the exact centre), and the roads of the
   neighbours run to that node.
 - Each edge to a neighbour cell exists by `hash(edge id)`, so both cells agree without knowing each other.
@@ -141,7 +141,7 @@ on 232 road edges of 1 024 x 1 024 tiles (the numbers of the old state are in `d
 
 Decisions:
 
-1. **Waypoint nodes sit on the best land.** The node of a waypoint cell is the best of 16 candidate tiles drawn uniformly from the
+1. **Waypoint nodes sit on the best land.** The node of a waypoint cell is the best of 48 candidate tiles (16 left 14 of 93 nodes within 3 tiles of a level change, 48 leave 3) drawn uniformly from the
    node area of the cell by hash: the one with the largest clearance, the Chebyshev distance to the nearest tile of another
    base level or to water, searched up to 8 tiles (a tile in water has clearance 0, ties go to the lower candidate index).
    It reads the base level only (`heightLevelAt`, never the crossings, which come after the roads), like the town candidates
@@ -317,7 +317,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Choose `CHUNK_SIZE` and cell size together so a cell is a whole number of chunks (16 tiles per chunk, 5 x 5 chunks per cell)
 - [x] Path graph: cell nodes, edge hashes, degree rule, bent roads (replaced by road planning 3), bridges (waypoint nodes only, the bridge is a flat color)
 - [x] Stairs where a road crosses a level change (crossings of the bent road, see Road planning for the next stage)
-- [ ] Road planning 1: waypoint nodes on the best land (largest clearance of 16 hashed candidates)
+- [x] Road planning 1: waypoint nodes on the best land (largest clearance of 48 hashed candidates)
 - [ ] Road planning 2: town gates, one per side with an edge, the planner starts there (straight road to the node inside until the street grid exists)
 - [ ] Road planning 3: grid path finder with stairs as crossing rules, replacing the bent line, the walk for crossings and the straightening
 - [ ] Road planning 4: rounded corners and gentle waves on long straights outside towns

@@ -53,6 +53,14 @@ Paths and towns.
   A building that finds no place is left out, the Center too (a small or heavily eroded town can end up without one; the road layout step has to guarantee it). The road layer is read by the layout, never the other way round. `Tile` draws the
   piece (`tileset/outsideSheet.ts`, `drawOutsideTile`) after the cliff and before the level shade. Not done: the layout
   of the roads themselves (loop, fountain, side paths, gates), trees and fences; no fountain was found in the sheet yet.
+- **`town/waypointNodes.ts`** (new) — `waypointPosition(cx, cy)`: the node of a cell without a town. 48 candidate tiles are drawn
+  uniformly from the node area of the cell by hash (`node:cx:cy:index:x|y`); each gets a clearance, the Chebyshev distance to the nearest
+  tile of another base level (`heightLevelAt` of the noise, not the cleaned levels and no crossings) or to water, searched up to 8 tiles
+  (a tile in water has 0, a tile with nothing in reach 9); the candidate with the largest clearance wins, the lower index on a tie. The
+  node area lies 16 tiles inside the cell and the radius is 8, so only the own cell is read. Cached per cell, about 1.7 ms per cell cold.
+  Measured on 93 waypoint cells (13 x 13 cells, one seed): before (a random point) 21 % of all nodes lay in water and 28 % within 3 tiles of
+  a level change; now none of the waypoint nodes lies in water and 3 of 93 have a clearance of 3 or less (16 candidates: 14 of 93, so 48).
+  Stairs on the 309 edges of 1 024 x 1 024 tiles: 551 -> 571, failures of the kinds road curve 53 -> 15, no straight edge 79 -> 53, water 3 -> 1.
 - **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint;
   `straightRoadRadiusOf`: the straight radius of the town, or null for a waypoint. The road layer reads these; the town
   does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not built

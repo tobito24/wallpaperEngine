@@ -25,24 +25,21 @@ const NEIGHBOUR_STEPS: readonly (readonly [number, number])[] = [
   [0, -1],
 ];
 
-const waypointCache = new Map<string, Point>();
 const edgeValueCache = new Map<string, number>();
 
 export function cellIndexOf(tile: number): number {
   return Math.floor(tile / CELL_SIZE_TILES);
 }
 
-export function waypointPosition(cx: number, cy: number): Point {
-  return remember(waypointCache, SKELETON_CACHE_MAX_ENTRIES, `${cx},${cy}`, () => ({
-    x:
-      cx * CELL_SIZE_TILES +
-      NODE_AREA_MARGIN_TILES +
-      randomValue(`node:${cx}:${cy}:x`) * NODE_AREA_SIZE_TILES,
-    y:
-      cy * CELL_SIZE_TILES +
-      NODE_AREA_MARGIN_TILES +
-      randomValue(`node:${cx}:${cy}:y`) * NODE_AREA_SIZE_TILES,
-  }));
+export function nodeAreaOf(
+  cx: number,
+  cy: number,
+): { readonly minX: number; readonly minY: number; readonly size: number } {
+  return {
+    minX: cx * CELL_SIZE_TILES + NODE_AREA_MARGIN_TILES,
+    minY: cy * CELL_SIZE_TILES + NODE_AREA_MARGIN_TILES,
+    size: NODE_AREA_SIZE_TILES,
+  };
 }
 
 export function isEdgeOrdered(ax: number, ay: number, bx: number, by: number): boolean {
