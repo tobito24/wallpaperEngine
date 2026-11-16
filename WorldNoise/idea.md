@@ -152,7 +152,7 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
   tile into the lower one for 4 rows, the stairs lie over it, the road below is shifted one row south of the road above (both
   variants, the stairs are drawn diagonally) and both ends of the road finish straight at the stairs. A road may end at a cliff or go around it when no stairs fit.
   Step 1 (built): a *crossing* is where a road passes a level change; the road is straightened around it and the level map
-  flattened to a straight edge; step 2: the north/south overlay; step 3: the east/west bulge, overlay and road shift. Bridges later.
+  flattened to a straight edge; step 2 (built): the north/south overlay on the three road tiles of the straight edge, `stairs.png` rows 4 and 5; step 3: the east/west bulge, overlay and road shift. Bridges later.
   Decoration is never placed on a wall.
 - **Terrain scale:** the elevation and the level field use base frequency 0.01, features of about 100 tiles, so that a
   town of 2 x 2 to 3 x 3 chunks fits inside a landmass (at 0.02 hardly any footprint is mostly land). The measured values
@@ -266,7 +266,8 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Cliffs, outer ring: 16-pattern pieces on the higher tile, from `assets/cliff-assets/cliff-N.png`, the lower neighbour under the corners
 - [x] Cliffs, inner ring: a top-texture autotile over the biome ground (`cliff-autotile-N.png`), never water under it
 - [x] A straight cliff edge where a road meets a cliff (road crossings: road straightened, level map flattened)
-- [ ] Stairs where a road crosses a cliff: north/south overlay, then east/west with the bulge and the road shift
+- [x] Stairs where a road crosses a cliff, north/south: overlay of `stairs.png` on the straight cliff piece
+- [ ] Stairs, east/west: bulge in the level map, 2 x 4 overlay, road one row south of the road above
 - [ ] Rule-based decoration
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
 - [x] A ground per biome: one ground per biome (rank order, sheet table into `assets/autotiles/`), flat color where a sheet is missing
