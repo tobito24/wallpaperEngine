@@ -46,7 +46,9 @@ if (
   Math.max(
     CROSSING_HALF_LENGTH_TILES + CROSSING_BOUNDARY_SEARCH_TILES,
     CROSSING_HALF_WIDTH_TILES + CROSSING_MAX_LANE_SHIFT_TILES,
-  ) >= MAX_FOOTPRINT_REACH_TILES
+  ) +
+    1 >
+  MAX_FOOTPRINT_REACH_TILES
 ) {
   throw new Error('A crossing footprint must stay closer to its road than a road to the edge of its cell');
 }

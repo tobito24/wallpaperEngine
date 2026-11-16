@@ -37,8 +37,8 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_HALF_WIDTH_TILES
   (nodes are at least 16 tiles from the cell edge, the bend is at most 6).
 - **`road/roadEdge.ts`** (new) — `roadEdge(ax, ay, bx, by)`: the curve of an edge plus its crossings, cached per edge
   (`ROAD_EDGE_CACHE_MAX_ENTRIES`, 5 000); `roadEdgesIn(minX, minY, width, height)`: the edges of the east and south side of every cell around
-  a rectangle (a road stays at least 10 tiles away from the border of its cells, so a crossing footprint, at most 9 tiles from the road
-  (`CROSSING_HALF_WIDTH_TILES` plus `CROSSING_MAX_LANE_SHIFT_TILES`), never reaches into a cell this misses; checked when the modules load).
+  a rectangle (a road stays at least 10 tiles away from the border of its cells, so a crossing footprint, at most 10 tiles from the road
+  (`CROSSING_HALF_WIDTH_TILES` plus `CROSSING_MAX_LANE_SHIFT_TILES` plus one for the rounding of the lane), never reaches into a cell this misses; checked when the modules load).
 - **`road/roadCrossing.ts`, `road/roadStraightening.ts`** (new) — a *crossing* is a level change along the curve of a road. The curve is walked
   in steps of `CROSSING_SAMPLE_STEP_TILES` (0.5) over the terrain level before cleanup (noise level with the town override). A change
   is a candidate when the higher level is at least 2 (a cliff exists) and the lower one is land. The road travels along the axis it moves
