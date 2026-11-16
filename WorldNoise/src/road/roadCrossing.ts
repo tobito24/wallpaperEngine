@@ -29,6 +29,11 @@ export interface RoadCrossing {
   readonly lowerLevel: number;
 }
 
+export type CrossingOutcome =
+  'stairs' | 'noBoundary' | 'overlap' | 'tooExpensive' | 'water' | 'town' | 'curve';
+export type PlacementFailure = 'noBoundary' | 'overlap' | 'tooExpensive' | 'water' | 'town';
+export type Placement = { readonly placed: RoadCrossing } | { readonly failure: PlacementFailure };
+
 export interface TileRectangle {
   readonly minX: number;
   readonly minY: number;
@@ -37,6 +42,13 @@ export interface TileRectangle {
 }
 
 const FIRST_CLIFF_LEVEL = 2;
+const FAILURE_STAGE: Readonly<Record<PlacementFailure, number>> = {
+  noBoundary: 0,
+  overlap: 1,
+  tooExpensive: 2,
+  water: 3,
+  town: 3,
+};
 export const EAST_WEST_STAIRS_ROWS = 4;
 export const EAST_WEST_STAIRS_FIRST_ROW_OFFSET_TILES = -1;
 const MAX_FOOTPRINT_REACH_TILES = CELL_BUFFER_CHUNKS * CHUNK_SIZE - ROAD_BEND_MAX_TILES;
@@ -138,20 +150,20 @@ function waterReachTiles(crossing: RoadCrossing): number {
   return Math.max(0, clearance - 1);
 }
 
-function isBuildable(crossing: RoadCrossing): boolean {
+function buildFailure(crossing: RoadCrossing): 'water' | 'town' | null {
   const { minX, minY, width, height } = footprintOf(crossing);
   const reach = waterReachTiles(crossing);
   for (let y = minY - reach; y < minY + height + reach; y++) {
     for (let x = minX - reach; x < minX + width + reach; x++) {
-      if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return false;
+      if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return 'water';
     }
   }
   for (let y = minY; y < minY + height; y++) {
     for (let x = minX; x < minX + width; x++) {
-      if (townInfoAt(x, y) !== null) return false;
+      if (townInfoAt(x, y) !== null) return 'town';
     }
   }
-  return true;
+  return null;
 }
 
 function oppositeOf(side: Side): Side {
@@ -197,20 +209,36 @@ export function placeCrossing(
   candidate: RoadCrossing,
   preferredLane: number,
   isAllowed: (placed: RoadCrossing) => boolean,
-): RoadCrossing | null {
+): Placement {
   let best: RoadCrossing | null = null;
   let bestCost = CROSSING_MAX_FLATTENED_TILES + 1;
+  let failure: PlacementFailure = 'noBoundary';
+  const fail = (reason: PlacementFailure): void => {
+    if (FAILURE_STAGE[reason] > FAILURE_STAGE[failure]) failure = reason;
+  };
   for (const lane of lanesNear(candidate, preferredLane)) {
     const boundary = boundaryAtLane(candidate, lane);
     if (boundary === null) continue;
     const placed = { ...candidate, id: `${candidate.travelAxis}:${boundary}:${lane}`, boundary, lane };
-    if (!isAllowed(placed)) continue;
+    if (!isAllowed(placed)) {
+      fail('overlap');
+      continue;
+    }
     const cost = tilesToFlatten(placed);
-    if (cost >= bestCost || !isBuildable(placed)) continue;
+    if (cost > CROSSING_MAX_FLATTENED_TILES) {
+      fail('tooExpensive');
+      continue;
+    }
+    if (cost >= bestCost) continue;
+    const blocked = buildFailure(placed);
+    if (blocked !== null) {
+      fail(blocked);
+      continue;
+    }
     best = placed;
     bestCost = cost;
   }
-  return best;
+  return best === null ? { failure } : { placed: best };
 }
 
 export function crossingCandidates(curve: readonly Point[]): RoadCrossing[] {

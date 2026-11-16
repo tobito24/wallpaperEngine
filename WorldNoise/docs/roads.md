@@ -80,6 +80,12 @@ the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TIL
   by one row in the middle of the stairs and both roads end straight at the stairs (measured: the road tiles next to the stairs are
   exactly rows lane - 1 to lane + 1 on the upper side and lane to lane + 2 on the lower side in all of them). `chainsOnto` adds that offset to the
   lane difference.
+  `placeCrossing` returns the placement or the reason it failed (`noBoundary`, `overlap`, `tooExpensive`, `water`, `town`; the reason of the
+  furthest stage any lane reached), `buildEdge` adds `curve` where the straightening fails and `stairs` where a crossing was built;
+  these are kept per edge as `candidateOutcomes` for the debug overlay (see [world-and-render.md](world-and-render.md)). Measured on
+  309 edges in 1 024 x 1 024 tiles, 1 278 places where a road changes its level: 301 stairs, 298 town, 270 too much to flatten, 229 too close
+  to a stair, 92 road curve, 79 no straight edge, 9 water (a place is counted once per crossing of the curve, so a road that wiggles over a cliff counts
+  several times).
 - **`road/crossingTerrain.ts`** (new) — `crossingsOf(edges)`, `flattenCrossings(levels, minX, minY, size, crossings)`: sets every tile of
   a footprint to the upper or the lower level of the crossing, a straight edge. `Chunk` does this on its level block before the
   water limit and the cleanup (measured: all 227 footprints inside 1 024 x 1 024 tiles carry exactly their levels after the cleanup; 1.8 ms per chunk).
