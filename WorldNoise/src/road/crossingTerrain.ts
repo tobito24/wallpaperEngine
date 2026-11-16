@@ -1,4 +1,4 @@
-import { footprintOf } from './roadCrossing';
+import { footprintOf, plannedLevelAt } from './roadCrossing';
 import type { RoadCrossing } from './roadCrossing';
 import type { RoadEdge } from './roadEdge';
 
@@ -26,9 +26,7 @@ export function flattenCrossings(
     const lastY = Math.min(minY + size - 1, footprint.minY + footprint.height - 1);
     for (let y = firstY; y <= lastY; y++) {
       for (let x = firstX; x <= lastX; x++) {
-        const side = (crossing.travelAxis === 'x' ? x : y) >= crossing.boundary ? 1 : -1;
-        levels[(y - minY) * size + (x - minX)] =
-          side === crossing.upperSide ? crossing.upperLevel : crossing.lowerLevel;
+        levels[(y - minY) * size + (x - minX)] = plannedLevelAt(crossing, x, y);
       }
     }
   }

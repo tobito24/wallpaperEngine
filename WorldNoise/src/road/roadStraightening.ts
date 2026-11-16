@@ -1,8 +1,8 @@
 import {
   CROSSING_APPROACH_TILES,
   CROSSING_BOUNDARY_SEARCH_TILES,
-  CROSSING_MAX_LANE_SHIFT_TILES,
   CROSSING_HALF_LENGTH_TILES,
+  CROSSING_MAX_LANE_SHIFT_TILES,
   CROSSING_STRAIGHTENING_STEP_TILES,
 } from '../config/constants';
 import type { Point } from '../skeleton/cellGrid';
@@ -26,7 +26,7 @@ function pointAt(travel: number, lane: number, crossing: RoadCrossing): Point {
   return crossing.travelAxis === 'x' ? { x: travel, y: lane } : { x: lane, y: travel };
 }
 
-function easedWeight(distanceFromBoundary: number): number {
+function weightAt(distanceFromBoundary: number): number {
   const fade = (distanceFromBoundary - CROSSING_HALF_LENGTH_TILES) / CROSSING_APPROACH_TILES;
   if (fade <= 0) return 1;
   return (1 + Math.cos(Math.min(1, fade) * Math.PI)) / 2;
@@ -55,44 +55,86 @@ function indexOfSegmentThroughBoundary(polyline: readonly Point[], crossing: Roa
   return best;
 }
 
-export function straightenAt(polyline: readonly Point[], crossing: RoadCrossing): readonly Point[] | null {
-  const throughIndex = indexOfSegmentThroughBoundary(polyline, crossing);
+function blendedLane(
+  progress: number,
+  rawLane: number,
+  crossingProgresses: readonly number[],
+  crossingLanes: readonly number[],
+): number {
+  let untouched = 1;
+  let sharpenedSum = 0;
+  let sharpenedLaneSum = 0;
+  for (let index = 0; index < crossingProgresses.length; index++) {
+    const weight = weightAt(Math.abs(progress - crossingProgresses[index]));
+    if (weight === 1) return crossingLanes[index];
+    untouched *= 1 - weight;
+    const sharpened = weight / (1 - weight);
+    sharpenedSum += sharpened;
+    sharpenedLaneSum += sharpened * crossingLanes[index];
+  }
+  if (sharpenedSum === 0) return rawLane;
+  return rawLane * untouched + (sharpenedLaneSum / sharpenedSum) * (1 - untouched);
+}
+
+function sampleProgresses(crossingProgresses: readonly number[]): number[] {
+  const first = crossingProgresses[0] - WINDOW_HALF_LENGTH_TILES;
+  const last = crossingProgresses[crossingProgresses.length - 1] + WINDOW_HALF_LENGTH_TILES;
+  const samples = new Set<number>([last]);
+  for (let progress = first; progress < last; progress += CROSSING_STRAIGHTENING_STEP_TILES) {
+    samples.add(progress);
+  }
+  for (const crossingProgress of crossingProgresses) {
+    samples.add(crossingProgress - CROSSING_HALF_LENGTH_TILES);
+    samples.add(crossingProgress + CROSSING_HALF_LENGTH_TILES);
+  }
+  return [...samples].sort((a, b) => a - b);
+}
+
+export function straightenThrough(
+  polyline: readonly Point[],
+  run: readonly RoadCrossing[],
+): readonly Point[] | null {
+  const anchor = run[0];
+  const throughIndex = indexOfSegmentThroughBoundary(polyline, anchor);
   if (throughIndex < 0) return null;
 
   const direction = Math.sign(
-    alongTravel(polyline[throughIndex + 1], crossing) - alongTravel(polyline[throughIndex], crossing),
+    alongTravel(polyline[throughIndex + 1], anchor) - alongTravel(polyline[throughIndex], anchor),
   );
   const progressOf = (index: number): number =>
-    direction * (alongTravel(polyline[index], crossing) - crossing.boundary);
+    direction * (alongTravel(polyline[index], anchor) - anchor.boundary);
+  const crossingProgresses = run.map((crossing) => direction * (crossing.boundary - anchor.boundary));
+  const crossingLanes = run.map((crossing) => crossing.lane + 0.5);
+  for (let index = 1; index < crossingProgresses.length; index++) {
+    if (crossingProgresses[index] <= crossingProgresses[index - 1]) return null;
+  }
+  const windowStart = crossingProgresses[0] - WINDOW_HALF_LENGTH_TILES;
+  const windowEnd = crossingProgresses[crossingProgresses.length - 1] + WINDOW_HALF_LENGTH_TILES;
 
   let firstOutside = throughIndex;
-  while (progressOf(firstOutside) >= -WINDOW_HALF_LENGTH_TILES) {
+  while (progressOf(firstOutside) >= windowStart) {
     if (firstOutside === 0 || progressOf(firstOutside - 1) >= progressOf(firstOutside)) return null;
     firstOutside--;
   }
   let lastOutside = throughIndex + 1;
-  while (progressOf(lastOutside) <= WINDOW_HALF_LENGTH_TILES) {
+  while (progressOf(lastOutside) <= windowEnd) {
     if (lastOutside === polyline.length - 1 || progressOf(lastOutside + 1) <= progressOf(lastOutside))
       return null;
     lastOutside++;
   }
 
-  const laneAtProgress = (progress: number): number => {
+  const rawLaneAtProgress = (progress: number): number => {
     let index = firstOutside;
     while (progressOf(index + 1) < progress) index++;
     const from = progressOf(index);
     const t = (progress - from) / (progressOf(index + 1) - from);
-    return laneBetween(polyline[index], polyline[index + 1], t, crossing);
+    return laneBetween(polyline[index], polyline[index + 1], t, anchor);
   };
 
-  const laneCentre = crossing.lane + 0.5;
   const straightened: Point[] = polyline.slice(0, firstOutside + 1);
-  const stepCount = (2 * WINDOW_HALF_LENGTH_TILES) / CROSSING_STRAIGHTENING_STEP_TILES;
-  for (let step = 0; step <= stepCount; step++) {
-    const progress = -WINDOW_HALF_LENGTH_TILES + step * CROSSING_STRAIGHTENING_STEP_TILES;
-    const weight = easedWeight(Math.abs(progress));
-    const lane = laneAtProgress(progress) * (1 - weight) + laneCentre * weight;
-    straightened.push(pointAt(crossing.boundary + direction * progress, lane, crossing));
+  for (const progress of sampleProgresses(crossingProgresses)) {
+    const lane = blendedLane(progress, rawLaneAtProgress(progress), crossingProgresses, crossingLanes);
+    straightened.push(pointAt(anchor.boundary + direction * progress, lane, anchor));
   }
   straightened.push(...polyline.slice(lastOutside));
   return straightened;
