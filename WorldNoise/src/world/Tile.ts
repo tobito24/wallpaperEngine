@@ -72,11 +72,10 @@ export class Tile {
       if (this.cliffUnderlays)
         drawGroundUnderlay(ctx, this.cliffUnderlays, animationFrame, screenX, screenY, size);
       drawCliff(ctx, this.cliffType, this.heightLevel, screenX, screenY, size);
+      if (this.stairs) drawNorthSouthStairs(ctx, this.stairs, screenX, screenY, size);
     } else if (this.cliffTopAutotileIndex !== null) {
       drawCliffTop(ctx, this.heightLevel, this.cliffTopAutotileIndex, screenX, screenY, size);
     }
-
-    if (this.stairs) drawNorthSouthStairs(ctx, this.stairs, screenX, screenY, size);
 
     if (this.decoration) drawOutsideTile(ctx, this.decoration, screenX, screenY, size);
 
