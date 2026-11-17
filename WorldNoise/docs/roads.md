@@ -96,10 +96,12 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
 - **`road/roadMask.ts`** (new) — `roadTilesIn(minX, minY, width, height)`: marks the tiles whose centre is within
   `ROAD_HALF_WIDTH_TILES` (1.5, about 3 tiles wide) of a road (the polyline of every edge of `roadEdgesIn`). A pure function of the coordinates: two overlapping rectangles agree on every shared tile (0 of
   57 200 compared tiles differed), so roads have no seams at chunk borders. Roads are 5.2 % of the world, one chunk
-  costs about 0.03 ms. After the marking, a tile with a road tile on one vertical and one horizontal neighbour is
-  added: it fills the inner side of a bend and the notch where the road jogs sideways (curves and waves), so the road does
-  not look thin there. The painting runs one tile beyond the rectangle so the fill needs no neighbour chunk (overlapping
-  rectangles still agree, checked on 4 areas of 160 x 160 tiles). Stair stretches are straight, so the footprints are untouched.
+  costs about 0.03 ms. After the marking, thin spots are filled: a road tile is thin when its horizontal or vertical run is shorter than 3
+(`MIN_ROAD_THICKNESS_TILES`); a non-road tile with road on one vertical and one horizontal neighbour, one of them thin, becomes
+road. That closes the 2-wide joints of waves and jogs, while the ordinary stair-steps of a rounded bend stay as they are (a first
+version filled every inner corner and made bends look squarer). The painting runs 3 tiles beyond the rectangle so the fill
+needs no neighbour chunk (overlapping rectangles still agree, checked on 4 areas of 160 x 160 tiles). Stair stretches are
+straight, so the footprints are untouched.
 
 ## Measured with the planner
 
@@ -110,3 +112,6 @@ the cleanup (another crossing touches them) and 40 have a road tile too many or 
 no jump of two levels among land, no decorated tile in a footprint, 4.8 tiles flattened per footprint on average (12 at most). Stairs
 before the planner (the bent line, the walk for crossings and the straightening): 559 crossings and 1 278 places where a road changed
 its level. The prototype of the planner that led here is described in [idea.md](../idea.md), Road planning.
+
+A road tile within `ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES` (1) of a stairs tile, but not a stairs tile itself, draws no cliff piece and
+no cliff top (`Chunk`), so the road meets the stairs without a cliff edge cutting in.

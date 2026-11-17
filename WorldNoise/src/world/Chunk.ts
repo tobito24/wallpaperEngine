@@ -1,6 +1,6 @@
 import { TOWN_BIOME, biomeAt } from '../biome/biome';
 import type { Biome } from '../biome/biome';
-import { CHUNK_SIZE } from '../config/constants';
+import { CHUNK_SIZE, ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { CLIFF_LAYOUT_REACH_TILES, NO_INNER_RING, layoutCliffs } from '../elevation/cliffLayout';
 import { heightLevelAt } from '../elevation/heightLevel';
@@ -43,6 +43,15 @@ const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, num
   [0, 1, -1, 0, -1, 1],
   [0, 1, 1, 0, 1, 1],
 ];
+
+function hasStairsNear(stairs: ReadonlyMap<string, unknown>, tileX: number, tileY: number): boolean {
+  for (let dy = -ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES; dy <= ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES; dy++) {
+    for (let dx = -ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES; dx <= ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES; dx++) {
+      if (stairs.has(tileKey(tileX + dx, tileY + dy))) return true;
+    }
+  }
+  return false;
+}
 
 export class Chunk {
   readonly chunkX: number;
@@ -119,8 +128,12 @@ export class Chunk {
         const index = (ly + 1) * PADDED_SIZE + (lx + 1);
         const level = levels[index];
         const layoutIndex = (ly + LEVEL_BLOCK_MARGIN) * LEVEL_BLOCK_SIZE + lx + LEVEL_BLOCK_MARGIN;
-        const cliffType = cliffLayout.cliffTypes[layoutIndex];
-        const innerRingIndex = cliffLayout.innerRingIndices[layoutIndex];
+        const roadCoversCliff =
+          roads[index] === ROAD_TILE_MARK &&
+          !stairs.has(tileKey(originX + lx, originY + ly)) &&
+          hasStairsNear(stairs, originX + lx, originY + ly);
+        const cliffType = roadCoversCliff ? null : cliffLayout.cliffTypes[layoutIndex];
+        const innerRingIndex = roadCoversCliff ? NO_INNER_RING : cliffLayout.innerRingIndices[layoutIndex];
 
         const town = insideTowns[index];
         const decoration: SheetTile | null = town ? townDecorationAt(town, originX + lx, originY + ly) : null;
