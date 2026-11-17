@@ -82,16 +82,17 @@ Reason for the shape: an endless world has no global view, so every decision mus
   roads, buildings in the fields between, trees and cliffs as a frame, and gates where the roads leave. Which kind a town is
   follows from a hash of its cell; 20 % of the towns are designed (decided by the user, a constant).
   - **Generated towns** get their layout from rules, not from WFC, and as a pure function of the cell hash and the footprint.
-    There are several layout algorithms and a hash picks one per town, so towns differ. The first one is the user's idea:
-    straight roads run from the gates through the town, where they cross lies a road loop with a fountain in the middle,
-    a few side paths branch off, and houses (4 and 8 tiles wide) stand along the roads and around, one Pokemon Center and one
-    Mart per town (a small town may have only the Center), trees and fences in what is left. Later layouts, for example a
-    main street with houses on both sides, a ring road around a park or pond (the O town) or a grid, are added the same way.
+    There are several layout algorithms and a hash picks one per town, so towns differ. The first one is the user's idea,
+    modelled on Jubilife City (`DesignCorner/private/pokeCitysExample/793px-Jubelstadt_Pt.png`): there is no town centre that
+    all gates must reach; the gates are joined by the street rules in "Town streets" below, a few side paths branch off, and
+    houses (4 and 8 tiles wide) stand along the streets, one Pokemon Center and one Mart per town (a small town may have only
+    the Center), fountains, lamps, trees and fences in what is left. Later layouts, for example a main street with houses on
+    both sides, a ring road around a park or pond (the O town) or a grid, are added the same way.
     The rules are refined when the step is built.
   - The roads of a town are the roads of the graph: the edges to the neighbouring nodes end at the town gates and run straight
     from there through the town to its node (road planning 2; before it the straight radius of the town kept the bent road
     straight through the footprint). Where they meet is the crossing. In an L or T a road can cross a notch and leave and
-    enter the footprint again; the street grid of the layout step replaces these straight roads.
+    enter the footprint again; the town streets replace these straight roads.
   - **Designed towns** are hand-built templates, stamped into the footprint (chosen and rotated by hash). During development
     a real town (Marmoria City) is rebuilt as the first template; the public version gets own designs instead. A template
     carries its footprint shape, its tiles and its gates. The template format is decided when the step is built.
@@ -151,7 +152,7 @@ Decisions:
    the gate is a plateau tile that has no plateau tile next to it in that direction, taken from the middle third of that side
    by hash (for L, T and O shapes only tiles of the outline that really face that way count). The gate points along the side's
    axis. The planner starts at the gate and meets the terrace ring first: ring cliffs get stairs by the normal crossing rule, as
-   today. Inside the plateau the town has a street grid (the layout step of the generated towns); until that exists the road
+   today. Inside the plateau the town streets (see "Town streets") join the gates; until that exists the road
    runs straight from the gate to the town node, as it does today, also where that line crosses a notch of an L or T shape. The
    planner never plans inside a plateau. The straight road radius and its fade are gone with step 2 (the bent
    line now ends at the gate), the bend (`roadCurve.ts`, `ROAD_BEND_*`) goes away in step 3; the 97 % land rule is not touched, the gates follow its outline.
@@ -189,6 +190,55 @@ Measured on the same 232 edges and seed, a step is good when: at least 95 % of t
 the crossings are failures, no waypoint node lies in water and 90 % have a clearance of 4 or more, the roads are at most 30 %
 longer than the bent line, a chunk takes at most 3 ms (about 1.9 ms today, measured on 4096 chunks), a chunk equals the whole map (levels, stairs, road
 mask), and no building stands on a stair.
+
+### Town streets (decided 2026-11-17, not built yet)
+
+Model: Jubilife City. The roads of the graph end at the gates (road planning 2); inside the plateau the streets join the gates
+with each other. The town node is no longer a target: no road has to reach the middle, and a town with two gates is just a street.
+
+Rules, by number of gates (a gate exists only on a side with a graph edge, so 1 to 4):
+
+- **Four gates:** the two opposite pairs are joined, north to south and west to east, each as straight as possible. The two
+  streets cross where they meet (a crossing, or a plaza the layout may put there).
+- **Three gates:** the one opposite pair is joined straight. The third gate takes the shortest way to that street: a straight
+  street at a right angle to it, ending in a T junction.
+- **Two gates:** if they are opposite, they are joined straight. If they are on neighbouring sides, one street with a single
+  rounded corner joins them.
+- **One gate:** a dead-end street from the gate a few tiles into the plateau, ending in a small plaza (a fountain, a bench).
+  The graph degree rule normally gives a town at least one edge.
+- **As straight as possible:** two opposite gates share one lane (a column for north/south, a row for west/east) when both
+  sides of the footprint have a tile on it, so the street is a single straight line. Today each gate picks its lane alone by
+  hash; the shared lane comes from the same hash, so a town's gates stay a pure function of the town. Where the lanes cannot
+  be equal (L or T shape, a notch in between, water near one gate), the street has one jog of the offset in the middle, like the
+  north-south street of Jubilife, and all turns are right angles with rounded corners.
+- **Inside the footprint only.** A street never leaves the plateau; at a notch of an L or T it follows the footprint. The planner
+  of the roads still never plans inside a plateau: the layout step owns everything between two gates.
+- **Streets and side paths.** The through streets are 3 tiles wide like the roads outside. Short side paths (1 to 2 tiles) branch
+  off a street at right angles and end at a house door or a small plaza; they are the "fields between roads" of the model.
+  Houses, Center, Mart and the lamp and tree rules read the street mask, so nothing stands on a street.
+- **Continuous with the outside:** a gate stays where the road of the graph arrives (same lane, same width), so no change of
+  the road planner is needed except that its edge ends at the gate and the straight stretch to the node goes away.
+
+Ground. The plateau gets its own **town ground** (grey paving, plaza) instead of the biome ground, and the streets and side
+paths get **town road** art. The edge of the plateau stays a cliff or a hedge/fence line; where the town ground meets the biome
+ground (open edge) an autotile rim blends them like any other ground pair.
+
+Art the user supplies (development: from the Essentials/Platinum art in `DesignCorner/private/`, public version: own art, see
+"Two asset versions"):
+
+1. **Town ground**, an autotile in the same XP layout as the other grounds (128 x 96 px, `assets/autotiles/`), the paving of
+   the town. Optional second one: a park/grass variant for the plaza fields.
+2. **Town road**, an autotile in the same layout, the asphalt/cobble of the streets (the existing `brick-path.png` stays the
+   road outside).
+3. **Town side path**, an autotile for the 1 to 2 tile paths (may be the same sheet as the ground with another rank).
+4. Later, for the layout rules: a plaza fountain, lamps, hedge/fence pieces (single tiles or pieces on the `Outside` sheet).
+
+Built in this order, each step looked at before the next: (1) the gate lanes: opposite gates share a lane, (2) the street
+planner as a pure function of the town and its gates (a list of straight segments inside the footprint), with a debug overlay,
+(3) street mask and town ground/road in the ground layer, (4) buildings along the streets (replaces `townLayout.ts` placement),
+(5) side paths, plazas, fountains, lamps, trees and fences. Good when: every gate of every town is joined to the others as the rules
+say, no street leaves the footprint or touches a cliff, a chunk takes at most the 3 ms budget of the road planning, and a chunk
+equals the whole map.
 
 ### Height levels and cliffs
 
@@ -318,7 +368,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Path graph: cell nodes, edge hashes, degree rule, bent roads (replaced by road planning 3), bridges (waypoint nodes only, the bridge is a flat color)
 - [x] Stairs where a road crosses a level change (crossings of the bent road, see Road planning for the next stage)
 - [x] Road planning 1: waypoint nodes on the best land (largest clearance of 48 hashed candidates)
-- [x] Road planning 2: town gates, one per side with an edge, the bent line ends there (straight road to the node inside until the street grid exists)
+- [x] Road planning 2: town gates, one per side with an edge, the bent line ends there (straight road to the node inside until the town streets exist)
 - [x] Road planning 3: grid path finder with stairs as crossing rules, replacing the bent line, the walk for crossings and the straightening (`road/roadPlanner.ts`, with a gap of 4 tiles between two crossings of a road, so step 5 is done as far as the footprints allow)
 - [x] Road planning 4: rounded corners and gentle waves on long straights outside towns (`road/roadSmoothing.ts`)
 - [x] Road planning 5: stairs closer together: 4 tiles apart for all crossings (a footprint is 3 tiles each side of its boundary, two footprints stay consistent when the boundaries are 3 apart for north/south and 4 for east/west because of the bulge; 3 for north/south is a later small gain)
@@ -326,7 +376,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
   - [x] First buildings: Center, Mart and houses from the private `Outside` sheet placed along the existing roads (`townLayout.ts`)
-  - [ ] Street grid inside the plateau from the gates of road planning 2 (the layout step takes the gates from there), side paths, fountain, trees and fences; houses follow the streets of that layout
+  - [ ] Town streets inside the plateau (rules in "Town streets": no centre, opposite gates joined straight, third gate by the shortest way, one gate a dead end), then side paths, plazas, fountains, lamps, trees and fences; houses follow the streets of that layout
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
 - [ ] Fences or trees where the edge of a town is open (no cliff wall)
