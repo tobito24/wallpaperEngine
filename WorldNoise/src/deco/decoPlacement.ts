@@ -24,6 +24,7 @@ export interface DecoInstance {
   readonly variant: number;
   readonly x: number;
   readonly y: number;
+  readonly level: number;
 }
 
 export interface DecoStats {
@@ -354,7 +355,7 @@ function candidateAt(
     originY + item.sprite.height - item.footprint.height,
     originY + cell - item.footprint.height,
   );
-  return { item, variant, x, y };
+  return { item, variant, x, y, level: block.levels[indexOf(block, x, y)] };
 }
 
 export function decoInRegion(minX: number, minY: number, size: number, stats?: DecoStats): DecoInstance[] {
@@ -409,8 +410,12 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
 
 const chunkCache = new Map<string, readonly DecoInstance[]>();
 
-export function decoOfChunk(chunkX: number, chunkY: number): readonly DecoInstance[] {
+export function computeDecoOfChunk(chunkX: number, chunkY: number): readonly DecoInstance[] {
   return remember(chunkCache, DECO_CACHE_MAX_ENTRIES, `${chunkX},${chunkY}`, () =>
     decoInRegion(chunkX * CHUNK_SIZE, chunkY * CHUNK_SIZE, CHUNK_SIZE),
   );
+}
+
+export function peekDecoOfChunk(chunkX: number, chunkY: number): readonly DecoInstance[] | undefined {
+  return chunkCache.get(`${chunkX},${chunkY}`);
 }

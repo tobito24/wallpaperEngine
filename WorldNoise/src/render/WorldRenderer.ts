@@ -2,9 +2,12 @@ import { ANIMATED_AUTOTILE_FRAME_DURATION_MS, CHUNK_SIZE } from '../config/const
 import type { Camera } from '../core/Camera';
 import type { World } from '../world/World';
 import { drawCrossingMarkers } from './crossingDebug';
+import { DecoRenderer } from './DecoRenderer';
 import { drawDecoFootprints } from './decoDebug';
 
 export class WorldRenderer {
+  private readonly decoRenderer = new DecoRenderer();
+
   render(
     ctx: CanvasRenderingContext2D,
     camera: Camera,
@@ -29,6 +32,8 @@ export class WorldRenderer {
         tile.draw(ctx, screen.x, screen.y, size, animationFrame);
       }
     }
+
+    this.decoRenderer.render(ctx, camera, bounds, viewportWidth, viewportHeight, size, animationFrame);
 
     if (!debugEnabled) return;
 
