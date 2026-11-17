@@ -1,5 +1,6 @@
 import {
   TOWN_CACHE_MAX_ENTRIES,
+  TOWN_GATE_LANDING_AREA_VOTE_WEIGHT,
   TOWN_GATE_LANDING_DEPTH_TILES,
   TOWN_GATE_LANDING_SAMPLE_DEPTH_TILES,
   TOWN_GATE_PAD_DEPTH_TILES,
@@ -63,7 +64,18 @@ const landingCache = new Map<string, readonly Landing[]>();
 
 function landingLevelOf(town: Town, landing: Pad): number {
   const [outwardX, outwardY] = gateDirection(landing.side);
-  const counts = new Map<number, number>();
+  const lowestLevel = Math.max(town.plateauLevel - 1, WATER_LEVEL + 1);
+  const highestLevel = town.plateauLevel + 1;
+  const votes = new Map<number, number>();
+  const vote = (x: number, y: number, weight: number): void => {
+    const level = heightLevelAt(x, y, elevationNoise(x, y));
+    const limited =
+      level === WATER_LEVEL ? lowestLevel : Math.min(highestLevel, Math.max(lowestLevel, level));
+    votes.set(limited, (votes.get(limited) ?? 0) + weight);
+  };
+  for (let y = landing.minY; y <= landing.maxY; y++) {
+    for (let x = landing.minX; x <= landing.maxX; x++) vote(x, y, TOWN_GATE_LANDING_AREA_VOTE_WEIGHT);
+  }
   for (let lateral = 0; lateral < TOWN_GATE_PAD_WIDTH_TILES; lateral++) {
     for (let depth = 1; depth <= TOWN_GATE_LANDING_SAMPLE_DEPTH_TILES; depth++) {
       const x =
@@ -74,21 +86,16 @@ function landingLevelOf(town: Town, landing: Pad): number {
         outwardY !== 0
           ? (outwardY > 0 ? landing.maxY : landing.minY) + outwardY * depth
           : landing.minY + lateral;
-      const level = heightLevelAt(x, y, elevationNoise(x, y));
-      if (level === WATER_LEVEL) continue;
-      const limited = Math.min(town.plateauLevel + 1, Math.max(town.plateauLevel - 1, level));
-      counts.set(limited, (counts.get(limited) ?? 0) + 1);
+      vote(x, y, TOWN_GATE_LANDING_SAMPLE_DEPTH_TILES + 1 - depth);
     }
   }
-  let best = town.plateauLevel;
-  let bestCount = 0;
-  for (const [level, count] of counts) {
-    if (
-      count > bestCount ||
-      (count === bestCount && Math.abs(level - town.plateauLevel) < Math.abs(best - town.plateauLevel))
-    ) {
+  let best = lowestLevel;
+  let bestVotes = -1;
+  for (const level of [lowestLevel, town.plateauLevel, highestLevel]) {
+    const count = votes.get(level) ?? 0;
+    if (count > bestVotes) {
       best = level;
-      bestCount = count;
+      bestVotes = count;
     }
   }
   return best;
