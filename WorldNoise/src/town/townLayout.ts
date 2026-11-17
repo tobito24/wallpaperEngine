@@ -98,6 +98,7 @@ function computeLayout(town: Town): TownLayout {
     }
   }
 
+  const placeable = free.slice();
   const sidewalk = new Uint8Array(width * height);
   const reach = TOWN_BUILDING_STREET_MARGIN_TILES;
   for (let y = 0; y < height; y++) {
@@ -107,7 +108,7 @@ function computeLayout(town: Town): TownLayout {
         for (let dx = -reach; dx <= reach; dx++) {
           const nx = x + dx;
           const ny = y + dy;
-          if (nx >= 0 && ny >= 0 && nx < width && ny < height && roads[ny * width + nx] !== ROAD_TILE_MARK) {
+          if (nx >= 0 && ny >= 0 && nx < width && ny < height && placeable[ny * width + nx]) {
             sidewalk[ny * width + nx] = 1;
           }
         }
@@ -124,6 +125,7 @@ function computeLayout(town: Town): TownLayout {
     const startY = y + type.height;
     if (startX >= width || startY >= height) return null;
     const startIndex = startY * width + startX;
+    if (!free[startIndex] && !sidewalk[startIndex]) return null;
     const cameFrom = new Map<number, number>([[startIndex, -1]]);
     let frontier = [startIndex];
     for (let length = 0; length <= TOWN_DOOR_PATH_MAX_TILES && frontier.length > 0; length++) {
