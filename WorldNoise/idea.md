@@ -236,7 +236,7 @@ the autotile neighbour check of the road ground, while the stairs overlay is dra
 crossing (the road above and the road below), to the roads outside and to the streets inside. It needs no change of the path
 or of the corner smoothing outside (radius 3 stays as built); it is a change of the ground layer, looked at in step (3).
 
-Built in this order, each step looked at before the next: (1) the gate lanes: opposite gates share a lane, (2) the street
+Built in this order, each step looked at before the next: (1) the gate lanes: opposite gates share a lane (built), (2) the street
 planner as a pure function of the town and its gates (a list of straight segments inside the footprint), with a debug overlay,
 (3) street mask and town ground/road in the ground layer, (4) buildings along the streets (replaces `townLayout.ts` placement),
 (5) side paths, plazas, fountains, lamps, trees and fences. Good when: every gate of every town is joined to the others as the rules
