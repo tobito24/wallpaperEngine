@@ -8,7 +8,7 @@ Paths and towns.
 
 `config/constants.ts`: `TOWN_CELL_PROBABILITY`, `TOWN_DESIGNED_SHARE`, `TOWN_MIN_LAND_SHARE`, `TOWN_RING_WIDTH_TILES`,
 `TOWN_SAMPLE_STRIDE_TILES`, `TOWN_LARGE_WEIGHT`, `TOWN_MEDIUM_WEIGHT`, `TOWN_CACHE_MAX_ENTRIES`,
-`TOWN_OUTLINE_WOBBLE_TILES`, `TOWN_BUILDING_MARGIN_TILES`, `TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES`, `TOWN_HOUSES_PER_CHUNK`.
+`TOWN_OUTLINE_WOBBLE_TILES`, `TOWN_BUILDING_MARGIN_TILES`, `TOWN_BUILDING_STREET_MARGIN_TILES`, `TOWN_DOOR_PATH_MAX_TILES`, `TOWN_HOUSES_PER_CHUNK`.
 `CELL_SIZE_CHUNKS` and `CELL_BUFFER_CHUNKS` are described in [roads.md](roads.md).
 
 ## Modules
@@ -48,11 +48,10 @@ Paths and towns.
   tile shows or null. The layout of a town is computed once (cached per town, `TOWN_CACHE_MAX_ENTRIES`) as a pure function
   of the town: tiles that are inside the wavy footprint and not road are free; the Center, the Mart (towns of two or more
   chunks) and `floor(chunks * TOWN_HOUSES_PER_CHUNK)` random houses are tried in an order of positions shuffled by the town's seeded random stream, and one
-  fits where all its tiles are free and a road tile lies within `TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES` (4) of the tile in
-  front of its door (bottom middle). A placed building blocks its tiles and a margin of `TOWN_BUILDING_MARGIN_TILES` (1).
+  fits where all its tiles are free and a door path exists. Tiles within `TOWN_BUILDING_STREET_MARGIN_TILES` (1) of a street are never free (a strip of paving along the street, the "sidewalk"). The door path is a shortest path (breadth first, at most `TOWN_DOOR_PATH_MAX_TILES` = 10 tiles) from the tile in
+  front of the door (bottom middle) over free tiles, around the building itself, to a sidewalk tile; its tiles are the side paths, one tile wide, drawn as `cityStreet` (`townPathAt(town, x, y)`, read by `Chunk`) and no later building may stand on them. A placed building blocks its tiles and a margin of `TOWN_BUILDING_MARGIN_TILES` (1); a building without a door path is not placed there.
   A building that finds no place is left out, the Center too (a small or heavily eroded town can end up without one; the road layout step has to guarantee it). The road layer is read by the layout, never the other way round. `Tile` draws the
-  piece (`tileset/outsideSheet.ts`, `drawOutsideTile`) after the cliff and before the level shade. Not done: the layout
-  of the roads themselves (loop, fountain, side paths, gates), trees and fences; no fountain was found in the sheet yet.
+  piece (`tileset/outsideSheet.ts`, `drawOutsideTile`) after the cliff and before the level shade. Not done: fountain, lamps, plaza fields (`cityGrass`), trees and fences; no fountain was found in the sheet yet.
 - **`town/waypointNodes.ts`** (new) — `waypointPosition(cx, cy)`: the node of a cell without a town. 48 candidate tiles are drawn
   uniformly from the node area of the cell by hash (`node:cx:cy:index:x|y`); each gets a clearance, the Chebyshev distance to the nearest
   tile of another base level (`heightLevelAt` of the noise, not the cleaned levels and no crossings) or to water, searched up to 8 tiles

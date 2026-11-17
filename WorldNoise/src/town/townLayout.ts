@@ -3,8 +3,9 @@ import {
   CHUNK_SIZE,
   SEED,
   TOWN_BUILDING_MARGIN_TILES,
-  TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES,
+  TOWN_BUILDING_STREET_MARGIN_TILES,
   TOWN_CACHE_MAX_ENTRIES,
+  TOWN_DOOR_PATH_MAX_TILES,
   TOWN_HOUSES_PER_CHUNK,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
@@ -23,6 +24,7 @@ interface TownLayout {
   readonly minY: number;
   readonly width: number;
   readonly pieces: ReadonlyMap<number, SheetTile>;
+  readonly paths: ReadonlySet<number>;
 }
 
 interface Placement {
@@ -32,6 +34,12 @@ interface Placement {
 }
 
 const MIN_CHUNKS_FOR_MART = 2;
+const PATH_STEPS: readonly (readonly [number, number])[] = [
+  [0, 1],
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+];
 
 const layoutCache = new Map<string, TownLayout>();
 
@@ -90,17 +98,58 @@ function computeLayout(town: Town): TownLayout {
     }
   }
 
-  const nearRoad = (x: number, y: number): boolean => {
-    const reach = TOWN_BUILDING_MAX_ROAD_DISTANCE_TILES;
-    for (let dy = -reach; dy <= reach; dy++) {
-      for (let dx = -reach; dx <= reach; dx++) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        if (roads[ny * width + nx] === ROAD_TILE_MARK) return true;
+  const sidewalk = new Uint8Array(width * height);
+  const reach = TOWN_BUILDING_STREET_MARGIN_TILES;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (roads[y * width + x] !== ROAD_TILE_MARK) continue;
+      for (let dy = -reach; dy <= reach; dy++) {
+        for (let dx = -reach; dx <= reach; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && ny >= 0 && nx < width && ny < height && roads[ny * width + nx] !== ROAD_TILE_MARK) {
+            sidewalk[ny * width + nx] = 1;
+          }
+        }
       }
     }
-    return false;
+  }
+  for (let i = 0; i < free.length; i++) if (sidewalk[i]) free[i] = 0;
+
+  const isOnBuilding = (type: BuildingType, x: number, y: number, tileX: number, tileY: number): boolean =>
+    tileX >= x && tileX < x + type.width && tileY >= y && tileY < y + type.height;
+
+  const pathFromDoor = (type: BuildingType, x: number, y: number): number[] | null => {
+    const startX = x + Math.floor(type.width / 2);
+    const startY = y + type.height;
+    if (startX >= width || startY >= height) return null;
+    const startIndex = startY * width + startX;
+    const cameFrom = new Map<number, number>([[startIndex, -1]]);
+    let frontier = [startIndex];
+    for (let length = 0; length <= TOWN_DOOR_PATH_MAX_TILES && frontier.length > 0; length++) {
+      const next: number[] = [];
+      for (const index of frontier) {
+        if (sidewalk[index]) {
+          const path: number[] = [];
+          for (let step = index; step !== -1; step = cameFrom.get(step) as number) path.push(step);
+          return path;
+        }
+        const tileX = index % width;
+        const tileY = Math.floor(index / width);
+        for (const [dx, dy] of PATH_STEPS) {
+          const nx = tileX + dx;
+          const ny = tileY + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const neighbour = ny * width + nx;
+          if (cameFrom.has(neighbour) || isOnBuilding(type, x, y, nx, ny)) continue;
+          if (!free[neighbour] && !sidewalk[neighbour]) continue;
+          cameFrom.set(neighbour, index);
+          next.push(neighbour);
+        }
+      }
+      frontier = next;
+    }
+    return null;
   };
 
   const fits = (type: BuildingType, x: number, y: number): boolean => {
@@ -111,7 +160,7 @@ function computeLayout(town: Town): TownLayout {
         if (nx >= width || ny >= height || !free[ny * width + nx]) return false;
       }
     }
-    return nearRoad(x + Math.floor(type.width / 2), y + type.height);
+    return true;
   };
 
   const occupy = (type: BuildingType, x: number, y: number): void => {
@@ -125,6 +174,7 @@ function computeLayout(town: Town): TownLayout {
     }
   };
 
+  const paths = new Set<number>();
   const placements: Placement[] = [];
   for (const type of buildingsOf(town, random)) {
     const candidates: number[] = [];
@@ -133,8 +183,14 @@ function computeLayout(town: Town): TownLayout {
       const x = index % width;
       const y = Math.floor(index / width);
       if (!fits(type, x, y)) continue;
+      const path = pathFromDoor(type, x, y);
+      if (path === null) continue;
       placements.push({ type, x, y });
       occupy(type, x, y);
+      for (const index of path) {
+        paths.add(index);
+        free[index] = 0;
+      }
       break;
     }
   }
@@ -147,12 +203,19 @@ function computeLayout(town: Town): TownLayout {
       }
     }
   }
-  return { minX, minY, width, pieces };
+  return { minX, minY, width, pieces, paths };
+}
+
+function layoutOf(town: Town): TownLayout {
+  return remember(layoutCache, TOWN_CACHE_MAX_ENTRIES, `${town.cx},${town.cy}`, () => computeLayout(town));
+}
+
+export function townPathAt(town: Town, tileX: number, tileY: number): boolean {
+  const layout = layoutOf(town);
+  return layout.paths.has((tileY - layout.minY) * layout.width + (tileX - layout.minX));
 }
 
 export function townDecorationAt(town: Town, tileX: number, tileY: number): SheetTile | null {
-  const layout = remember(layoutCache, TOWN_CACHE_MAX_ENTRIES, `${town.cx},${town.cy}`, () =>
-    computeLayout(town),
-  );
+  const layout = layoutOf(town);
   return layout.pieces.get((tileY - layout.minY) * layout.width + (tileX - layout.minX)) ?? null;
 }
