@@ -196,6 +196,16 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
   for (const entry of items) {
     if (names.has(entry.name)) throw new RangeError(`Deco item ${entry.name} is listed twice`);
     names.add(entry.name);
+    const wholeNumbers = [
+      entry.variants,
+      entry.frames,
+      entry.anchorColumn,
+      entry.clearance,
+      entry.footprint.width,
+      entry.footprint.height,
+    ];
+    if (!wholeNumbers.every(Number.isInteger))
+      throw new RangeError(`Deco item ${entry.name} needs whole numbers`);
     const cellSize = DECO_CELL_SIZE_BY_PASS[entry.pass];
     if (
       entry.footprint.width + entry.clearance > cellSize ||
@@ -203,11 +213,16 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
     ) {
       throw new RangeError(`Deco item ${entry.name} does not fit a cell of its pass (${entry.pass})`);
     }
-    if (entry.anchorColumn < 0) throw new RangeError(`Deco item ${entry.name} has a negative anchor`);
-    if (entry.variants < 1 || entry.frames < 1)
+    if (entry.anchorColumn < 0 || entry.clearance < 0) {
+      throw new RangeError(`Deco item ${entry.name} has a negative anchor or clearance`);
+    }
+    if (entry.variants < 1 || entry.frames < 1) {
       throw new RangeError(`Deco item ${entry.name} needs a variant and a frame`);
-    for (const [biomeId, weight] of Object.entries(entry.biomes) as [BiomeId, number][]) {
-      if (weight <= 0)
+    }
+    const weights = Object.entries(entry.biomes) as [BiomeId, number][];
+    if (weights.length === 0) throw new RangeError(`Deco item ${entry.name} has no biome`);
+    for (const [biomeId, weight] of weights) {
+      if (!(weight > 0))
         throw new RangeError(`Deco item ${entry.name} has a weight of ${weight} for ${biomeId}`);
       const isWaterBiome = WATER_BIOMES.includes(biomeId);
       if (isWaterBiome !== (entry.surface === 'water')) {
