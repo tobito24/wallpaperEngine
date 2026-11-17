@@ -1,3 +1,4 @@
+import { JUMP_PROMPT, parseJumpTarget } from './jumpTarget';
 import type { Camera } from './Camera';
 import { ZOOM_STEP_PX, PAN_SPRINT_MULTIPLIER } from '../config/constants';
 
@@ -45,6 +46,19 @@ export class DebugState {
       if (e.key.toLowerCase() === 'r') this.enabled = !this.enabled;
     });
   }
+}
+
+export function attachJumpControl(camera: Camera, debugState: DebugState): () => void {
+  const onKeyUp = (e: KeyboardEvent) => {
+    if (e.key.toLowerCase() !== 'g' || !debugState.enabled) return;
+    const answer = window.prompt(JUMP_PROMPT);
+    if (answer === null) return;
+    const target = parseJumpTarget(answer);
+    if (target) camera.centerOn(target.x, target.y);
+  };
+
+  window.addEventListener('keyup', onKeyUp);
+  return () => window.removeEventListener('keyup', onKeyUp);
 }
 
 export function attachTouchControls(camera: Camera, target: HTMLElement): () => void {

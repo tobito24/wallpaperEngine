@@ -24,6 +24,11 @@ export class Camera {
     this.tileSize = tileSize;
   }
 
+  centerOn(tileX: number, tileY: number): void {
+    this.x = tileX;
+    this.y = tileY;
+  }
+
   setTileSize(tileSize: number): void {
     this.tileSize = Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, tileSize));
   }
