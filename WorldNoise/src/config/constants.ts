@@ -56,6 +56,12 @@ export const ROAD_CROSSING_COST = 20;
 export const ROAD_FLATTENED_TILE_COST = 5;
 export const ROAD_UNPLANNED_CROSSING_COST = 600;
 export const ROAD_FOREIGN_PLATEAU_COST = 400;
+export const ROAD_CORNER_RADIUS_TILES = 3;
+export const ROAD_WAVE_AMPLITUDE_TILES = 2;
+export const ROAD_WAVE_LENGTH_TILES = 28;
+export const ROAD_WAVE_MARGIN_TILES = 6;
+export const ROAD_WAVE_MIN_LENGTH_TILES = 12;
+export const ROAD_WAVE_SAMPLE_STEP_TILES = 2;
 export const CHUNK_UNLOAD_DELAY_MS = 5000;
 
 export const ELEVATION_OCTAVES = 4;

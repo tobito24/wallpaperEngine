@@ -24,6 +24,8 @@ import type { Point } from '../skeleton/cellGrid';
 import { levelWithTown, townInfoAt } from '../town/townTerrain';
 import { flattenCostOf } from './roadCrossing';
 import type { RoadCrossing, Side, TravelAxis } from './roadCrossing';
+import { smoothPolyline } from './roadSmoothing';
+import type { GroundProbe } from './roadSmoothing';
 
 type Step = readonly [number, number];
 
@@ -404,12 +406,32 @@ function polylineOf(cells: readonly PathCell[], steps: ReadonlyMap<number, RoadC
   return withoutRedundantPoints(points);
 }
 
+function probeOf(grid: Grid): GroundProbe {
+  const indexOf = (tileX: number, tileY: number): number =>
+    tileX < grid.minX ||
+    tileY < grid.minY ||
+    tileX >= grid.minX + grid.width ||
+    tileY >= grid.minY + grid.height
+      ? -1
+      : (tileY - grid.minY) * grid.width + (tileX - grid.minX);
+  return {
+    levelAt: (tileX, tileY) => {
+      const index = indexOf(tileX, tileY);
+      return index < 0 ? -1 : grid.levels[index];
+    },
+    isTown: (tileX, tileY) => {
+      const index = indexOf(tileX, tileY);
+      return index < 0 || grid.inside[index] === 1;
+    },
+  };
+}
+
 export function planRoad(start: PlanEnd, end: PlanEnd): PlannedRoad {
   const grid = buildGrid(start.point, end.point);
   const cells = cellsOf(grid, search(grid, start, end));
   const extracted = extract(grid, cells);
   return {
-    polyline: polylineOf(cells, extracted.steps),
+    polyline: smoothPolyline(polylineOf(cells, extracted.steps), extracted.crossings, probeOf(grid)),
     crossings: extracted.crossings,
     unplanned: extracted.unplanned,
   };

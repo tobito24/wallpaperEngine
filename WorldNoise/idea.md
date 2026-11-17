@@ -320,7 +320,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Road planning 1: waypoint nodes on the best land (largest clearance of 48 hashed candidates)
 - [x] Road planning 2: town gates, one per side with an edge, the bent line ends there (straight road to the node inside until the street grid exists)
 - [x] Road planning 3: grid path finder with stairs as crossing rules, replacing the bent line, the walk for crossings and the straightening (`road/roadPlanner.ts`, with a gap of 4 tiles between two crossings of a road, so step 5 is done as far as the footprints allow)
-- [ ] Road planning 4: rounded corners and gentle waves on long straights outside towns
+- [x] Road planning 4: rounded corners and gentle waves on long straights outside towns (`road/roadSmoothing.ts`)
 - [x] Road planning 5: stairs closer together: 4 tiles apart for all crossings (a footprint is 3 tiles each side of its boundary, two footprints stay consistent when the boundaries are 3 apart for north/south and 4 for east/west because of the bulge; 3 for north/south is a later small gain)
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
