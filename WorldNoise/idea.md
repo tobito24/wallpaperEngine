@@ -505,7 +505,7 @@ Each step is built and looked at before the next one starts. The plan is final b
   - [x] 4. Deco pass in the renderer: layers, sorting, frames, the ring of neighbouring chunks; first items (a tree, a flower)
   - [x] 5. Forests (grove pass), meadow blobs, densities tuned by eye
   - [x] 6. Strips (1 x N): the cliff ridge (done); tree rows with crown modules (still open)
-  - [ ] 7. Fields (tall grass, 9 pieces, rectangles) as an overlay
+  - [x] 7. Fields (tall grass, 9 pieces, rectangles) as an overlay
   - [ ] 8. Water and cliff overhang review, items with parts, the final numbers in `docs/deco.md`
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
 - [x] A ground per biome: one ground per biome (rank order, sheet table into `assets/autotiles/`), flat color where a sheet is missing

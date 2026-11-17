@@ -2,6 +2,9 @@ import {
   CHUNK_SIZE,
   DECO_CACHE_EVICTED_SHARE,
   DECO_CACHE_MAX_ENTRIES,
+  DECO_FIELD_ATTEMPTS,
+  DECO_FIELD_CELL_TILES,
+  DECO_FIELD_CHANCE,
   DECO_REGION_CHUNKS,
   SEED,
 } from '../config/constants';
@@ -22,13 +25,14 @@ import {
   DECO_CLUSTER_FREQUENCY_BY_PASS,
   DECO_CLUSTER_STRENGTH,
   DECO_DENSITY_BY_PASS_AND_BIOME,
+  DECO_FIELD_MAX_TILES,
   DECO_ITEMS,
   DECO_MARGIN_TILES,
   DECO_PASS_DENSITY,
   DECO_PASS_EXPANSION_TILES,
   DECO_PASS_ORDER,
 } from './decoTable';
-import type { DecoItem, DecoPass } from './decoTable';
+import type { DecoArea, DecoItem, DecoPass } from './decoTable';
 
 export interface DecoInstance {
   readonly item: DecoItem;
@@ -36,6 +40,7 @@ export interface DecoInstance {
   readonly x: number;
   readonly y: number;
   readonly length: number;
+  readonly rows: number;
   readonly level: number;
 }
 
@@ -86,6 +91,7 @@ interface Occupancy {
 const ROAD_CLEARANCE_TILES = 1;
 const STAIRS_CLEARANCE_TILES = 3;
 const STAIRS_KEY_SEPARATOR = ',';
+const FIELD_HASH_SALT = 2000;
 
 const clusterNoiseByPass = new Map(
   DECO_PASS_ORDER.map((pass) => [
@@ -111,6 +117,15 @@ function buildPools(blobOnly: boolean): Map<string, Pool> {
     }
   }
   return pools;
+}
+
+const fieldPoolByBiome = new Map<string, Pool>();
+for (const item of DECO_ITEMS) {
+  if (!item.area) continue;
+  for (const [biome, weight] of Object.entries(item.biomes) as [BiomeId, number][]) {
+    const entries = [...(fieldPoolByBiome.get(biome)?.entries ?? []), { item, weight }];
+    fieldPoolByBiome.set(biome, { entries, total: entries.reduce((sum, entry) => sum + entry.weight, 0) });
+  }
 }
 
 const poolByPassAndBiome = buildPools(false);
@@ -165,16 +180,25 @@ function masksOf(block: TerrainBlock): Masks {
   };
 }
 
-export function decoFootprintOf(item: DecoItem, x: number, y: number, length: number): Rectangle {
-  const width = item.strip ? length : item.footprint.width;
-  return { left: x, top: y, right: x + width, bottom: y + item.footprint.height };
+export function decoFootprintOf(
+  item: DecoItem,
+  x: number,
+  y: number,
+  length: number,
+  rows: number,
+): Rectangle {
+  const width = item.strip || item.area ? length : item.footprint.width;
+  const height = item.area ? rows : item.footprint.height;
+  return { left: x, top: y, right: x + width, bottom: y + height };
 }
 
-export function decoSpriteOf(item: DecoItem, x: number, y: number, length: number): Rectangle {
-  const width = item.strip ? length : item.sprite.width;
+export function decoSpriteOf(item: DecoItem, x: number, y: number, length: number, rows: number): Rectangle {
+  const width = item.strip || item.area ? length : item.sprite.width;
+  const footprintHeight = item.area ? rows : item.footprint.height;
+  const spriteHeight = item.area ? rows : item.sprite.height;
   const left = x - item.anchorColumn;
-  const bottom = y + item.footprint.height;
-  return { left, top: bottom - item.sprite.height, right: left + width, bottom };
+  const bottom = y + footprintHeight;
+  return { left, top: bottom - spriteHeight, right: left + width, bottom };
 }
 
 function expanded(rectangle: Rectangle, reach: number): Rectangle {
@@ -234,11 +258,12 @@ function invalidReason(
   x: number,
   y: number,
   length: number,
+  rows: number,
   block: TerrainBlock,
   masks: Masks,
 ): string | null {
-  const footprint = decoFootprintOf(item, x, y, length);
-  const sprite = decoSpriteOf(item, x, y, length);
+  const footprint = decoFootprintOf(item, x, y, length, rows);
+  const sprite = decoSpriteOf(item, x, y, length, rows);
   const firstIndex = indexOf(block, x, y);
   if (firstIndex < 0) return 'outside';
   const level = block.levels[firstIndex];
@@ -276,11 +301,12 @@ function conflicts(
   x: number,
   y: number,
   length: number,
+  rows: number,
   block: TerrainBlock,
   occupancy: Occupancy,
 ): boolean {
-  const footprint = decoFootprintOf(item, x, y, length);
-  const sprite = decoSpriteOf(item, x, y, length);
+  const footprint = decoFootprintOf(item, x, y, length, rows);
+  const sprite = decoSpriteOf(item, x, y, length, rows);
   if (
     anyTile(
       block,
@@ -312,10 +338,11 @@ function occupy(
   x: number,
   y: number,
   length: number,
+  rows: number,
   block: TerrainBlock,
   occupancy: Occupancy,
 ): void {
-  const footprint = decoFootprintOf(item, x, y, length);
+  const footprint = decoFootprintOf(item, x, y, length, rows);
   forEachTile(block, footprint, (index) => {
     occupancy.footprint[index] = 1;
   });
@@ -325,7 +352,7 @@ function occupy(
     });
   }
   if (!item.overlapsDeco) {
-    forEachTile(block, decoSpriteOf(item, x, y, length), (index, column, row) => {
+    forEachTile(block, decoSpriteOf(item, x, y, length, rows), (index, column, row) => {
       if (!insideFootprint(footprint, column, row)) occupancy.coveredBySprite[index] = 1;
     });
   }
@@ -401,7 +428,99 @@ function candidateAt(
   const lowestY = item.overlapsDeco ? originY : originY + item.sprite.height - item.footprint.height;
   const x = clamp(pointX, lowestX, highestX);
   const y = clamp(pointY, lowestY, originY + cell - item.footprint.height);
-  return { item, variant, x, y, length, level: block.levels[indexOf(block, x, y)] };
+  return {
+    item,
+    variant,
+    x,
+    y,
+    length,
+    rows: item.footprint.height,
+    level: block.levels[indexOf(block, x, y)],
+  };
+}
+
+function fieldAttempt(
+  attempt: number,
+  cellX: number,
+  cellY: number,
+  block: TerrainBlock,
+  masks: Masks,
+  stats: DecoStats | undefined,
+): DecoInstance | null {
+  const cell = DECO_FIELD_CELL_TILES;
+  const originX = cellX * cell;
+  const originY = cellY * cell;
+  const salt = FIELD_HASH_SALT + attempt;
+  const pointX = originX + Math.floor(decoHash(salt, cellX, cellY, 1) * cell);
+  const pointY = originY + Math.floor(decoHash(salt, cellX, cellY, 2) * cell);
+  const pointIndex = indexOf(block, pointX, pointY);
+  if (pointIndex < 0) return null;
+  const pool = fieldPoolByBiome.get(block.grounds[pointIndex]);
+  if (!pool) {
+    if (stats) stats.rejected['field no pool'] = (stats.rejected['field no pool'] ?? 0) + 1;
+    return null;
+  }
+  const { item } = pickEntry(pool, decoHash(salt, cellX, cellY, 3));
+  const area = item.area as DecoArea;
+  const length =
+    area.minWidth + Math.floor(decoHash(salt, cellX, cellY, 4) * (area.maxWidth - area.minWidth + 1));
+  const rows =
+    area.minHeight + Math.floor(decoHash(salt, cellX, cellY, 5) * (area.maxHeight - area.minHeight + 1));
+  const x = clamp(pointX, originX, originX + cell - length);
+  const y = clamp(pointY, originY, originY + cell - rows);
+  const reason = invalidReason(item, x, y, length, rows, block, masks);
+  if (reason) {
+    if (stats) stats.rejected[`field ${reason}`] = (stats.rejected[`field ${reason}`] ?? 0) + 1;
+    return null;
+  }
+  return { item, variant: 0, x, y, length, rows, level: block.levels[indexOf(block, x, y)] };
+}
+
+function fieldAt(
+  cellX: number,
+  cellY: number,
+  block: TerrainBlock,
+  masks: Masks,
+  stats: DecoStats | undefined,
+): DecoInstance | null {
+  if (decoHash(FIELD_HASH_SALT, cellX, cellY, 0) >= DECO_FIELD_CHANCE) return null;
+  for (let attempt = 0; attempt < DECO_FIELD_ATTEMPTS; attempt++) {
+    const field = fieldAttempt(attempt, cellX, cellY, block, masks, stats);
+    if (field) return field;
+  }
+  return null;
+}
+
+function fieldsOverlapping(
+  minX: number,
+  minY: number,
+  size: number,
+  block: TerrainBlock,
+  masks: Masks,
+  stats: DecoStats | undefined,
+): DecoInstance[] {
+  const cell = DECO_FIELD_CELL_TILES;
+  const fields: DecoInstance[] = [];
+  const firstCellX = Math.floor((minX - DECO_FIELD_MAX_TILES) / cell);
+  const lastCellX = Math.floor((minX + size + DECO_FIELD_MAX_TILES) / cell);
+  const firstCellY = Math.floor((minY - DECO_FIELD_MAX_TILES) / cell);
+  const lastCellY = Math.floor((minY + size + DECO_FIELD_MAX_TILES) / cell);
+  for (let cellY = firstCellY; cellY <= lastCellY; cellY++) {
+    for (let cellX = firstCellX; cellX <= lastCellX; cellX++) {
+      const field = fieldAt(cellX, cellY, block, masks, stats);
+      if (field) fields.push(field);
+    }
+  }
+  return fields;
+}
+
+function rectanglesOverlap(first: Rectangle, second: Rectangle): boolean {
+  return (
+    first.left < second.right &&
+    second.left < first.right &&
+    first.top < second.bottom &&
+    second.top < first.bottom
+  );
 }
 
 export function decoInRegion(minX: number, minY: number, size: number, stats?: DecoStats): DecoInstance[] {
@@ -437,6 +556,7 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
           candidate.x,
           candidate.y,
           candidate.length,
+          candidate.rows,
           block,
           masks,
         );
@@ -444,7 +564,17 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
           if (stats) stats.rejected[reason] = (stats.rejected[reason] ?? 0) + 1;
           continue;
         }
-        if (conflicts(candidate.item, candidate.x, candidate.y, candidate.length, block, occupancy)) {
+        if (
+          conflicts(
+            candidate.item,
+            candidate.x,
+            candidate.y,
+            candidate.length,
+            candidate.rows,
+            block,
+            occupancy,
+          )
+        ) {
           if (stats) stats.rejected.conflict = (stats.rejected.conflict ?? 0) + 1;
           continue;
         }
@@ -453,15 +583,22 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
       }
     }
     for (const instance of acceptedInPass) {
-      occupy(instance.item, instance.x, instance.y, instance.length, block, occupancy);
+      occupy(instance.item, instance.x, instance.y, instance.length, instance.rows, block, occupancy);
     }
     accepted.push(...acceptedInPass);
   });
 
-  return accepted.filter(
-    (instance) =>
-      instance.x >= minX && instance.x < minX + size && instance.y >= minY && instance.y < minY + size,
+  const fields = fieldsOverlapping(minX, minY, size, block, masks, stats);
+  const fieldRectangles = fields.map((field) =>
+    decoFootprintOf(field.item, field.x, field.y, field.length, field.rows),
   );
+  const owned = (instance: DecoInstance): boolean =>
+    instance.x >= minX && instance.x < minX + size && instance.y >= minY && instance.y < minY + size;
+  const outsideFields = accepted.filter((instance) => {
+    const footprint = decoFootprintOf(instance.item, instance.x, instance.y, instance.length, instance.rows);
+    return !fieldRectangles.some((rectangle) => rectanglesOverlap(footprint, rectangle));
+  });
+  return [...outsideFields, ...fields].filter(owned);
 }
 
 const chunkCache = new Map<string, readonly DecoInstance[]>();

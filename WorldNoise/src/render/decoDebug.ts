@@ -26,9 +26,9 @@ function drawInstance(
   size: number,
   instance: DecoInstance,
 ): void {
-  const { item, x, y, length } = instance;
-  const sprite = decoSpriteOf(item, x, y, length);
-  const footprint = decoFootprintOf(item, x, y, length);
+  const { item, x, y, length, rows } = instance;
+  const sprite = decoSpriteOf(item, x, y, length, rows);
+  const footprint = decoFootprintOf(item, x, y, length, rows);
   ctx.strokeStyle = SPRITE_COLOR;
   ctx.lineWidth = 1;
   drawRectangle(ctx, camera, viewportWidth, viewportHeight, size, {
