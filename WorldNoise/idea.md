@@ -203,14 +203,14 @@ Rules, by number of gates (a gate exists only on a side with a graph edge, so 1 
 - **Three gates:** the one opposite pair is joined straight. The third gate takes the shortest way to that street: a straight
   street at a right angle to it, ending in a T junction.
 - **Two gates:** if they are opposite, they are joined straight. If they are on neighbouring sides, one street with a single
-  rounded corner joins them.
+  single right-angled corner joins them.
 - **One gate:** a dead-end street from the gate a few tiles into the plateau, ending in a small plaza (a fountain, a bench).
   The graph degree rule normally gives a town at least one edge.
 - **As straight as possible:** two opposite gates share one lane (a column for north/south, a row for west/east) when both
   sides of the footprint have a tile on it, so the street is a single straight line. Today each gate picks its lane alone by
   hash; the shared lane comes from the same hash, so a town's gates stay a pure function of the town. Where the lanes cannot
   be equal (L or T shape, a notch in between, water near one gate), the street has one jog of the offset in the middle, like the
-  north-south street of Jubilife, and all turns are right angles with rounded corners.
+  north-south street of Jubilife, and all turns are right angles (town streets have sharp corners; the autotile draws the corner piece).
 - **Inside the footprint only.** A street never leaves the plateau; at a notch of an L or T it follows the footprint. The planner
   of the roads still never plans inside a plateau: the layout step owns everything between two gates.
 - **Streets and side paths.** The through streets are 3 tiles wide like the roads outside. Short side paths (1 to 2 tiles) branch
@@ -227,12 +227,14 @@ biome ground (open edge) an autotile rim blends them like any other ground pair.
 a plaza fountain, lamps, hedge/fence pieces (single tiles or pieces on the `Outside` sheet). Development art may come from
 `DesignCorner/private/`, the public version gets own art ("Two asset versions").
 
-Rounded corners. The corners of the town streets are rounded like the roads outside (radius 3, a smaller one where the segment is
-short). The road outside is rounded in front of a gate as well: the planner already rounds every corner of a path except next to
-stairs, so a corner near a gate is rounded up to the room left; the last straight run into a gate and the footprint of stairs on
-the terrace ring stay exact, because the street, the stairs and the road must meet at a right angle on one lane. How much room
-that leaves in front of a gate is looked at when step (2) is built; if it is too little, the straight run in front of a gate gets
-shorter (a constant) before anything else changes.
+Rounded ends, not rounded corners (clarified by the user 2026-11-17). The corners of the town streets are **not** rounded as a
+curve: a street turns at a right angle and the autotile draws the corner piece. "Rounded" means that a road **ends** and gets its
+rounded cap from the autotile rim, as in the sketch of the user: the road on the upper level stops in front of the top of the
+stairs (and in front of a gate or the end of a dead-end street) and its last tile is an end piece, not a straight piece running
+on under the stairs. So the road mask must treat the stairs footprint (and the tiles beyond the end of a street) as not road for
+the autotile neighbour check of the road ground, while the stairs overlay is drawn on top. This applies to both ends of a
+crossing (the road above and the road below), to the roads outside and to the streets inside. It needs no change of the path
+or of the corner smoothing outside (radius 3 stays as built); it is a change of the ground layer, looked at in step (3).
 
 Built in this order, each step looked at before the next: (1) the gate lanes: opposite gates share a lane, (2) the street
 planner as a pure function of the town and its gates (a list of straight segments inside the footprint), with a debug overlay,
