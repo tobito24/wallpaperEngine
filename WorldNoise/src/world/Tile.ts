@@ -10,6 +10,8 @@ import type { Ground } from '../tileset/ground';
 import { drawGroundAutotile, drawGroundUnderlay } from '../tileset/groundSheets';
 import { drawStairs } from '../tileset/stairsSheet';
 
+const PLAIN_AUTOTILE_INDEX = 0;
+
 export class Tile {
   readonly worldX: number;
   readonly worldY: number;
@@ -24,6 +26,7 @@ export class Tile {
   readonly cliffTopAutotileIndex: number | null;
   readonly stairs: StairsTile | null;
   readonly decoration: SheetTile | null;
+  readonly groundUnderRoad: Ground | null;
 
   constructor(
     worldX: number,
@@ -39,6 +42,7 @@ export class Tile {
     cliffTopAutotileIndex: number | null,
     stairs: StairsTile | null,
     decoration: SheetTile | null,
+    groundUnderRoad: Ground | null,
   ) {
     this.worldX = worldX;
     this.worldY = worldY;
@@ -53,6 +57,33 @@ export class Tile {
     this.cliffTopAutotileIndex = cliffTopAutotileIndex;
     this.stairs = stairs;
     this.decoration = decoration;
+    this.groundUnderRoad = groundUnderRoad;
+  }
+
+  private drawGround(
+    ctx: CanvasRenderingContext2D,
+    ground: Ground,
+    autotileIndex: number,
+    animationFrame: number,
+    screenX: number,
+    screenY: number,
+    size: number,
+  ): void {
+    if (!drawGroundAutotile(ctx, ground, autotileIndex, animationFrame, screenX, screenY, size)) {
+      ctx.fillStyle = fallbackColorOf(ground);
+      ctx.fillRect(screenX, screenY, size, size);
+    }
+  }
+
+  private drawGroundWithRim(
+    ctx: CanvasRenderingContext2D,
+    animationFrame: number,
+    screenX: number,
+    screenY: number,
+    size: number,
+  ): void {
+    if (this.underlays) drawGroundUnderlay(ctx, this.underlays, animationFrame, screenX, screenY, size);
+    this.drawGround(ctx, this.ground, this.autotileIndex, animationFrame, screenX, screenY, size);
   }
 
   draw(
@@ -62,10 +93,18 @@ export class Tile {
     size: number,
     animationFrame: number,
   ): void {
-    if (this.underlays) drawGroundUnderlay(ctx, this.underlays, animationFrame, screenX, screenY, size);
-    if (!drawGroundAutotile(ctx, this.ground, this.autotileIndex, animationFrame, screenX, screenY, size)) {
-      ctx.fillStyle = fallbackColorOf(this.ground);
-      ctx.fillRect(screenX, screenY, size, size);
+    if (this.groundUnderRoad) {
+      this.drawGround(
+        ctx,
+        this.groundUnderRoad,
+        PLAIN_AUTOTILE_INDEX,
+        animationFrame,
+        screenX,
+        screenY,
+        size,
+      );
+    } else {
+      this.drawGroundWithRim(ctx, animationFrame, screenX, screenY, size);
     }
 
     if (this.cliffType && hasCliffSheet(this.heightLevel)) {
@@ -75,6 +114,8 @@ export class Tile {
     } else if (this.cliffTopAutotileIndex !== null) {
       drawCliffTop(ctx, this.heightLevel, this.cliffTopAutotileIndex, screenX, screenY, size);
     }
+
+    if (this.groundUnderRoad) this.drawGroundWithRim(ctx, animationFrame, screenX, screenY, size);
 
     if (this.stairs && hasCliffSheet(this.heightLevel)) drawStairs(ctx, this.stairs, screenX, screenY, size);
 

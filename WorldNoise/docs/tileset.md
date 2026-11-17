@@ -93,4 +93,4 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   lane - 1 to lane + 2) carry a `StairsTile` of the kind `eastWest` with its column and row in the stairs; the sheet columns 0 and 1 are used
   when the upper level lies west (the cliff on the right of the stairs), columns 2 and 3 when it lies east, rows 0 to 3. The stairs are drawn
   over any tile of the bulge that has a cliff sheet, also the two without a piece (the inner ring is below, the overlay is opaque there).
-  A road tile (ground `road`, `bridge` or `cityStreet`, never a stairs tile) draws no cliff piece and no inner ring (`Chunk`, `isRoadGround`), so a road on a ring or on a piece tile outside a crossing lies over the cliff instead of being covered by it.
+  A road tile (ground `road`, `bridge` or `cityStreet`, never a stairs tile) is drawn in the order biome ground (`Tile.groundUnderRoad`, plain), cliff piece or inner ring, then the road with its own rim (`Tile.drawGroundWithRim`), so a road lies over a cliff but the cliff stays under its rim and the edges next to it stay clean. Dropping the cliff piece under a road was tried and left unclean edges.

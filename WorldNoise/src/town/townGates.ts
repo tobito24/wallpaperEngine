@@ -1,6 +1,9 @@
 import {
   CHUNK_SIZE,
   TOWN_CACHE_MAX_ENTRIES,
+  TOWN_GATE_LEVEL_DEPTH_TILES,
+  TOWN_GATE_LEVEL_HALF_WIDTH_TILES,
+  TOWN_GATE_WATER_COST,
   TOWN_GATE_WATER_DEPTH_TILES,
   TOWN_GATE_WATER_HALF_WIDTH_TILES,
 } from '../config/constants';
@@ -119,6 +122,36 @@ function sharedLaneKey(town: Town, side: GateSide): string {
   return `gate:${town.cx}:${town.cy}:${pair}`;
 }
 
+function gateCost(town: Town, lane: EdgeLane, side: GateSide): number {
+  return waterNear(lane, side) * TOWN_GATE_WATER_COST + levelVariation(town, lane, side);
+}
+
+function ringLevelBeyond(town: Town, x: number, y: number): number {
+  const baseLevel = heightLevelAt(x, y, elevationNoise(x, y));
+  if (baseLevel === WATER_LEVEL) return WATER_LEVEL;
+  return Math.min(town.plateauLevel + 1, Math.max(town.plateauLevel - 1, baseLevel));
+}
+
+function levelVariation(town: Town, lane: EdgeLane, side: GateSide): number {
+  const { alongX, outward } = SIDE_GEOMETRY[side];
+  const centreX = Math.floor(lane.point.x);
+  const centreY = Math.floor(lane.point.y);
+  const levelAt = (across: number, depth: number): number =>
+    ringLevelBeyond(
+      town,
+      centreX + (alongX ? across : outward * depth),
+      centreY + (alongX ? outward * depth : across),
+    );
+  const referenceLevel = levelAt(0, 1);
+  let varying = 0;
+  for (let across = -TOWN_GATE_LEVEL_HALF_WIDTH_TILES; across <= TOWN_GATE_LEVEL_HALF_WIDTH_TILES; across++) {
+    for (let depth = 1; depth <= TOWN_GATE_LEVEL_DEPTH_TILES; depth++) {
+      if (levelAt(across, depth) !== referenceLevel) varying++;
+    }
+  }
+  return varying;
+}
+
 function findGate(town: Town, side: GateSide): Point {
   const opposite = OPPOSITE_SIDE[side];
   const ownLanes = edgeLanes(town, side);
@@ -132,18 +165,19 @@ function findGate(town: Town, side: GateSide): Point {
     const preferred = commonLanes.filter(
       (candidate) => ownMiddle.has(candidate.lane) && oppositeMiddle.has(candidate.lane),
     );
-    const waterOnBothSides = (candidate: EdgeLane): number =>
-      waterNear(candidate, side) + waterNear(oppositeByLane.get(candidate.lane) as EdgeLane, opposite);
-    return pickWithFewestWater(
-      preferred.length > 0 ? preferred : commonLanes,
-      waterOnBothSides,
-      sharedLaneKey(town, side),
-    ).point;
+    const costOnBothSides = (candidate: EdgeLane): number =>
+      gateCost(town, candidate, side) +
+      gateCost(town, oppositeByLane.get(candidate.lane) as EdgeLane, opposite);
+    const cheapestOf = (candidates: readonly EdgeLane[]): number =>
+      Math.min(...candidates.map(costOnBothSides));
+    const searched =
+      preferred.length > 0 && cheapestOf(preferred) <= cheapestOf(commonLanes) ? preferred : commonLanes;
+    return pickWithFewestWater(searched, costOnBothSides, sharedLaneKey(town, side)).point;
   }
 
   return pickWithFewestWater(
     middleThird(ownLanes),
-    (candidate) => waterNear(candidate, side),
+    (candidate) => gateCost(town, candidate, side),
     `gate:${town.cx}:${town.cy}:${side}`,
   ).point;
 }

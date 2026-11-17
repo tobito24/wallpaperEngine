@@ -6,6 +6,7 @@ import {
   TOWN_BUILDING_STREET_MARGIN_TILES,
   TOWN_CACHE_MAX_ENTRIES,
   TOWN_DOOR_PATH_MAX_TILES,
+  TOWN_DOOR_PATH_WIDTH_TILES,
   TOWN_HOUSES_PER_CHUNK,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
@@ -120,22 +121,56 @@ function computeLayout(town: Town): TownLayout {
   const isOnBuilding = (type: BuildingType, x: number, y: number, tileX: number, tileY: number): boolean =>
     tileX >= x && tileX < x + type.width && tileY >= y && tileY < y + type.height;
 
-  const pathFromDoor = (type: BuildingType, x: number, y: number): number[] | null => {
-    const startX = x + Math.floor(type.width / 2);
-    const startY = y + type.height;
-    if (startX >= width || startY >= height) return null;
-    const startIndex = startY * width + startX;
-    if (!free[startIndex] && !sidewalk[startIndex]) return null;
-    const cameFrom = new Map<number, number>([[startIndex, -1]]);
-    let frontier = [startIndex];
-    for (let length = 0; length <= TOWN_DOOR_PATH_MAX_TILES && frontier.length > 0; length++) {
+  const isWalkable = (index: number): boolean => free[index] === 1 || sidewalk[index] === 1;
+
+  const frontStripOf = (type: BuildingType, x: number, y: number): number[] | null => {
+    const strip: number[] = [];
+    for (let row = 0; row < TOWN_DOOR_PATH_WIDTH_TILES; row++) {
+      for (let column = 0; column < type.width; column++) {
+        const tileX = x + column;
+        const tileY = y + type.height + row;
+        if (tileX >= width || tileY >= height) return null;
+        const index = tileY * width + tileX;
+        if (!isWalkable(index)) return null;
+        strip.push(index);
+      }
+    }
+    return strip;
+  };
+
+  const widened = (type: BuildingType, x: number, y: number, tiles: ReadonlySet<number>): Set<number> => {
+    const result = new Set(tiles);
+    const canTake = (tileX: number, tileY: number): boolean =>
+      tileX >= 0 &&
+      tileY >= 0 &&
+      tileX < width &&
+      tileY < height &&
+      isWalkable(tileY * width + tileX) &&
+      !isOnBuilding(type, x, y, tileX, tileY);
+    const take = (first: readonly [number, number], second: readonly [number, number]): void => {
+      const [tileX, tileY] = canTake(first[0], first[1]) ? first : second;
+      if (canTake(tileX, tileY)) result.add(tileY * width + tileX);
+    };
+    for (const index of tiles) {
+      const tileX = index % width;
+      const tileY = Math.floor(index / width);
+      const runsVertically = tiles.has(index - width) || tiles.has(index + width);
+      const runsHorizontally = tiles.has(index - 1) || tiles.has(index + 1);
+      if (runsVertically) take([tileX + 1, tileY], [tileX - 1, tileY]);
+      if (runsHorizontally) take([tileX, tileY + 1], [tileX, tileY - 1]);
+    }
+    return result;
+  };
+
+  const pathFromFront = (type: BuildingType, x: number, y: number): Set<number> | null => {
+    const strip = frontStripOf(type, x, y);
+    if (strip === null) return null;
+    if (strip.some((index) => sidewalk[index])) return new Set(strip);
+    const cameFrom = new Map<number, number>(strip.map((index) => [index, -1]));
+    let frontier = strip;
+    for (let length = 1; length <= TOWN_DOOR_PATH_MAX_TILES && frontier.length > 0; length++) {
       const next: number[] = [];
       for (const index of frontier) {
-        if (sidewalk[index]) {
-          const path: number[] = [];
-          for (let step = index; step !== -1; step = cameFrom.get(step) as number) path.push(step);
-          return path;
-        }
         const tileX = index % width;
         const tileY = Math.floor(index / width);
         for (const [dx, dy] of PATH_STEPS) {
@@ -143,9 +178,13 @@ function computeLayout(town: Town): TownLayout {
           const ny = tileY + dy;
           if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
           const neighbour = ny * width + nx;
-          if (cameFrom.has(neighbour) || isOnBuilding(type, x, y, nx, ny)) continue;
-          if (!free[neighbour] && !sidewalk[neighbour]) continue;
+          if (cameFrom.has(neighbour) || isOnBuilding(type, x, y, nx, ny) || !isWalkable(neighbour)) continue;
           cameFrom.set(neighbour, index);
+          if (sidewalk[neighbour]) {
+            const connection = new Set<number>();
+            for (let step = neighbour; step !== -1; step = cameFrom.get(step) as number) connection.add(step);
+            return new Set([...strip, ...widened(type, x, y, connection)]);
+          }
           next.push(neighbour);
         }
       }
@@ -185,7 +224,7 @@ function computeLayout(town: Town): TownLayout {
       const x = index % width;
       const y = Math.floor(index / width);
       if (!fits(type, x, y)) continue;
-      const path = pathFromDoor(type, x, y);
+      const path = pathFromFront(type, x, y);
       if (path === null) continue;
       placements.push({ type, x, y });
       occupy(type, x, y);
