@@ -415,8 +415,14 @@ function probeOf(grid: Grid): GroundProbe {
       ? -1
       : (tileY - grid.minY) * grid.width + (tileX - grid.minX);
   return {
-    levelAt: (tileX, tileY) => (indexOf(tileX, tileY) < 0 ? -1 : grid.levels[indexOf(tileX, tileY)]),
-    isTown: (tileX, tileY) => indexOf(tileX, tileY) < 0 || grid.inside[indexOf(tileX, tileY)] === 1,
+    levelAt: (tileX, tileY) => {
+      const index = indexOf(tileX, tileY);
+      return index < 0 ? -1 : grid.levels[index];
+    },
+    isTown: (tileX, tileY) => {
+      const index = indexOf(tileX, tileY);
+      return index < 0 || grid.inside[index] === 1;
+    },
   };
 }
 

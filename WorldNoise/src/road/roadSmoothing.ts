@@ -156,8 +156,8 @@ function freeIntervals(
 }
 
 function waveSign(segment: Segment, start: number): number {
-  const hash = (Math.floor(start) * 73856093) ^ (Math.floor(segment.lateral) * 19349663);
-  return (hash & 1) === 0 ? 1 : -1;
+  const hash = Math.imul(Math.floor(start), 73856093) ^ Math.imul(Math.floor(segment.lateral), 19349663);
+  return ((hash >>> 7) & 1) === 0 ? 1 : -1;
 }
 
 function wavePoints(
@@ -171,12 +171,11 @@ function wavePoints(
   const low = Math.min(from, to) + ROAD_WAVE_MARGIN_TILES;
   const high = Math.max(from, to) - ROAD_WAVE_MARGIN_TILES;
   if (high - low < ROAD_WAVE_MIN_LENGTH_TILES) return [];
-  const [centreX, centreY] = tileAt(segment, (low + high) / 2, 0);
-  const level = ground.levelAt(centreX, centreY);
-  if (level <= 0 || ground.isTown(centreX, centreY)) return [];
-
   const runs: Point[][] = [];
   for (const [start, end] of freeIntervals(low, high, crossings)) {
+    const [centreX, centreY] = tileAt(segment, (start + end) / 2, 0);
+    const level = ground.levelAt(centreX, centreY);
+    if (level <= 0 || ground.isTown(centreX, centreY)) continue;
     const sign = waveSign(segment, start);
     const amplitude = WAVE_AMPLITUDES.find((candidate) =>
       isCorridorClear(segment, start, end, candidate, sign, ground, level),
@@ -201,7 +200,7 @@ export function smoothPolyline(
   crossings: readonly RoadCrossing[],
   ground: GroundProbe,
 ): Point[] {
-  if (points.length < 3) return [...points];
+  if (points.length < 2) return [...points];
   const radii = cornerRadii(points, crossings);
   const smoothed: Point[] = [points[0]];
   for (let index = 0; index + 1 < points.length; index++) {
