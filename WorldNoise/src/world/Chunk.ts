@@ -1,25 +1,7 @@
-import { TOWN_BIOME, biomeAt } from '../biome/biome';
-import type { Biome } from '../biome/biome';
-import { CHUNK_SIZE, ELEVATION_SEA_LEVEL } from '../config/constants';
-import { elevationNoise } from '../elevation/elevationNoise';
-import { CLIFF_LAYOUT_REACH_TILES, NO_INNER_RING, layoutCliffs } from '../elevation/cliffLayout';
-import { WATER_LEVEL, heightLevelAt } from '../elevation/heightLevel';
-import {
-  LEVEL_CLEANUP_REACH_TILES,
-  WATER_LIMIT_REACH_TILES,
-  cleanHeightLevels,
-  limitLevelsNearWater,
-} from '../elevation/levelCleanup';
-import { moistureNoise } from '../moisture/moistureNoise';
-import { stairsOf, tileKey } from '../road/crossingStairs';
-import { crossingsOf, flattenCrossings } from '../road/crossingTerrain';
-import { roadEdgesIn } from '../road/roadEdge';
-import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
-import { temperatureNoise } from '../temperature/temperatureNoise';
-import type { Town } from '../town/townPlacement';
-import { townDecorationAt, townPathAt } from '../town/townLayout';
-import { levelWithTown, townInfoAt } from '../town/townTerrain';
-import type { TownTileInfo } from '../town/townTerrain';
+import { CHUNK_SIZE } from '../config/constants';
+import { NO_INNER_RING } from '../elevation/cliffLayout';
+import { tileKey } from '../road/crossingStairs';
+import { townDecorationAt } from '../town/townLayout';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import type { SheetTile } from '../tileset/outsideSheet';
 import { groundOf, isRoadGround } from '../tileset/ground';
@@ -27,15 +9,14 @@ import type { Ground } from '../tileset/ground';
 import { lowerNeighbourGround } from '../tileset/cliffUnderlay';
 import { continuesInto, underlayGround } from '../tileset/groundRank';
 import { Tile } from './Tile';
+import { terrainBlockAt } from './terrainBlock';
 
 const BORDER_COLOR = '#ffcc00';
 const CHUNK_LABEL_FONT = '12px monospace';
 const CHUNK_LABEL_OFFSET_PX = 4;
 const CHUNK_LABEL_BASELINE_PX = 14;
-const PADDED_SIZE = CHUNK_SIZE + 2;
-const LEVEL_BLOCK_MARGIN = CLIFF_LAYOUT_REACH_TILES + LEVEL_CLEANUP_REACH_TILES + WATER_LIMIT_REACH_TILES;
 const PADDING = 1;
-const LEVEL_BLOCK_SIZE = CHUNK_SIZE + 2 * LEVEL_BLOCK_MARGIN;
+const PADDED_SIZE = CHUNK_SIZE + 2 * PADDING;
 
 const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, number, number, number])[] = [
   [0, -1, -1, 0, -1, -1],
@@ -43,8 +24,6 @@ const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, num
   [0, 1, -1, 0, -1, 1],
   [0, 1, 1, 0, 1, 1],
 ];
-
-const RECLAIMED_LAND_ELEVATION = ELEVATION_SEA_LEVEL + 0.001;
 
 export class Chunk {
   readonly chunkX: number;
@@ -59,81 +38,20 @@ export class Chunk {
 
     const originX = chunkX * CHUNK_SIZE;
     const originY = chunkY * CHUNK_SIZE;
-    const blockElevations = new Float64Array(LEVEL_BLOCK_SIZE * LEVEL_BLOCK_SIZE);
-    const blockLevels = new Uint8Array(LEVEL_BLOCK_SIZE * LEVEL_BLOCK_SIZE);
-    const blockTownInfos: (TownTileInfo | null)[] = [];
-    for (let by = 0; by < LEVEL_BLOCK_SIZE; by++) {
-      for (let bx = 0; bx < LEVEL_BLOCK_SIZE; bx++) {
-        const worldX = originX + bx - LEVEL_BLOCK_MARGIN;
-        const worldY = originY + by - LEVEL_BLOCK_MARGIN;
-        const blockIndex = by * LEVEL_BLOCK_SIZE + bx;
-        blockElevations[blockIndex] = elevationNoise(worldX, worldY);
-        const townInfo = townInfoAt(worldX, worldY);
-        blockTownInfos.push(townInfo);
-        blockLevels[blockIndex] = levelWithTown(
-          heightLevelAt(worldX, worldY, blockElevations[blockIndex]),
-          townInfo,
-        );
-      }
-    }
-    const blockMinX = originX - LEVEL_BLOCK_MARGIN;
-    const blockMinY = originY - LEVEL_BLOCK_MARGIN;
-    const crossings = crossingsOf(roadEdgesIn(blockMinX, blockMinY, LEVEL_BLOCK_SIZE, LEVEL_BLOCK_SIZE));
-    flattenCrossings(blockLevels, blockMinX, blockMinY, LEVEL_BLOCK_SIZE, crossings);
-    const stairs = stairsOf(crossings);
-    const blockCleanedLevels = cleanHeightLevels(
-      limitLevelsNearWater(blockLevels, LEVEL_BLOCK_SIZE),
-      LEVEL_BLOCK_SIZE,
+    const { elevations, levels, biomes, insideTowns, grounds, stairs, cliffLayout } = terrainBlockAt(
+      originX - PADDING,
+      originY - PADDING,
+      PADDED_SIZE,
     );
-    const cliffLayout = layoutCliffs(blockCleanedLevels, LEVEL_BLOCK_SIZE);
-
-    const elevations = new Float64Array(PADDED_SIZE * PADDED_SIZE);
-    const levels = new Uint8Array(PADDED_SIZE * PADDED_SIZE);
-    const biomes: Biome[] = [];
-    const insideTowns: (Town | null)[] = [];
-    for (let py = 0; py < PADDED_SIZE; py++) {
-      for (let px = 0; px < PADDED_SIZE; px++) {
-        const worldX = originX + px - 1;
-        const worldY = originY + py - 1;
-        const index = py * PADDED_SIZE + px;
-        const blockIndex =
-          (py + LEVEL_BLOCK_MARGIN - PADDING) * LEVEL_BLOCK_SIZE + px + LEVEL_BLOCK_MARGIN - PADDING;
-        levels[index] = blockCleanedLevels[blockIndex];
-        elevations[index] =
-          levels[index] > WATER_LEVEL && blockElevations[blockIndex] <= ELEVATION_SEA_LEVEL
-            ? RECLAIMED_LAND_ELEVATION
-            : blockElevations[blockIndex];
-        const townInfo = blockTownInfos[blockIndex];
-        insideTowns.push(townInfo?.inside ? townInfo.town : null);
-        biomes.push(
-          townInfo?.inside
-            ? TOWN_BIOME
-            : biomeAt(elevations[index], moistureNoise(worldX, worldY), temperatureNoise(worldX, worldY)),
-        );
-      }
-    }
-
-    const roads = roadTilesIn(originX - 1, originY - 1, PADDED_SIZE, PADDED_SIZE);
-    const grounds: Ground[] = biomes.map((biome, index) => {
-      const worldX = originX + (index % PADDED_SIZE) - 1;
-      const worldY = originY + Math.floor(index / PADDED_SIZE) - 1;
-      const town = insideTowns[index];
-      return groundOf(biome.id, {
-        isRoad: roads[index] === ROAD_TILE_MARK || (town !== null && townPathAt(town, worldX, worldY)),
-        isInsideTown: town !== null,
-        isStairs: stairs.has(tileKey(worldX, worldY)),
-      });
-    });
 
     const tiles: Tile[] = [];
     for (let ly = 0; ly < CHUNK_SIZE; ly++) {
       for (let lx = 0; lx < CHUNK_SIZE; lx++) {
         const index = (ly + 1) * PADDED_SIZE + (lx + 1);
         const level = levels[index];
-        const layoutIndex = (ly + LEVEL_BLOCK_MARGIN) * LEVEL_BLOCK_SIZE + lx + LEVEL_BLOCK_MARGIN;
         const ground = grounds[index];
-        const cliffType = cliffLayout.cliffTypes[layoutIndex];
-        const innerRingIndex = cliffLayout.innerRingIndices[layoutIndex];
+        const cliffType = cliffLayout.cliffTypes[index];
+        const innerRingIndex = cliffLayout.innerRingIndices[index];
 
         const town = insideTowns[index];
         const decoration: SheetTile | null = town ? townDecorationAt(town, originX + lx, originY + ly) : null;
