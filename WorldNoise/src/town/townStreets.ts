@@ -11,6 +11,7 @@ export type Street = readonly Point[];
 interface Gate {
   readonly side: GateSide;
   readonly point: Point;
+  readonly edgePoint: Point;
 }
 
 const streetCache = new Map<string, readonly Street[]>();
@@ -19,6 +20,7 @@ function gatesOf(town: Town): Gate[] {
   return GATE_SIDES.filter((side) => hasGate(town, side)).map((side) => ({
     side,
     point: padEndPoint(townGate(town, side), side),
+    edgePoint: townGate(town, side),
   }));
 }
 
@@ -112,7 +114,13 @@ function cornerStreet(town: Town, gates: readonly Gate[]): Street {
     northOrSouth.point,
   ];
   if (isStreetInside(town, viaInnerCorner)) return viaInnerCorner;
-  return [eastOrWest.point, { x: eastOrWest.point.x, y: northOrSouth.point.y }, northOrSouth.point];
+  return [
+    eastOrWest.point,
+    eastOrWest.edgePoint,
+    { x: eastOrWest.edgePoint.x, y: northOrSouth.edgePoint.y },
+    northOrSouth.edgePoint,
+    northOrSouth.point,
+  ];
 }
 
 function deadEndStreet(town: Town, gate: Gate): Street {
