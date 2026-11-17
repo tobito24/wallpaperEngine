@@ -183,7 +183,7 @@ function computeLayout(town: Town): TownLayout {
           if (sidewalk[neighbour]) {
             const connection = new Set<number>();
             for (let step = neighbour; step !== -1; step = cameFrom.get(step) as number) connection.add(step);
-            return widened(type, x, y, new Set([...strip, ...connection]));
+            return new Set([...strip, ...widened(type, x, y, connection)]);
           }
           next.push(neighbour);
         }
