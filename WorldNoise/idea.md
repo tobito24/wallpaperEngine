@@ -243,7 +243,7 @@ planner as a pure function of the town and its gates (a list of straight segment
 say, no street leaves the footprint or touches a cliff, a chunk takes at most the 3 ms budget of the road planning, and a chunk
 equals the whole map.
 
-### Gate pads and the house path network (decided 2026-11-17, pads built, path network not built yet)
+### Gate pads and the house path network (decided 2026-11-17, built)
 
 Why: 17 of 239 gates (measured on 97 towns) still have a road crossing a cliff without stairs close to the gate. A gate often
 lies right behind a cliff, so the road planner has to find a place for stairs in an uncontrolled spot and sometimes bends
@@ -269,7 +269,7 @@ strangely towards the cliff edge. The fix is to give the planner a controlled sp
   street form a graph: the nodes are the strips and the sidewalk of the streets, the edges are shortest paths (breadth first over free
   tiles). The paths are the minimum spanning tree of this graph: every building is connected once, to the street or to a nearer
   building, and the network reaches the street at as few places as the tree needs. A building whose strip cannot be reached is
-  dropped. The longest connection grows from 10 to 14 tiles so the tree has room (judged by eye). Paths stay 2 tiles wide.
+  dropped. The longest connection grew from 10 to 14 tiles so the tree has room (judged by eye). Paths stay 2 tiles wide.
 
 ### Height levels and cliffs
 
