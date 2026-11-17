@@ -231,7 +231,7 @@ Rounded ends, not rounded corners (clarified by the user 2026-11-17). The corner
 curve: a street turns at a right angle and the autotile draws the corner piece. "Rounded" means that a road **ends** and gets its
 rounded cap from the autotile rim, as in the sketch of the user: the road on the upper level stops in front of the top of the
 stairs (and in front of a gate or the end of a dead-end street) and its last tile is an end piece, not a straight piece running
-on under the stairs. So the road mask must treat the stairs footprint (and the tiles beyond the end of a street) as not road for
+on under the stairs. The user wants the road not to run under the stairs at all, so that more end caps show in front of the stairs. So the road mask must treat the stairs footprint (and the tiles beyond the end of a street) as not road for
 the autotile neighbour check of the road ground, while the stairs overlay is drawn on top. This applies to both ends of a
 crossing (the road above and the road below), to the roads outside and to the streets inside. It needs no change of the path
 or of the corner smoothing outside (radius 3 stays as built); it is a change of the ground layer, looked at in step (3).
