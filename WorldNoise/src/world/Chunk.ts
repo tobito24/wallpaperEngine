@@ -17,7 +17,7 @@ import { roadEdgesIn } from '../road/roadEdge';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
 import { temperatureNoise } from '../temperature/temperatureNoise';
 import type { Town } from '../town/townPlacement';
-import { townDecorationAt } from '../town/townLayout';
+import { townDecorationAt, townPathAt } from '../town/townLayout';
 import { levelWithTown, townInfoAt } from '../town/townTerrain';
 import type { TownTileInfo } from '../town/townTerrain';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
@@ -114,15 +114,16 @@ export class Chunk {
     }
 
     const roads = roadTilesIn(originX - 1, originY - 1, PADDED_SIZE, PADDED_SIZE);
-    const grounds: Ground[] = biomes.map((biome, index) =>
-      groundOf(biome.id, {
-        isRoad: roads[index] === ROAD_TILE_MARK,
-        isInsideTown: insideTowns[index] !== null,
-        isStairs: stairs.has(
-          tileKey(originX + (index % PADDED_SIZE) - 1, originY + Math.floor(index / PADDED_SIZE) - 1),
-        ),
-      }),
-    );
+    const grounds: Ground[] = biomes.map((biome, index) => {
+      const worldX = originX + (index % PADDED_SIZE) - 1;
+      const worldY = originY + Math.floor(index / PADDED_SIZE) - 1;
+      const town = insideTowns[index];
+      return groundOf(biome.id, {
+        isRoad: roads[index] === ROAD_TILE_MARK || (town !== null && townPathAt(town, worldX, worldY)),
+        isInsideTown: town !== null,
+        isStairs: stairs.has(tileKey(worldX, worldY)),
+      });
+    });
 
     const tiles: Tile[] = [];
     for (let ly = 0; ly < CHUNK_SIZE; ly++) {
