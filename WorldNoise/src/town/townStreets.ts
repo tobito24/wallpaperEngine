@@ -1,8 +1,8 @@
 import { CHUNK_SIZE, TOWN_CACHE_MAX_ENTRIES } from '../config/constants';
 import { remember } from '../core/boundedCache';
-import { edgeExists } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
 import { GATE_SIDES, gateDirection, gateSideGeometry, townGate } from './townGates';
+import { hasGate, padEndPoint, padsOf } from './townPads';
 import type { GateSide } from './townGates';
 import type { Town } from './townPlacement';
 
@@ -11,21 +11,28 @@ export type Street = readonly Point[];
 interface Gate {
   readonly side: GateSide;
   readonly point: Point;
+  readonly edgePoint: Point;
 }
 
 const streetCache = new Map<string, readonly Street[]>();
 
 function gatesOf(town: Town): Gate[] {
-  return GATE_SIDES.filter((side) => {
-    const [stepX, stepY] = gateDirection(side);
-    return edgeExists(town.cx, town.cy, town.cx + stepX, town.cy + stepY);
-  }).map((side) => ({ side, point: townGate(town, side) }));
+  return GATE_SIDES.filter((side) => hasGate(town, side)).map((side) => ({
+    side,
+    point: padEndPoint(townGate(town, side), side),
+    edgePoint: townGate(town, side),
+  }));
 }
 
 function isFootprintPoint(town: Town, point: Point): boolean {
   const chunkX = Math.floor(point.x / CHUNK_SIZE);
   const chunkY = Math.floor(point.y / CHUNK_SIZE);
-  return town.chunks.some(([x, y]) => x === chunkX && y === chunkY);
+  if (town.chunks.some(([x, y]) => x === chunkX && y === chunkY)) return true;
+  const tileX = Math.floor(point.x);
+  const tileY = Math.floor(point.y);
+  return padsOf(town).some(
+    (pad) => tileX >= pad.minX && tileX <= pad.maxX && tileY >= pad.minY && tileY <= pad.maxY,
+  );
 }
 
 function middleOf(low: number, high: number): number {
@@ -107,7 +114,13 @@ function cornerStreet(town: Town, gates: readonly Gate[]): Street {
     northOrSouth.point,
   ];
   if (isStreetInside(town, viaInnerCorner)) return viaInnerCorner;
-  return [eastOrWest.point, { x: eastOrWest.point.x, y: northOrSouth.point.y }, northOrSouth.point];
+  return [
+    eastOrWest.point,
+    eastOrWest.edgePoint,
+    { x: eastOrWest.edgePoint.x, y: northOrSouth.edgePoint.y },
+    northOrSouth.edgePoint,
+    northOrSouth.point,
+  ];
 }
 
 function deadEndStreet(town: Town, gate: Gate): Street {

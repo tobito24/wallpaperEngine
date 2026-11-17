@@ -3,6 +3,7 @@ import {
   TOWN_CACHE_MAX_ENTRIES,
   TOWN_GATE_LEVEL_DEPTH_TILES,
   TOWN_GATE_LEVEL_HALF_WIDTH_TILES,
+  TOWN_GATE_PAD_DEPTH_TILES,
   TOWN_GATE_WATER_COST,
   TOWN_GATE_WATER_DEPTH_TILES,
   TOWN_GATE_WATER_HALF_WIDTH_TILES,
@@ -142,10 +143,11 @@ function levelVariation(town: Town, lane: EdgeLane, side: GateSide): number {
       centreX + (alongX ? across : outward * depth),
       centreY + (alongX ? outward * depth : across),
     );
-  const referenceLevel = levelAt(0, 1);
+  const firstDepth = TOWN_GATE_PAD_DEPTH_TILES + 1;
+  const referenceLevel = levelAt(0, firstDepth);
   let varying = 0;
   for (let across = -TOWN_GATE_LEVEL_HALF_WIDTH_TILES; across <= TOWN_GATE_LEVEL_HALF_WIDTH_TILES; across++) {
-    for (let depth = 1; depth <= TOWN_GATE_LEVEL_DEPTH_TILES; depth++) {
+    for (let depth = firstDepth; depth < firstDepth + TOWN_GATE_LEVEL_DEPTH_TILES; depth++) {
       if (levelAt(across, depth) !== referenceLevel) varying++;
     }
   }

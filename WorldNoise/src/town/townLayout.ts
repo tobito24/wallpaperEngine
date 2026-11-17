@@ -24,6 +24,7 @@ interface TownLayout {
   readonly minX: number;
   readonly minY: number;
   readonly width: number;
+  readonly height: number;
   readonly pieces: ReadonlyMap<number, SheetTile>;
   readonly paths: ReadonlySet<number>;
 }
@@ -244,19 +245,30 @@ function computeLayout(town: Town): TownLayout {
       }
     }
   }
-  return { minX, minY, width, pieces, paths };
+  return { minX, minY, width, height, pieces, paths };
 }
 
 function layoutOf(town: Town): TownLayout {
   return remember(layoutCache, TOWN_CACHE_MAX_ENTRIES, `${town.cx},${town.cy}`, () => computeLayout(town));
 }
 
+function isInLayout(layout: TownLayout, tileX: number, tileY: number): boolean {
+  return (
+    tileX >= layout.minX &&
+    tileX < layout.minX + layout.width &&
+    tileY >= layout.minY &&
+    tileY < layout.minY + layout.height
+  );
+}
+
 export function townPathAt(town: Town, tileX: number, tileY: number): boolean {
   const layout = layoutOf(town);
+  if (!isInLayout(layout, tileX, tileY)) return false;
   return layout.paths.has((tileY - layout.minY) * layout.width + (tileX - layout.minX));
 }
 
 export function townDecorationAt(town: Town, tileX: number, tileY: number): SheetTile | null {
   const layout = layoutOf(town);
+  if (!isInLayout(layout, tileX, tileY)) return null;
   return layout.pieces.get((tileY - layout.minY) * layout.width + (tileX - layout.minX)) ?? null;
 }

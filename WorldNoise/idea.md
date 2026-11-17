@@ -243,13 +243,13 @@ planner as a pure function of the town and its gates (a list of straight segment
 say, no street leaves the footprint or touches a cliff, a chunk takes at most the 3 ms budget of the road planning, and a chunk
 equals the whole map.
 
-### Gate pads and the house path network (decided 2026-11-17, not built yet)
+### Gate pads and the house path network (decided 2026-11-17, pads built, path network not built yet)
 
 Why: 17 of 239 gates (measured on 97 towns) still have a road crossing a cliff without stairs close to the gate. A gate often
 lies right behind a cliff, so the road planner has to find a place for stairs in an uncontrolled spot and sometimes bends
 strangely towards the cliff edge. The fix is to give the planner a controlled spot.
 
-- **Gate pad.** Every gate that has a road gets a **pad**: a square of 6 x 6 tiles outside the plateau edge, centred on the gate
+- **Gate pad.** Every gate that has a road gets a **pad**: a rectangle 6 deep and 7 wide (built: 7 so it covers the 7 lanes of a stairs footprint) outside the plateau edge, centred on the gate
   lane, at the plateau level P. Its ground is town paving (`city`). Water inside a pad becomes land (like the stairs do); the gate lane cost
   (water, level variation) stays as it is, so a pad is rarely on water. The plateau edge at the gate then has no cliff, the pad
   edge is straight, and the cliff (if any) lies at the outer edge of the pad, where the stairs go. Stairs are only tried there first

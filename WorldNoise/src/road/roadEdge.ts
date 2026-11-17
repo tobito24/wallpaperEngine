@@ -5,6 +5,7 @@ import type { Point } from '../skeleton/cellGrid';
 import { gateDirection, gateSideOf, townGate } from '../town/townGates';
 import { nodePosition } from '../town/townNodes';
 import { townOfCell } from '../town/townPlacement';
+import { padEndPoint } from '../town/townPads';
 import { townStreets } from '../town/townStreets';
 import type { CrossingOutcome, RoadCrossing } from './roadCrossing';
 import { planRoad } from './roadPlanner';
@@ -34,9 +35,8 @@ function edgeEnd(cx: number, cy: number, towardCx: number, towardCy: number): Pl
   const town = townOfCell(cx, cy);
   if (!town) return { point: nodePosition(cx, cy), outward: null };
   const side = gateSideOf(towardCx - cx, towardCy - cy);
-  const gate = townGate(town, side);
   const outward = gateDirection(side);
-  return { point: gate, outward };
+  return { point: padEndPoint(townGate(town, side), side), outward };
 }
 
 function crossingPosition(crossing: RoadCrossing): Point {
