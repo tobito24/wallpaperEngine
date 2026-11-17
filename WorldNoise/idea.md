@@ -347,7 +347,7 @@ Adding an item = a PNG plus one table row, no engine change (the rule of "More a
    largest footprint plus clearance), so no pass has conflicts inside itself. Touching trees use clearance 0 and no jitter.
 2. The item is picked from the pool of the biome by weight, among the items whose `where` fits the ground under the candidate.
 3. **Valid** when every footprint tile has an allowed ground, one level for the whole footprint, no road (and no rim of a road), no stairs or
-   crossing footprint, no cliff piece or inner ring, and no town (plateau, pads, landings; the terrace ring too in the first version), and the overhang
+   crossing footprint, no cliff piece or inner ring, and no town (plateau, pads, landings and the terrace ring; decided with the user: no deco in the ring for now), and the overhang
    covers no road, stairs or town and covers cliffs or deco only when the item allows it.
 4. **Accepted** when valid and no *accepted* item of an earlier pass overlaps its footprint plus clearance. The accepted items of the earlier
    pass depend only on terrain and on still earlier passes, never on their own pass, so the chain is three passes long, not unbounded: the result of one tile
@@ -366,7 +366,7 @@ the margin stays inside what the terrain block provides.
 **Rendering.** A **deco pass after all tiles** of the visible chunks (the tile pass stays as it is: ground, cliffs, stairs, town pieces, level shade): all items of the
 chunks in view plus the ring of chunks whose items reach into the view, sorted by `(layer, row of the footprint, column, hash)`, drawn
 scaled with `drawImage`. The sort is cached while the set of chunks does not change. Overhead parts come after all object parts, so a crown covers a
-neighbour's trunk and a cliff, like in the Pokemon games. The level shade (a tint per tile) is **not** applied to deco in the first version (judged by eye).
+neighbour's trunk and a cliff, like in the Pokemon games. The level shade (a tint per tile) **is** applied to deco (decided with the user): a sprite is tinted by the shade of the level of its footprint, using a copy of the sprite per level made once (`source-atop` fill on an offscreen canvas) and cached, so transparent parts stay transparent.
 Items with frames use the animation clock of the water.
 
 **Water and cliffs.** Surface `water` items (lilies on shallow water, rocks that stand out of the water) have a footprint on water tiles, layer `flat` or `object`, and are drawn
@@ -530,11 +530,8 @@ roads that always lead on and connect towns, and the seed can be changed from th
 - Town layouts: the Pokewiki city list (https://www.pokewiki.de/St%C3%A4dteverzeichnis) is the inspiration, above all the old
   towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format, the share of
   designed towns, and the rules of the generated layout (first proposal in Design).
-- **Deco: where the item table lives** (decision of the user needed): `src/deco/decoTable.ts` (committed, typed; my proposal) or a `deco.json` in the git-ignored
-  `assets/deco/` next to the PNGs (quicker for the artist, but lost on a fresh clone).
-- **Deco: the art of the first version.** Cut from `InfinityWalker/img/tileset.png` by a script, or the Alienor trees, or own PNGs; sizes of trees and rocks decide the cell sizes of the passes.
-- **Deco: the level shade** on objects (first version: none) and whether the terrace ring of a town may carry deco (first version: no).
-- **Deco: a global density property** for the Wallpaper Engine panel.
+- **Deco: a global density property** for the Wallpaper Engine panel (the item table lives in `src/deco/decoTable.ts`, the first art is cut from
+  `InfinityWalker/img/tileset.png` by a script, the level shade applies, the town ring stays free: all decided with the user 2026-11-17).
 - The list of town shapes beyond 2 x 2, 3 x 3, L and T.
 - Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks). A water animation
   speed property needs its own animation clock; scaling `nowMs` would make the frame jump whenever the value changes.
