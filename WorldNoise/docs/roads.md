@@ -113,5 +113,4 @@ no jump of two levels among land, no decorated tile in a footprint, 4.8 tiles fl
 before the planner (the bent line, the walk for crossings and the straightening): 559 crossings and 1 278 places where a road changed
 its level. The prototype of the planner that led here is described in [idea.md](../idea.md), Road planning.
 
-A road tile within `ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES` (1) of a stairs tile, but not a stairs tile itself, draws no cliff piece and
-no cliff top (`Chunk`), so the road meets the stairs without a cliff edge cutting in.
+Road tiles next to stairs keep their cliff pieces: leaving them out cut the cliff off abruptly (tried and removed).

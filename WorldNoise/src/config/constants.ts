@@ -104,5 +104,3 @@ export const TEMPERATURE_BAND_THRESHOLDS: readonly number[] = [1 / 3, 2 / 3];
 export const TICK_INTERVAL_DEFAULT_MS = 250;
 export const MIN_TICK_INTERVAL_MS = 100;
 export const MAX_TICK_INTERVAL_MS = 2000;
-
-export const ROAD_COVERS_CLIFF_NEAR_STAIRS_TILES = 1;
