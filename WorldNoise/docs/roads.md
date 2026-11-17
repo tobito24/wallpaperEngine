@@ -12,7 +12,9 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
 `CROSSING_LANES_AFTER_TILES`, `CROSSING_EAST_WEST_EXTRA_LANES_AFTER_TILES`, `CROSSING_MAX_FLATTENED_TILES`), the planner constants
 (`ROAD_PLANNING_MARGIN_TILES`, `ROAD_RUN_BEFORE_CROSSING_TILES`, `ROAD_LOCK_AFTER_CROSSING_TILES`, `ROAD_MIN_TURN_RUN_TILES`,
 `ROAD_MIN_CROSSING_GAP_TILES` and the costs `ROAD_STEP_COST`, `ROAD_TURN_COST`, `ROAD_WATER_STEP_COST`, `ROAD_EDGE_HUGGING_COST`,
-`ROAD_CROSSING_COST`, `ROAD_FLATTENED_TILE_COST`, `ROAD_UNPLANNED_CROSSING_COST`, `ROAD_FOREIGN_PLATEAU_COST`) and the cache limits
+`ROAD_CROSSING_COST`, `ROAD_FLATTENED_TILE_COST`, `ROAD_UNPLANNED_CROSSING_COST`, `ROAD_FOREIGN_PLATEAU_COST`), the smoothing constants
+(`ROAD_CORNER_RADIUS_TILES`, `ROAD_WAVE_AMPLITUDE_TILES`, `ROAD_WAVE_LENGTH_TILES`, `ROAD_WAVE_MARGIN_TILES`, `ROAD_WAVE_MIN_LENGTH_TILES`,
+`ROAD_WAVE_SAMPLE_STEP_TILES`) and the cache limits
 `SKELETON_CACHE_MAX_ENTRIES` / `ROAD_EDGE_CACHE_MAX_ENTRIES`.
 
 ## Modules
@@ -29,7 +31,7 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
   the town layer. Measured on 57 600 cells: no node has fewer than two edges (46 % have 2, 39 % 3, 15 % 4), every
   edge is seen identically from both ends. Degree two does not make one connected network: islands of linked cells and
   closed loops can exist, and a path between two given towns is not guaranteed.
-- **`road/roadPlanner.ts`** (new) — `planRoad(start, end)`: the road of one edge, planned on the level field. An end is a point (a
+- **`road/roadPlanner.ts`** (new) — `planRoad(start, end)`: the road of one edge, planned on the level field (the result goes through `smoothPolyline`). An end is a point (a
   tile centre) and, at a town gate, the direction outward. Grid A* in a box around the two ends (`ROAD_PLANNING_MARGIN_TILES` 14 tiles
   more on every side, so the road stays inside the two cells of its edge, checked when the module loads: nodes and gates lie at least
   16 tiles inside their cell) over the level of a tile (the noise level with the town override, `levelWithTown`). A state is tile,
@@ -51,10 +53,20 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
     `ROAD_EDGE_HUGGING_COST` (the road is 3 tiles wide, it should not run along a cliff); a plateau tile of a town costs
     `ROAD_FOREIGN_PLATEAU_COST` unless it is an end (the planner never plans inside a town);
   - a gate end starts (or ends) straight along the gate direction.
-  The result is the polyline (the tile centres at the corners, plus the two points of a vertical step at the boundary of an east/west
+  The result before the smoothing is the polyline (the tile centres at the corners, plus the two points of a vertical step at the boundary of an east/west
   crossing, collinear points dropped), the crossings (`RoadCrossing`: axis, boundary, lane = the row or column of the road on the upper
   side, side and levels of the upper level, so the stairs, the footprint and the road mask agree) and the level changes that were no
   crossing (`unplanned`). The search buffers are reused between calls (up to a few million states for a long edge).
+- **`road/roadSmoothing.ts`** (new) — `smoothPolyline(points, crossings, ground)`: the planned polyline has right-angle corners and long straights;
+  this makes it softer without moving a stair. A corner is cut by a quadratic curve (the corner as control point, `ROAD_CORNER_RADIUS_TILES`
+  3 at most, half of the shorter adjacent segment at most), and never closer to a crossing than its straight stretch of
+  `CROSSING_HALF_LENGTH_TILES` (3) each side of the boundary: with the 4 straight tiles the planner keeps before and after a crossing the radius
+  there is at most 1.5, so the road inside a footprint stays exactly where the stairs expect it. The two points of the vertical step of an east/west
+  crossing are never rounded. A straight stretch (after the corners) gets a gentle wave: the free part, `ROAD_WAVE_MARGIN_TILES` (6) in from
+  its ends and from every crossing, if at least `ROAD_WAVE_MIN_LENGTH_TILES` (12) long, moves sideways by `sin(2 pi along / ROAD_WAVE_LENGTH_TILES)`
+  times `ROAD_WAVE_AMPLITUDE_TILES` (2) times a window that is zero at both ends (the sign is a hash of the position, so it is deterministic;
+  amplitude 1 is tried when 2 does not fit). The wave is only built where the corridor (the road and one tile each side) stays on one land level
+  and outside every town plateau; elsewhere the road stays straight. `GroundProbe` is the level field of the search box.
 - **`road/roadEdge.ts`** (new) — `roadEdge(ax, ay, bx, by)`: the polyline, the crossings and the `candidateOutcomes` (`stairs` or `unplanned`
   with a position, for the debug overlay) of an edge, cached per edge (`ROAD_EDGE_CACHE_MAX_ENTRIES`, 5 000). The ends: a waypoint node
   (`town/waypointNodes.ts`) or, at a town, the gate towards the neighbour (`town/townGates.ts`); inside the plateau the polyline runs from the
@@ -90,7 +102,7 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
 
 On the 392 edges that `roadEdgesIn` returns for 1 024 x 1 024 tiles (one seed): 1 141 crossings (508 east/west) and 82 level changes without stairs, 77 of them
 within 9 tiles of a town (the terrace ring of a town has a cliff every 4 tiles, `TOWN_RING_TERRACE_STEP_TILES`); 328 of the 392 edges have no level
-change without stairs. The planning of all edges takes 5 s (13 ms per edge, once, cached), about 112 tiles per edge. Of 672 whole footprints 5 differ after
+change without stairs. The planning of all edges takes 5 s (13 ms per edge, once, cached), about 112 tiles per edge (107 after the smoothing: the cut corners are shorter), 49 points per polyline, 22 of the 154 edges that lie fully inside the area have a wave. Of 672 whole footprints 5 differ after
 the cleanup (another crossing touches them) and 40 have a road tile too many or too few around the stairs (a second road runs near);
 no jump of two levels among land, no decorated tile in a footprint, 4.8 tiles flattened per footprint on average (12 at most). Stairs
 before the planner (the bent line, the walk for crossings and the straightening): 559 crossings and 1 278 places where a road changed
