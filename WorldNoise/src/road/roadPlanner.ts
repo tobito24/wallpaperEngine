@@ -64,6 +64,7 @@ interface Grid {
   readonly height: number;
   readonly levels: Int8Array;
   readonly inside: Uint8Array;
+  readonly relaxed: boolean;
 }
 
 interface State {
@@ -110,7 +111,7 @@ function decode(code: number): State {
   return { cell: (rest - direction) / 4, direction, run, lock };
 }
 
-function buildGrid(start: Point, end: Point): Grid {
+function buildGrid(start: Point, end: Point, relaxed: boolean): Grid {
   const minX = Math.floor(Math.min(start.x, end.x)) - ROAD_PLANNING_MARGIN_TILES;
   const minY = Math.floor(Math.min(start.y, end.y)) - ROAD_PLANNING_MARGIN_TILES;
   const width = Math.ceil(Math.abs(start.x - end.x)) + 2 * ROAD_PLANNING_MARGIN_TILES + 1;
@@ -127,7 +128,7 @@ function buildGrid(start: Point, end: Point): Grid {
       inside[y * width + x] = info?.inside ? 1 : 0;
     }
   }
-  return { minX, minY, width, height, levels, inside };
+  return { minX, minY, width, height, levels, inside, relaxed };
 }
 
 function crossingChoice(
@@ -136,8 +137,9 @@ function crossingChoice(
   lane: number,
   upperSide: Side,
   upperLevel: number,
+  relaxed: boolean,
 ): CrossingChoice | null {
-  const key = `${axis}:${boundary}:${lane}:${upperSide}:${upperLevel}`;
+  const key = `${axis}:${boundary}:${lane}:${upperSide}:${upperLevel}:${relaxed}`;
   return remember(choiceCache, ROAD_EDGE_CACHE_MAX_ENTRIES, key, () => {
     const crossing: RoadCrossing = {
       id: `${axis}:${boundary}:${lane}`,
@@ -148,7 +150,7 @@ function crossingChoice(
       upperLevel,
       lowerLevel: upperLevel - 1,
     };
-    const flattenedTiles = flattenCostOf(crossing);
+    const flattenedTiles = flattenCostOf(crossing, relaxed);
     return flattenedTiles === null ? null : { crossing, flattenedTiles };
   });
 }
@@ -157,7 +159,7 @@ function oppositeOf(side: Side): Side {
   return side === 1 ? -1 : 1;
 }
 
-function choiceOfMove(move: CellMove): CrossingChoice | null {
+function choiceOfMove(move: CellMove, relaxed: boolean): CrossingChoice | null {
   if (Math.abs(move.fromLevel - move.toLevel) !== 1) return null;
   const upperIsAfter = move.toLevel > move.fromLevel;
   const upperLevel = Math.max(move.fromLevel, move.toLevel);
@@ -169,6 +171,7 @@ function choiceOfMove(move: CellMove): CrossingChoice | null {
       upperIsAfter ? move.toY : move.fromY,
       upperIsAfter ? forward : oppositeOf(forward),
       upperLevel,
+      relaxed,
     );
   }
   const forward: Side = move.toY > move.fromY ? 1 : -1;
@@ -178,6 +181,7 @@ function choiceOfMove(move: CellMove): CrossingChoice | null {
     move.fromX,
     upperIsAfter ? forward : oppositeOf(forward),
     upperLevel,
+    relaxed,
   );
 }
 
@@ -286,7 +290,9 @@ function search(grid: Grid, start: PlanEnd, end: PlanEnd): number[] {
 
       if (isLandChange(fromLevel, toLevel)) {
         const choice =
-          !turning && mayCross && direction % 2 === 1 ? choiceOfMove(moveOf(grid, state.cell, next)) : null;
+          !turning && mayCross && direction % 2 === 1
+            ? choiceOfMove(moveOf(grid, state.cell, next), grid.relaxed)
+            : null;
         if (choice === null) {
           stepCost += ROAD_UNPLANNED_CROSSING_COST;
         } else {
@@ -311,7 +317,7 @@ function search(grid: Grid, start: PlanEnd, end: PlanEnd): number[] {
         const next = ny * grid.width + nx;
         const toLevel = grid.levels[next];
         if (!isLandChange(fromLevel, toLevel) || toLevel < fromLevel !== (sideways === 1)) continue;
-        const choice = choiceOfMove(moveOf(grid, state.cell, next));
+        const choice = choiceOfMove(moveOf(grid, state.cell, next), grid.relaxed);
         if (choice === null) continue;
         const foreignPlateauCost =
           grid.inside[next] === 1 && next !== endCell && next !== startCell ? ROAD_FOREIGN_PLATEAU_COST : 0;
@@ -366,7 +372,10 @@ function extract(grid: Grid, cells: readonly PathCell[]): Extracted {
     if (!isLandChange(fromLevel, toLevel)) continue;
     const choice =
       to.lock === ROAD_LOCK_AFTER_CROSSING_TILES
-        ? choiceOfMove({ fromX: from.x, fromY: from.y, toX: to.x, toY: to.y, fromLevel, toLevel })
+        ? choiceOfMove(
+            { fromX: from.x, fromY: from.y, toX: to.x, toY: to.y, fromLevel, toLevel },
+            grid.relaxed,
+          )
         : null;
     if (choice === null) {
       extracted.unplanned.push({ x: (from.x + to.x) / 2 + 0.5, y: (from.y + to.y) / 2 + 0.5 });
@@ -426,8 +435,8 @@ function probeOf(grid: Grid): GroundProbe {
   };
 }
 
-export function planRoad(start: PlanEnd, end: PlanEnd): PlannedRoad {
-  const grid = buildGrid(start.point, end.point);
+function planWith(start: PlanEnd, end: PlanEnd, relaxed: boolean): PlannedRoad {
+  const grid = buildGrid(start.point, end.point, relaxed);
   const cells = cellsOf(grid, search(grid, start, end));
   const extracted = extract(grid, cells);
   return {
@@ -435,4 +444,11 @@ export function planRoad(start: PlanEnd, end: PlanEnd): PlannedRoad {
     crossings: extracted.crossings,
     unplanned: extracted.unplanned,
   };
+}
+
+export function planRoad(start: PlanEnd, end: PlanEnd): PlannedRoad {
+  const strict = planWith(start, end, false);
+  if (strict.unplanned.length === 0) return strict;
+  const relaxed = planWith(start, end, true);
+  return relaxed.unplanned.length < strict.unplanned.length ? relaxed : strict;
 }
