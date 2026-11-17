@@ -492,7 +492,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Stairs, east/west: bulge in the level map, 2 x 4 overlay, road one row south of the road above
 - [ ] Rule-based decoration (plan in "Decoration")
   - [x] 1. `assets/deco/` and `src/deco/decoTable.ts`: types, loader (one PNG per item or variant, a missing PNG draws nothing), a small dev set (a one-off script may cut items from `InfinityWalker/img/tileset.png` by the cells in `InfinityWalker/js/tiles.js`)
-  - [ ] 2. Terrain block shared by `Chunk` and the deco (grounds, final levels, cliff flags, roads, towns, stairs, with a margin); measure the chunk time before and after
+  - [x] 2. Terrain block shared by `Chunk` and the deco (grounds, final levels, cliff flags, roads, towns, stairs, with a margin); measure the chunk time before and after
   - [ ] 3. Placement core without drawing: passes, hashes, validity, acceptance, a measure script (items per 100 tiles per biome, rejection reasons, two chunkings give the same items), a debug overlay of footprints
   - [ ] 4. Deco pass in the renderer: layers, sorting, frames, the ring of neighbouring chunks; first items (a tree, a flower)
   - [ ] 5. Biome pools, densities and clustering, tuned by eye to "lots of decoration"
