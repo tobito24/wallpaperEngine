@@ -237,7 +237,7 @@ crossing (the road above and the road below), to the roads outside and to the st
 or of the corner smoothing outside (radius 3 stays as built); it is a change of the ground layer, looked at in step (3).
 
 Built in this order, each step looked at before the next: (1) the gate lanes: opposite gates share a lane (built), (2) the street
-planner as a pure function of the town and its gates (a list of straight segments inside the footprint), with a debug overlay,
+planner as a pure function of the town and its gates (a list of straight segments inside the footprint), built (the road mask paints the streets, so no extra overlay is needed),
 (3) street mask and town ground/road in the ground layer, (4) buildings along the streets (replaces `townLayout.ts` placement),
 (5) side paths, plazas, fountains, lamps, trees and fences. Good when: every gate of every town is joined to the others as the rules
 say, no street leaves the footprint or touches a cliff, a chunk takes at most the 3 ms budget of the road planning, and a chunk

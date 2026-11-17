@@ -1,11 +1,11 @@
-import { ROAD_EDGE_CACHE_MAX_ENTRIES, ROAD_RUN_BEFORE_CROSSING_TILES } from '../config/constants';
+import { ROAD_EDGE_CACHE_MAX_ENTRIES } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import { cellIndexOf, edgeExists, edgeKey, isEdgeOrdered } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
 import { gateDirection, gateSideOf, townGate } from '../town/townGates';
 import { nodePosition } from '../town/townNodes';
 import { townOfCell } from '../town/townPlacement';
-import { townInfoAt } from '../town/townTerrain';
+import { townStreets } from '../town/townStreets';
 import type { CrossingOutcome, RoadCrossing } from './roadCrossing';
 import { planRoad } from './roadPlanner';
 import type { PlanEnd } from './roadPlanner';
@@ -22,11 +22,6 @@ export interface RoadEdge {
   readonly candidateOutcomes: readonly CandidateOutcome[];
 }
 
-interface EdgeEnd {
-  readonly plan: PlanEnd;
-  readonly insidePoints: readonly Point[];
-}
-
 const EDGE_DIRECTIONS: readonly (readonly [number, number])[] = [
   [1, 0],
   [0, 1],
@@ -35,26 +30,13 @@ const CELL_PADDING = 2;
 
 const edgeCache = new Map<string, RoadEdge>();
 
-function straightApproach(gate: Point, step: readonly [number, number]): Point {
-  let approach = gate;
-  for (let tiles = 1; tiles <= ROAD_RUN_BEFORE_CROSSING_TILES; tiles++) {
-    const candidate = { x: gate.x - step[0] * tiles, y: gate.y - step[1] * tiles };
-    if (!townInfoAt(Math.floor(candidate.x), Math.floor(candidate.y))?.inside) break;
-    approach = candidate;
-  }
-  return approach;
-}
-
-function edgeEnd(cx: number, cy: number, towardCx: number, towardCy: number): EdgeEnd {
+function edgeEnd(cx: number, cy: number, towardCx: number, towardCy: number): PlanEnd {
   const town = townOfCell(cx, cy);
-  if (!town) return { plan: { point: nodePosition(cx, cy), outward: null }, insidePoints: [] };
+  if (!town) return { point: nodePosition(cx, cy), outward: null };
   const side = gateSideOf(towardCx - cx, towardCy - cy);
   const gate = townGate(town, side);
   const outward = gateDirection(side);
-  return {
-    plan: { point: gate, outward },
-    insidePoints: [town.center, straightApproach(gate, outward)],
-  };
+  return { point: gate, outward };
 }
 
 function crossingPosition(crossing: RoadCrossing): Point {
@@ -67,15 +49,19 @@ function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
   const ordered = isEdgeOrdered(ax, ay, bx, by);
   const start = ordered ? edgeEnd(ax, ay, bx, by) : edgeEnd(bx, by, ax, ay);
   const end = ordered ? edgeEnd(bx, by, ax, ay) : edgeEnd(ax, ay, bx, by);
-  const planned = planRoad(start.plan, end.plan);
+  const planned = planRoad(start, end);
   return {
-    polyline: [...start.insidePoints, ...planned.polyline, ...[...end.insidePoints].reverse()],
+    polyline: planned.polyline,
     crossings: planned.crossings,
     candidateOutcomes: [
       ...planned.crossings.map((crossing) => ({ ...crossingPosition(crossing), outcome: 'stairs' as const })),
       ...planned.unplanned.map((point) => ({ ...point, outcome: 'unplanned' as const })),
     ],
   };
+}
+
+function streetEdge(street: readonly Point[]): RoadEdge {
+  return { polyline: street, crossings: [], candidateOutcomes: [] };
 }
 
 export function roadEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
@@ -95,6 +81,8 @@ export function roadEdgesIn(minX: number, minY: number, width: number, height: n
       for (const [dx, dy] of EDGE_DIRECTIONS) {
         if (edgeExists(cx, cy, cx + dx, cy + dy)) edges.push(roadEdge(cx, cy, cx + dx, cy + dy));
       }
+      const town = townOfCell(cx, cy);
+      if (town) edges.push(...townStreets(town).map(streetEdge));
     }
   }
   return edges;
