@@ -2,7 +2,7 @@ import type { BiomeId } from '../biome/biome';
 import type { Ground } from '../tileset/ground';
 
 export type DecoLayer = 'flat' | 'object' | 'overhead';
-export type DecoPass = 'large' | 'medium' | 'small' | 'flat';
+export type DecoPass = 'grove' | 'large' | 'medium' | 'small' | 'flat';
 export type DecoSurface = 'land' | 'water';
 
 export interface DecoSize {
@@ -26,18 +26,21 @@ export interface DecoItem {
   readonly repeat: boolean;
   readonly overlapsDeco: boolean;
   readonly overlapsCliff: boolean;
+  readonly blob: boolean;
 }
 
 export const DECO_CELL_SIZE_BY_PASS: Readonly<Record<DecoPass, number>> = {
+  grove: 2,
   large: 6,
   medium: 4,
   small: 2,
   flat: 1,
 };
 
-export const DECO_PASS_ORDER: readonly DecoPass[] = ['large', 'medium', 'small', 'flat'];
+export const DECO_PASS_ORDER: readonly DecoPass[] = ['grove', 'large', 'medium', 'small', 'flat'];
 
 export const DECO_PASS_DENSITY: Readonly<Record<DecoPass, number>> = {
+  grove: 0.5,
   large: 0.3,
   medium: 0.4,
   small: 0.5,
@@ -45,11 +48,33 @@ export const DECO_PASS_DENSITY: Readonly<Record<DecoPass, number>> = {
 };
 
 export const DECO_CLUSTER_STRENGTH: Readonly<Record<DecoPass, number>> = {
+  grove: 2.2,
   large: 0.8,
   medium: 0.5,
   small: 0.3,
   flat: 0.2,
 };
+
+export const DECO_CLUSTER_FREQUENCY_BY_PASS: Readonly<Record<DecoPass, number>> = {
+  grove: 0.02,
+  large: 0.03,
+  medium: 0.03,
+  small: 0.03,
+  flat: 0.03,
+};
+
+export const DECO_DENSITY_BY_PASS_AND_BIOME: Readonly<
+  Partial<Record<DecoPass, Readonly<Partial<Record<BiomeId, number>>>>>
+> = {
+  grove: { forest: 0.6, jungle: 0.5, snowForest: 0.5, meadow: 0.12, steppe: 0.05, savanna: 0.03 },
+};
+
+export const DECO_BLOB_DENSITY: Readonly<Partial<Record<DecoPass, number>>> = {
+  small: 0.95,
+  flat: 0.9,
+};
+
+export const DECO_BLOB_BIOMES: readonly BiomeId[] = ['meadow', 'steppe', 'savanna'];
 
 export const DECO_BIOME_FACTOR: Readonly<Partial<Record<BiomeId, number>>> = {
   deepWater: 0.15,
@@ -75,6 +100,7 @@ const DEFAULTS = {
   repeat: false,
   overlapsDeco: false,
   overlapsCliff: false,
+  blob: false,
 } as const;
 
 type DecoRow = Partial<DecoItem> &
@@ -87,7 +113,7 @@ function item(row: DecoRow): DecoItem {
 export const DECO_ITEMS: readonly DecoItem[] = [
   item({
     name: 'tree-oak',
-    pass: 'large',
+    pass: 'grove',
     layer: 'object',
     sprite: FOUR_BY_THREE,
     footprint: TWO_BY_ONE,
@@ -151,6 +177,7 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     footprint: ONE_BY_ONE,
     biomes: { meadow: 3, forest: 2, steppe: 2, savanna: 2, jungle: 2 },
     overlapsDeco: true,
+    blob: true,
   }),
   item({
     name: 'fern',
@@ -160,6 +187,7 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     footprint: ONE_BY_ONE,
     biomes: { forest: 3, jungle: 3, meadow: 1 },
     overlapsDeco: true,
+    blob: true,
   }),
   item({
     name: 'stump',
@@ -176,7 +204,7 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     layer: 'object',
     sprite: ONE_BY_ONE,
     footprint: ONE_BY_ONE,
-    biomes: { mountain: 4, tundra: 2, steppe: 1, desert: 1, meadow: 0.5, forest: 0.5, savanna: 0.5 },
+    biomes: { mountain: 4, tundra: 2, steppe: 0.4, desert: 1, meadow: 0.3, forest: 0.3, savanna: 0.25 },
   }),
   item({
     name: 'flower',
@@ -195,6 +223,7 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     sprite: ONE_BY_ONE,
     footprint: ONE_BY_ONE,
     biomes: { meadow: 3, forest: 2, steppe: 3, savanna: 3 },
+    blob: true,
   }),
   item({
     name: 'mushroom',
@@ -254,8 +283,7 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
     if (
       entry.footprint.width + entry.clearance > cellSize ||
       entry.footprint.height + entry.clearance > cellSize ||
-      entry.sprite.width > cellSize ||
-      entry.sprite.height > cellSize
+      (!entry.overlapsDeco && (entry.sprite.width > cellSize || entry.sprite.height > cellSize))
     ) {
       throw new RangeError(`Deco item ${entry.name} does not fit a cell of its pass (${entry.pass})`);
     }

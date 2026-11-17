@@ -372,8 +372,16 @@ Items with frames use the animation clock of the water.
 **Water and cliffs.** Surface `water` items (lilies on shallow water, rocks that stand out of the water) have a footprint on water tiles, layer `flat` or `object`, and are drawn
 after the water because the deco pass is last. A tree whose crown hangs over a cliff edge uses `overlapsCliff` and an overhead part; its footprint stays on level ground.
 
-**Fields (later, separate mechanism).** Tall grass and flower meadows are areas, not objects: a noise mask per biome and a transparent **autotile** (the same 96 x 128 sheet format as the
-grounds) drawn as an overlay under the objects, with its own rim. It reuses the autotile code, not the item code.
+**Forests, meadow blobs, strips and fields (decided with the user 2026-11-17 after the first look).**
+
+- **Forests (built, step 5).** A `grove` pass with cells of 2 x 2 tiles in front of the big pass: trees (footprint 2 x 1) have `overlapsDeco`, so only their footprints must stay apart and the crowns may overlap, and the tree rows are sorted by the footprint row so a lower tree covers the crown of the one above. A low-frequency
+  noise (`DECO_CLUSTER_FREQUENCY_BY_PASS`) with a strong strength makes forests and clearings, `DECO_DENSITY_BY_PASS_AND_BIOME` the density per biome (forest 0.6, meadow 0.12 ...). The tree pieces of `InfinityWalker` that join crowns (`tree0_top_left_repeat_0`, `..._right_repeat_0`, `..._repeat_1`, tiles (4,36) to (5,37)) are a 2 x 2 crown module with
+  the peak in the middle and a seam below: it widens a crown by 2 tiles, so a wide canopy is left half + n modules + right half. That is a strip (below), used for tree rows and forest edges, after the overlapping trees have been judged by eye.
+- **Meadow blobs (built, step 5).** Round or oval patches in meadow, steppe and savanna, one cell of 40 tiles each with the chance 0.6, centre jittered; the radii (3 to 8 tiles, width and height apart), the angle, `rough` (edge noise, 0.05 to 0.35) and `dither` (soft edge band, 0.15 to 0.5) are drawn by hash, so no blob is a perfect circle.
+  Inside, the `small` and `flat` passes fill with the items marked `blob` (tufts, ferns; density 0.95 and 0.9) and every other pass is thinned out by the blob strength, so no rocks, logs or trees stand in a blob: a large meadow with dense grass.
+- **Strips (step 6), 1 x N.** An item that is a left end, a repeatable middle and a right end, N tiles long (cliff ridge `cliff_0` left, `cliff_1` middle, `cliff_2` right, 3 to 8 tiles, rare, horizontal, on land); the generalisation is a strip of whole columns (several rows), which makes the tree rows with the crown module.
+- **Fields (step 7), M x N.** Tall grass is an area, not an object: a rectangle of 3 x 3 up to about 6 x 5 tiles (the 9 pieces have corners, edges and a centre, no inner corners, so only rectangles; three looks: light green, dry yellow, dark green by biome), about one field per three chunks, drawn as an overlay under the objects.
+  It reuses the autotile code of the grounds with a 9-slice rule, not the item code.
 
 **Not part of this plan:** big structures (houses, ruins, wells; "prefab stamping" with a margin of its own), decoration inside towns (that is the town layout: trees along
 streets, fences), animals, collision. The table is built so that a structure is later one more item with a large footprint and `parts`.
@@ -495,10 +503,10 @@ Each step is built and looked at before the next one starts. The plan is final b
   - [x] 2. Terrain block shared by `Chunk` and the deco (grounds, final levels, cliff flags, roads, towns, stairs, with a margin); measure the chunk time before and after
   - [x] 3. Placement core without drawing: passes, hashes, validity, acceptance, a measure script (items per 100 tiles per biome, rejection reasons, two chunkings give the same items), a debug overlay of footprints
   - [x] 4. Deco pass in the renderer: layers, sorting, frames, the ring of neighbouring chunks; first items (a tree, a flower)
-  - [ ] 5. Biome pools, densities and clustering, tuned by eye to "lots of decoration"
-  - [ ] 6. Water items, cliff overhang, `overlapsDeco`, items with parts (trunk and crown)
-  - [ ] 7. Fields (tall grass, flower meadows) as an autotile overlay
-  - [ ] 8. `docs/deco.md`, numbers of the measure script into the doc
+  - [x] 5. Forests (grove pass), meadow blobs, densities tuned by eye
+  - [ ] 6. Strips (1 x N): the cliff ridge, tree rows with crown modules
+  - [ ] 7. Fields (tall grass, 9 pieces, rectangles) as an overlay
+  - [ ] 8. Water and cliff overhang review, items with parts, the final numbers in `docs/deco.md`
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
 - [x] A ground per biome: one ground per biome (rank order, sheet table into `assets/autotiles/`), flat color where a sheet is missing
 - [ ] Second ground per biome (bare earth beside the natural cover) and small secret paths inside a biome

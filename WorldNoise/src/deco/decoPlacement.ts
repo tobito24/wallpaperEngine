@@ -1,22 +1,23 @@
-import {
-  CHUNK_SIZE,
-  DECO_CACHE_EVICTED_SHARE,
-  DECO_CACHE_MAX_ENTRIES,
-  DECO_CLUSTER_FREQUENCY,
-  SEED,
-} from '../config/constants';
+import { CHUNK_SIZE, DECO_CACHE_EVICTED_SHARE, DECO_CACHE_MAX_ENTRIES, SEED } from '../config/constants';
 import { createFractalNoise2D } from '../core/noise';
 import { NO_INNER_RING } from '../elevation/cliffLayout';
 import { WATER_LEVEL } from '../elevation/heightLevel';
 import { ROAD_TILE_MARK } from '../road/roadMask';
+import type { BiomeId } from '../biome/biome';
 import { terrainBlockAt } from '../world/terrainBlock';
 import type { TerrainBlock } from '../world/terrainBlock';
+import { blobStrength, blobsOverlapping } from './decoBlobs';
+import type { Blob } from './decoBlobs';
 import { decoHash } from './decoHash';
 import {
   DECO_BIOME_FACTOR,
+  DECO_BLOB_BIOMES,
+  DECO_BLOB_DENSITY,
   DECO_CELL_SIZE_BY_PASS,
+  DECO_CLUSTER_FREQUENCY_BY_PASS,
   DECO_CLUSTER_STRENGTH,
   DECO_CONFLICT_REACH_TILES,
+  DECO_DENSITY_BY_PASS_AND_BIOME,
   DECO_ITEMS,
   DECO_MARGIN_TILES,
   DECO_PASS_DENSITY,
@@ -80,24 +81,34 @@ const ROAD_CLEARANCE_TILES = 1;
 const STAIRS_CLEARANCE_TILES = 3;
 const STAIRS_KEY_SEPARATOR = ',';
 
-const clusterNoise = createFractalNoise2D(`${SEED}:decoCluster`, 2, DECO_CLUSTER_FREQUENCY, 0.5, 2);
+const clusterNoiseByPass = new Map(
+  DECO_PASS_ORDER.map((pass) => [
+    pass,
+    createFractalNoise2D(`${SEED}:decoCluster:${pass}`, 2, DECO_CLUSTER_FREQUENCY_BY_PASS[pass], 0.5, 2),
+  ]),
+);
 
-const poolByPassAndBiome = new Map<string, Pool>();
-for (const pass of DECO_PASS_ORDER) {
-  const biomes = new Set<string>();
-  for (const item of DECO_ITEMS)
-    if (item.pass === pass) Object.keys(item.biomes).forEach((id) => biomes.add(id));
-  for (const biome of biomes) {
-    const entries = DECO_ITEMS.filter((item) => item.pass === pass && biome in item.biomes).map((item) => ({
-      item,
-      weight: item.biomes[biome as keyof DecoItem['biomes']] as number,
-    }));
-    poolByPassAndBiome.set(`${pass}:${biome}`, {
-      entries,
-      total: entries.reduce((sum, entry) => sum + entry.weight, 0),
-    });
+function buildPools(blobOnly: boolean): Map<string, Pool> {
+  const pools = new Map<string, Pool>();
+  for (const pass of DECO_PASS_ORDER) {
+    const passItems = DECO_ITEMS.filter((item) => item.pass === pass && (!blobOnly || item.blob));
+    const biomes = new Set<string>();
+    for (const item of passItems) Object.keys(item.biomes).forEach((id) => biomes.add(id));
+    for (const biome of biomes) {
+      const entries = passItems
+        .filter((item) => biome in item.biomes)
+        .map((item) => ({ item, weight: item.biomes[biome as keyof DecoItem['biomes']] as number }));
+      pools.set(`${pass}:${biome}`, {
+        entries,
+        total: entries.reduce((sum, entry) => sum + entry.weight, 0),
+      });
+    }
   }
+  return pools;
 }
+
+const poolByPassAndBiome = buildPools(false);
+const blobPoolByPassAndBiome = buildPools(true);
 
 function indexOf(block: TerrainBlock, x: number, y: number): number {
   const column = x - block.minX;
@@ -302,7 +313,8 @@ function occupy(item: DecoItem, x: number, y: number, block: TerrainBlock, occup
 }
 
 function clusterFactor(pass: DecoPass, x: number, y: number): number {
-  return Math.max(0, 1 + DECO_CLUSTER_STRENGTH[pass] * (2 * clusterNoise(x, y) - 1));
+  const noise = clusterNoiseByPass.get(pass);
+  return noise ? Math.max(0, 1 + DECO_CLUSTER_STRENGTH[pass] * (2 * noise(x, y) - 1)) : 1;
 }
 
 function clamp(value: number, low: number, high: number): number {
@@ -324,6 +336,7 @@ function candidateAt(
   cellX: number,
   cellY: number,
   block: TerrainBlock,
+  blobs: readonly Blob[],
   stats: DecoStats | undefined,
 ): DecoInstance | null {
   const cell = DECO_CELL_SIZE_BY_PASS[pass];
@@ -334,32 +347,36 @@ function candidateAt(
   const pointIndex = indexOf(block, pointX, pointY);
   if (pointIndex < 0) return null;
   const biome = block.grounds[pointIndex];
-  const pool = poolByPassAndBiome.get(`${pass}:${biome}`);
+  const blobShare =
+    blobs.length > 0 && DECO_BLOB_BIOMES.includes(biome as BiomeId) ? blobStrength(blobs, pointX, pointY) : 0;
+  const blobDensity = DECO_BLOB_DENSITY[pass];
+  const insideBlob = blobShare > 0 && blobDensity !== undefined;
+  const pool = (insideBlob ? blobPoolByPassAndBiome : poolByPassAndBiome).get(`${pass}:${biome}`);
   if (stats) stats.candidates++;
   if (!pool) {
     if (stats) stats.withoutPool++;
     return null;
   }
-  const density =
-    DECO_PASS_DENSITY[pass] *
-    (DECO_BIOME_FACTOR[biome as keyof typeof DECO_BIOME_FACTOR] ?? 1) *
-    clusterFactor(pass, pointX, pointY);
+  const biomeDensity =
+    DECO_DENSITY_BY_PASS_AND_BIOME[pass]?.[biome as BiomeId] ??
+    DECO_PASS_DENSITY[pass] * (DECO_BIOME_FACTOR[biome as BiomeId] ?? 1);
+  const baseDensity = insideBlob
+    ? (blobDensity as number) * blobShare
+    : biomeDensity * clusterFactor(pass, pointX, pointY);
+  const density = blobShare > 0 && !insideBlob ? baseDensity * (1 - blobShare) : baseDensity;
   if (decoHash(passIndex, cellX, cellY, 0) >= density) {
     if (stats) stats.gated++;
     return null;
   }
   const { item } = pickEntry(pool, decoHash(passIndex, cellX, cellY, 3));
   const variant = Math.floor(decoHash(passIndex, cellX, cellY, 4) * item.variants);
-  const x = clamp(
-    pointX,
-    originX + item.anchorColumn,
-    originX + cell - item.sprite.width + item.anchorColumn,
-  );
-  const y = clamp(
-    pointY,
-    originY + item.sprite.height - item.footprint.height,
-    originY + cell - item.footprint.height,
-  );
+  const lowestX = item.overlapsDeco ? originX : originX + item.anchorColumn;
+  const highestX = item.overlapsDeco
+    ? originX + cell - item.footprint.width
+    : originX + cell - item.sprite.width + item.anchorColumn;
+  const lowestY = item.overlapsDeco ? originY : originY + item.sprite.height - item.footprint.height;
+  const x = clamp(pointX, lowestX, highestX);
+  const y = clamp(pointY, lowestY, originY + cell - item.footprint.height);
   return { item, variant, x, y, level: block.levels[indexOf(block, x, y)] };
 }
 
@@ -377,6 +394,7 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
     coveredBySprite: new Uint8Array(count),
   };
   const accepted: DecoInstance[] = [];
+  const blobs = blobsOverlapping(block.minX, block.minY, block.minX + block.size, block.minY + block.size);
 
   DECO_PASS_ORDER.forEach((pass, passIndex) => {
     const reach = (DECO_PASS_ORDER.length - 1 - passIndex) * DECO_CONFLICT_REACH_TILES;
@@ -388,7 +406,7 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
     const acceptedInPass: DecoInstance[] = [];
     for (let cellY = firstCellY; cellY <= lastCellY; cellY++) {
       for (let cellX = firstCellX; cellX <= lastCellX; cellX++) {
-        const candidate = candidateAt(pass, passIndex, cellX, cellY, block, stats);
+        const candidate = candidateAt(pass, passIndex, cellX, cellY, block, blobs, stats);
         if (!candidate) continue;
         const reason = invalidReason(candidate.item, candidate.x, candidate.y, block, masks);
         if (reason) {

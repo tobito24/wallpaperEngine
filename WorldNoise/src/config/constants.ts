@@ -18,7 +18,16 @@ export const DECO_CACHE_MAX_ENTRIES = 1500;
 export const DECO_CACHE_EVICTED_SHARE = 0.25;
 export const DECO_MIN_TILE_SIZE_PX = 8;
 export const DECO_CHUNKS_PER_FRAME = 2;
-export const DECO_CLUSTER_FREQUENCY = 0.03;
+export const DECO_BLOB_CELL_TILES = 40;
+export const DECO_BLOB_CHANCE = 0.6;
+export const DECO_BLOB_MIN_RADIUS_TILES = 3;
+export const DECO_BLOB_MAX_RADIUS_TILES = 8;
+export const DECO_BLOB_MIN_ROUGH = 0.05;
+export const DECO_BLOB_MAX_ROUGH = 0.35;
+export const DECO_BLOB_MIN_DITHER = 0.15;
+export const DECO_BLOB_MAX_DITHER = 0.5;
+export const DECO_BLOB_EDGE_NOISE_FREQUENCY = 0.3;
+export const DECO_BLOB_REACH_TILES = 12;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;
