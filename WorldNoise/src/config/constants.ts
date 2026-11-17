@@ -13,6 +13,7 @@ export const AUTOTILE_QUARTER_COLUMNS = 6;
 export const ANIMATED_AUTOTILE_FRAME_DURATION_MS = 250;
 export const CLIFF_SHEET_TILE_SIZE_PX = 32;
 export const OUTSIDE_SHEET_TILE_SIZE_PX = 32;
+export const DECO_TILE_SIZE_PX = 32;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;
