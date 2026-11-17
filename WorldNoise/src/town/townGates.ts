@@ -2,6 +2,7 @@ import {
   CHUNK_SIZE,
   TOWN_CACHE_MAX_ENTRIES,
   TOWN_GATE_LEVEL_DEPTH_TILES,
+  TOWN_GATE_LANDING_DEPTH_TILES,
   TOWN_GATE_PAD_DEPTH_TILES,
   TOWN_GATE_PAD_TILES_BEFORE_LANE,
   TOWN_GATE_PAD_WIDTH_TILES,
@@ -144,7 +145,7 @@ function levelVariation(town: Town, lane: EdgeLane, side: GateSide): number {
       centreX + (alongX ? across : outward * depth),
       centreY + (alongX ? outward * depth : across),
     );
-  const firstDepth = TOWN_GATE_PAD_DEPTH_TILES + 1;
+  const firstDepth = TOWN_GATE_PAD_DEPTH_TILES + TOWN_GATE_LANDING_DEPTH_TILES + 1;
   const referenceLevel = levelAt(0, firstDepth);
   let varying = 0;
   const firstAcross = -TOWN_GATE_PAD_TILES_BEFORE_LANE;

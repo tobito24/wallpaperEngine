@@ -8,13 +8,14 @@ import {
   TOWN_GATE_STRAIGHT_HALF_WIDTH_TILES,
   TOWN_OUTLINE_WOBBLE_TILES,
   TOWN_RING_TERRACE_STEP_TILES,
+  TOWN_CELL_BUFFER_TILES,
   TOWN_RING_WIDTH_TILES,
 } from '../config/constants';
 import { createFractalNoise2D } from '../core/noise';
 import { WATER_LEVEL } from '../elevation/heightLevel';
 import { cellIndexOf } from '../skeleton/cellGrid';
 import { GATE_SIDES, gateSideGeometry, townGate } from './townGates';
-import { distanceToPads } from './townPads';
+import { distanceToPads, landingsOf, levelSourcesAt } from './townPads';
 import { townOfCell } from './townPlacement';
 import type { Town } from './townPlacement';
 import { TOWN_BLOCK_CHUNKS } from './townShapes';
@@ -22,7 +23,9 @@ import { TOWN_BLOCK_CHUNKS } from './townShapes';
 export interface TownTileInfo {
   readonly town: Town;
   readonly inside: boolean;
-  readonly ringDistance: number;
+  readonly fixedLevel?: number;
+  readonly ringLow?: number;
+  readonly ringHigh?: number;
 }
 
 function distanceToChunk(x: number, y: number, chunkX: number, chunkY: number): number {
@@ -90,6 +93,22 @@ function gateTaperedWobble(tileX: number, tileY: number, town: Town, wobble: num
   return tapered;
 }
 
+function ringBandAt(town: Town, x: number, y: number, distanceToFootprint: number): TownTileInfo {
+  const sources = [
+    { distance: distanceToFootprint, level: town.plateauLevel },
+    ...levelSourcesAt(town, x, y),
+  ];
+  let ringLow = -Infinity;
+  let ringHigh = Infinity;
+  for (const source of sources) {
+    if (source.distance > TOWN_RING_WIDTH_TILES) continue;
+    const allowed = 1 + Math.floor(source.distance / TOWN_RING_TERRACE_STEP_TILES);
+    ringLow = Math.max(ringLow, source.level - allowed);
+    ringHigh = Math.min(ringHigh, source.level + allowed);
+  }
+  return { town, inside: false, ringLow, ringHigh };
+}
+
 export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
   const town = townOfCell(cellIndexOf(tileX), cellIndexOf(tileY));
   if (!town) return null;
@@ -105,20 +124,30 @@ export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
     const inside =
       distanceToOutside > MAX_OUTLINE_WOBBLE_TILES ||
       distanceToOutside > gateTaperedWobble(tileX, tileY, town, outlineWobbleAt(x, y));
-    return { town, inside, ringDistance: 0 };
+    return inside ? { town, inside } : ringBandAt(town, x, y, 0);
   }
   const padDistance = distanceToPads(town, x, y);
-  if (padDistance === 0) return { town, inside: true, ringDistance: 0 };
+  if (padDistance === 0) {
+    const landing = landingsOf(town).find(
+      (candidate) =>
+        tileX >= candidate.minX &&
+        tileX <= candidate.maxX &&
+        tileY >= candidate.minY &&
+        tileY <= candidate.maxY,
+    );
+    if (landing) return { town, inside: false, fixedLevel: landing.level };
+    return { town, inside: true };
+  }
   const ringDistance = Math.min(nearest, padDistance);
-  return ringDistance <= TOWN_RING_WIDTH_TILES ? { town, inside: false, ringDistance } : null;
+  if (ringDistance > TOWN_RING_WIDTH_TILES || nearest > TOWN_CELL_BUFFER_TILES) return null;
+  return ringBandAt(town, x, y, nearest);
 }
 
 export function levelWithTown(baseLevel: number, info: TownTileInfo | null): number {
   if (!info) return baseLevel;
+  if (info.fixedLevel !== undefined) return info.fixedLevel;
   if (info.inside) return info.town.plateauLevel;
   if (baseLevel === WATER_LEVEL) return baseLevel;
 
-  const plateau = info.town.plateauLevel;
-  const allowedDifference = 1 + Math.floor(info.ringDistance / TOWN_RING_TERRACE_STEP_TILES);
-  return Math.min(plateau + allowedDifference, Math.max(plateau - allowedDifference, baseLevel));
+  return Math.min(info.ringHigh ?? baseLevel, Math.max(info.ringLow ?? baseLevel, baseLevel));
 }
