@@ -60,6 +60,10 @@ export class Tile {
     this.groundUnderRoad = groundUnderRoad;
   }
 
+  private hasCliffArt(): boolean {
+    return this.cliffType !== null || this.cliffTopAutotileIndex !== null;
+  }
+
   private drawGround(
     ctx: CanvasRenderingContext2D,
     ground: Ground,
@@ -82,7 +86,10 @@ export class Tile {
     screenY: number,
     size: number,
   ): void {
-    if (this.underlays) drawGroundUnderlay(ctx, this.underlays, animationFrame, screenX, screenY, size);
+    const keepsCliffVisible = this.groundUnderRoad !== null && this.hasCliffArt();
+    if (this.underlays && !keepsCliffVisible) {
+      drawGroundUnderlay(ctx, this.underlays, animationFrame, screenX, screenY, size);
+    }
     this.drawGround(ctx, this.ground, this.autotileIndex, animationFrame, screenX, screenY, size);
   }
 
