@@ -327,8 +327,8 @@ across chunk borders without extra work, which WFC was not in `InfinityWalker` (
 | anchor | where the footprint sits in the sprite (default: the bottom row, centred) |
 | layer | `flat` (under everything that stands: flowers, pebbles, lilies), `object` (trees, rocks, sorted by the row of the footprint), `overhead` (crowns, hanging parts, above objects and cliffs) |
 | parts | an item may be several parts with their own layer and offset (stacking): a tree = trunk on `object` + crown on `overhead` |
-| where | biomes with a weight each (the density and the pool), allowed grounds (default: the natural grounds of those biomes; `beach`, `shallowWater` and so on explicit), surface `land`, `water` or `both`, optional level range, optional "near water" |
-| repeat | may touch its own family (trees side by side, a hedge) or needs `clearance` free tiles around the footprint |
+| where | biomes with a weight each (the density and the pool), the ground of a footprint tile has to be a biome of the item (there is no separate `grounds` list, removed 2026-11-17: the biome keys do the job), surface `land`, `water` or `both`, optional level range, optional "near water" |
+| clearance | tiles around the footprint that stay free of earlier-pass items (trees side by side need none: the `grove` pass and `overlapsDeco` make them touch; there is no `repeat` flag, removed 2026-11-17 because nothing used it) |
 | overlap | whether its sprite may cover other deco (`overlapsDeco`) and cliffs (`overlapsCliff`: the footprint never stands on a cliff, only the overhang may reach over it); a footprint never overlaps another footprint; roads, stairs and towns are never covered |
 | variants, frames | `variants` = several PNGs of the same item (picked by hash), `frames` = animation frames side by side like the water (same frame clock) |
 | weight, size class | weight in the pool, and the size class decides the pass (below) |
