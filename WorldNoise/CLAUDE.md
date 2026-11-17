@@ -37,7 +37,7 @@ byte-identical to `TileGridBase`'s. See `TileGridBase/CLAUDE.md` for the full wr
 Idea and plan: `idea.md`. Entry point: `index.html` → `src/main.ts` → `src/core/App.ts`.
 
 Following the same split `ColorWar` uses: new, fork-specific logic lives in its own top-level folder (`src/elevation/`, `src/moisture/`, `src/temperature/`,
-`src/biome/`, `src/tileset/`, `src/skeleton/`, `src/road/`, `src/town/`) rather than growing
+`src/biome/`, `src/tileset/`, `src/skeleton/`, `src/road/`, `src/town/`, `src/deco/`) rather than growing
 the inherited `core`/`world` classes — those only get small additive changes (a new field, an extra import),
 nothing restructured.
 
@@ -53,6 +53,7 @@ New topic: new file in `docs/` and a row here.
 | Cell grid, graph of nodes and edges, road curve, road mask | [docs/roads.md](docs/roads.md) |
 | Town shapes, placement, plateau and outline, buildings and layout, town nodes | [docs/towns.md](docs/towns.md) |
 | `Tile`, `Chunk`, `WorldRenderer`, Wallpaper Engine properties | [docs/world-and-render.md](docs/world-and-render.md) |
+| Decoration items, table, sprites (not built beyond the table) | [docs/deco.md](docs/deco.md) |
 | Plan, design reasons, open questions | [idea.md](idea.md) |
 
 ## Controls (dev/debug, unchanged from TileGridBase for now)
