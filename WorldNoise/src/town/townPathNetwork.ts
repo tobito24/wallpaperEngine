@@ -77,8 +77,10 @@ function widened(input: PathNetworkInput, connection: ReadonlySet<number>): Set<
   for (const index of connection) {
     const tileX = index % width;
     const tileY = Math.floor(index / width);
-    const runsVertically = connection.has(index - width) || connection.has(index + width);
-    const runsHorizontally = connection.has(index - 1) || connection.has(index + 1);
+    const hasTile = (x: number, y: number): boolean =>
+      x >= 0 && y >= 0 && x < width && y < height && connection.has(y * width + x);
+    const runsVertically = hasTile(tileX, tileY - 1) || hasTile(tileX, tileY + 1);
+    const runsHorizontally = hasTile(tileX - 1, tileY) || hasTile(tileX + 1, tileY);
     if (runsVertically) take([tileX + 1, tileY], [tileX - 1, tileY]);
     if (runsHorizontally) take([tileX, tileY + 1], [tileX, tileY - 1]);
   }
@@ -116,6 +118,12 @@ export function planPathNetwork(input: PathNetworkInput): PathNetwork {
   input.strips.forEach((strip, index) => {
     if (connected[index + 1]) for (const tile of strip) tiles.add(tile);
   });
-  for (const tile of widened(input, connection)) tiles.add(tile);
+  const droppedStripTiles = new Set<number>();
+  input.strips.forEach((strip, index) => {
+    if (!connected[index + 1]) for (const tile of strip) droppedStripTiles.add(tile);
+  });
+  for (const tile of widened(input, connection)) {
+    if (!droppedStripTiles.has(tile) || connection.has(tile) || tiles.has(tile)) tiles.add(tile);
+  }
   return { connected: connected.slice(1), tiles };
 }
