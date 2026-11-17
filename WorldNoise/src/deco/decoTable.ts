@@ -29,6 +29,7 @@ export type DecoItemPass = DecoPass | 'field';
 
 export interface DecoItem {
   readonly name: string;
+  readonly fileStem?: string;
   readonly variants: number;
   readonly frames: number;
   readonly pass: DecoItemPass;
@@ -89,7 +90,18 @@ export const DECO_CLUSTER_FREQUENCY_BY_PASS: Readonly<Record<DecoPass, number>> 
 export const DECO_DENSITY_BY_PASS_AND_BIOME: Readonly<
   Partial<Record<DecoPass, Readonly<Partial<Record<BiomeId, number>>>>>
 > = {
-  grove: { forest: 0.6, jungle: 0.5, snowForest: 0.5, meadow: 0.12, steppe: 0.05, savanna: 0.03 },
+  grove: {
+    forest: 0.6,
+    jungle: 0.5,
+    snowForest: 0.5,
+    meadow: 0.12,
+    steppe: 0.05,
+    savanna: 0.05,
+    desert: 0.03,
+    tundra: 0.05,
+    snowField: 0.02,
+    shallowWater: 0.08,
+  },
 };
 
 export const DECO_BLOB_DENSITY: Readonly<Partial<Record<DecoPass, number>>> = {
@@ -147,6 +159,72 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     overlapsCliff: true,
   }),
   item({
+    name: 'tree-mossy',
+    pass: 'grove',
+    layer: 'object',
+    sprite: FOUR_BY_THREE,
+    footprint: TWO_BY_ONE,
+    anchorColumn: 1,
+    biomes: { forest: 3, jungle: 3 },
+    overlapsDeco: true,
+    overlapsCliff: true,
+  }),
+  item({
+    name: 'tree-swamp',
+    pass: 'grove',
+    layer: 'object',
+    sprite: FOUR_BY_THREE,
+    footprint: TWO_BY_ONE,
+    anchorColumn: 1,
+    biomes: { jungle: 2 },
+    overlapsDeco: true,
+    overlapsCliff: true,
+  }),
+  item({
+    name: 'tree-water',
+    pass: 'grove',
+    layer: 'object',
+    sprite: FOUR_BY_THREE,
+    footprint: TWO_BY_ONE,
+    anchorColumn: 1,
+    surface: 'water',
+    biomes: { shallowWater: 1 },
+    overlapsDeco: true,
+  }),
+  item({
+    name: 'tree-oak-snow',
+    pass: 'grove',
+    layer: 'object',
+    sprite: FOUR_BY_THREE,
+    footprint: TWO_BY_ONE,
+    anchorColumn: 1,
+    biomes: { snowForest: 8, tundra: 1, snowField: 0.5 },
+    overlapsDeco: true,
+    overlapsCliff: true,
+  }),
+  item({
+    name: 'tree-savanna',
+    pass: 'grove',
+    layer: 'object',
+    sprite: FOUR_BY_THREE,
+    footprint: TWO_BY_ONE,
+    anchorColumn: 1,
+    biomes: { savanna: 1 },
+    overlapsDeco: true,
+    overlapsCliff: true,
+  }),
+  item({
+    name: 'tree-cactus',
+    pass: 'grove',
+    layer: 'object',
+    sprite: FOUR_BY_THREE,
+    footprint: TWO_BY_ONE,
+    anchorColumn: 1,
+    biomes: { desert: 1 },
+    overlapsDeco: true,
+    overlapsCliff: true,
+  }),
+  item({
     name: 'palm',
     pass: 'large',
     layer: 'object',
@@ -164,6 +242,14 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     sprite: TWO_BY_TWO,
     footprint: TWO_BY_ONE,
     biomes: { mountain: 3, tundra: 1, desert: 1, steppe: 0.5, savanna: 0.5 },
+  }),
+  item({
+    name: 'boulder-snow',
+    pass: 'large',
+    layer: 'object',
+    sprite: TWO_BY_TWO,
+    footprint: TWO_BY_ONE,
+    biomes: { snowField: 1, tundra: 1, snowPeak: 1 },
   }),
   item({
     name: 'boulder-water',
@@ -220,6 +306,15 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     biomes: { forest: 3, meadow: 1, steppe: 0.5 },
   }),
   item({
+    name: 'log-snow',
+    fileStem: 'log-2',
+    pass: 'medium',
+    layer: 'object',
+    sprite: TWO_BY_ONE,
+    footprint: TWO_BY_ONE,
+    biomes: { snowForest: 3, tundra: 1 },
+  }),
+  item({
     name: 'rock-pair',
     pass: 'medium',
     layer: 'object',
@@ -247,6 +342,31 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     biomes: { forest: 3, jungle: 3, meadow: 1 },
     overlapsDeco: true,
     blob: true,
+  }),
+  item({
+    name: 'desert-plant',
+    pass: 'small',
+    layer: 'object',
+    sprite: ONE_BY_TWO,
+    footprint: ONE_BY_ONE,
+    biomes: { desert: 3 },
+    overlapsDeco: true,
+  }),
+  item({
+    name: 'skeleton',
+    pass: 'small',
+    layer: 'object',
+    sprite: ONE_BY_TWO,
+    footprint: ONE_BY_ONE,
+    biomes: { desert: 0.06, savanna: 0.03 },
+  }),
+  item({
+    name: 'oil-barrel',
+    pass: 'small',
+    layer: 'object',
+    sprite: ONE_BY_TWO,
+    footprint: ONE_BY_ONE,
+    biomes: { desert: 0.06 },
   }),
   item({
     name: 'stump',
@@ -283,6 +403,31 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     footprint: ONE_BY_ONE,
     biomes: { meadow: 3, forest: 2, steppe: 3, savanna: 3 },
     blob: true,
+  }),
+  item({
+    name: 'snow-grass',
+    pass: 'flat',
+    layer: 'flat',
+    sprite: ONE_BY_ONE,
+    footprint: ONE_BY_ONE,
+    biomes: { snowField: 2, tundra: 2, snowForest: 2 },
+  }),
+  item({
+    name: 'tuft-snow',
+    fileStem: 'tuft-small-2',
+    pass: 'flat',
+    layer: 'flat',
+    sprite: ONE_BY_ONE,
+    footprint: ONE_BY_ONE,
+    biomes: { snowField: 2, tundra: 2, snowForest: 2 },
+  }),
+  item({
+    name: 'desert-grass',
+    pass: 'flat',
+    layer: 'flat',
+    sprite: ONE_BY_ONE,
+    footprint: ONE_BY_ONE,
+    biomes: { desert: 3, savanna: 1 },
   }),
   item({
     name: 'mushroom',

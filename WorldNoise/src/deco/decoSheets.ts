@@ -19,7 +19,8 @@ export function decoStripFileName(item: DecoItem, part: (typeof DECO_STRIP_PARTS
 }
 
 export function decoFileName(item: DecoItem, variant: number): string {
-  return item.variants === 1 ? `${item.name}.png` : `${item.name}-${variant}.png`;
+  const stem = item.fileStem ?? item.name;
+  return item.variants === 1 ? `${stem}.png` : `${stem}-${variant}.png`;
 }
 
 function imageOf(file: string): HTMLImageElement | undefined {
