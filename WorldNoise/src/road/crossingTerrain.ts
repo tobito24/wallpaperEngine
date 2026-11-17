@@ -1,4 +1,5 @@
-import { footprintOf, plannedLevelAt } from './roadCrossing';
+import { WATER_LEVEL } from '../elevation/heightLevel';
+import { footprintOf, plannedLevelAt, waterZoneOf } from './roadCrossing';
 import type { RoadCrossing } from './roadCrossing';
 import type { RoadEdge } from './roadEdge';
 
@@ -11,6 +12,26 @@ export function crossingsOf(edges: readonly RoadEdge[]): RoadCrossing[] {
   return edges.flatMap((edge) => edge.crossings).sort(byId);
 }
 
+function convertWaterNear(
+  levels: Uint8Array,
+  minX: number,
+  minY: number,
+  size: number,
+  crossing: RoadCrossing,
+): void {
+  const zone = waterZoneOf(crossing);
+  const firstX = Math.max(minX, zone.minX);
+  const lastX = Math.min(minX + size - 1, zone.minX + zone.width - 1);
+  const firstY = Math.max(minY, zone.minY);
+  const lastY = Math.min(minY + size - 1, zone.minY + zone.height - 1);
+  for (let y = firstY; y <= lastY; y++) {
+    for (let x = firstX; x <= lastX; x++) {
+      const index = (y - minY) * size + (x - minX);
+      if (levels[index] === WATER_LEVEL) levels[index] = plannedLevelAt(crossing, x, y);
+    }
+  }
+}
+
 export function flattenCrossings(
   levels: Uint8Array,
   minX: number,
@@ -19,6 +40,7 @@ export function flattenCrossings(
   crossings: readonly RoadCrossing[],
 ): void {
   for (const crossing of crossings) {
+    convertWaterNear(levels, minX, minY, size, crossing);
     const footprint = footprintOf(crossing);
     const firstX = Math.max(minX, footprint.minX);
     const lastX = Math.min(minX + size - 1, footprint.minX + footprint.width - 1);

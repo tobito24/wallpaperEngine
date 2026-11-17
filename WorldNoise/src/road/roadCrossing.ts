@@ -4,7 +4,9 @@ import {
   CROSSING_LANES_AFTER_TILES,
   CROSSING_LANES_BEFORE_TILES,
   CROSSING_MAX_FLATTENED_TILES,
+  CROSSING_MAX_CONVERTED_WATER_TILES,
   CROSSING_MAX_FLATTENED_TILES_AT_TOWN,
+  CROSSING_WATER_TILE_FLATTEN_EQUIVALENT,
 } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { WATER_LEVEL, heightLevelAt, waterClearanceTiles } from '../elevation/heightLevel';
@@ -71,20 +73,13 @@ export function plannedLevelAt(crossing: RoadCrossing, tileX: number, tileY: num
   return inBulge ? crossing.upperLevel : straightLevelAt(crossing, tileX, tileY);
 }
 
-function tilesToFlatten(crossing: RoadCrossing): { count: number; touchesTown: boolean } {
-  const { minX, minY, width, height } = footprintOf(crossing);
-  let count = 0;
-  let touchesTown = false;
-  for (let y = minY; y < minY + height; y++) {
-    for (let x = minX; x < minX + width; x++) {
-      if (townInfoAt(x, y) !== null) touchesTown = true;
-      if (terrainLevelAt(x, y) !== straightLevelAt(crossing, x, y)) count++;
-    }
-  }
-  return { count, touchesTown };
+interface FootprintWork {
+  readonly flattened: number;
+  readonly convertedWater: number;
+  readonly touchesTown: boolean;
 }
 
-function waterReachTiles(crossing: RoadCrossing): number {
+export function waterReachTiles(crossing: RoadCrossing): number {
   const clearance = Math.max(
     waterClearanceTiles(crossing.upperLevel),
     waterClearanceTiles(crossing.lowerLevel),
@@ -92,20 +87,41 @@ function waterReachTiles(crossing: RoadCrossing): number {
   return Math.max(0, clearance - 1);
 }
 
-function hasWaterNear(crossing: RoadCrossing): boolean {
+export function waterZoneOf(crossing: RoadCrossing): TileRectangle {
   const { minX, minY, width, height } = footprintOf(crossing);
   const reach = waterReachTiles(crossing);
-  for (let y = minY - reach; y < minY + height + reach; y++) {
-    for (let x = minX - reach; x < minX + width + reach; x++) {
-      if (heightLevelAt(x, y, elevationNoise(x, y)) === WATER_LEVEL) return true;
+  return { minX: minX - reach, minY: minY - reach, width: width + 2 * reach, height: height + 2 * reach };
+}
+
+function isInside(rectangle: TileRectangle, tileX: number, tileY: number): boolean {
+  return (
+    tileX >= rectangle.minX &&
+    tileX < rectangle.minX + rectangle.width &&
+    tileY >= rectangle.minY &&
+    tileY < rectangle.minY + rectangle.height
+  );
+}
+
+function workOf(crossing: RoadCrossing): FootprintWork {
+  const footprint = footprintOf(crossing);
+  const zone = waterZoneOf(crossing);
+  let flattened = 0;
+  let convertedWater = 0;
+  let touchesTown = false;
+  for (let y = zone.minY; y < zone.minY + zone.height; y++) {
+    for (let x = zone.minX; x < zone.minX + zone.width; x++) {
+      const terrain = terrainLevelAt(x, y);
+      if (terrain === WATER_LEVEL) convertedWater++;
+      else if (isInside(footprint, x, y) && terrain !== straightLevelAt(crossing, x, y)) flattened++;
+      if (isInside(footprint, x, y) && townInfoAt(x, y) !== null) touchesTown = true;
     }
   }
-  return false;
+  return { flattened, convertedWater, touchesTown };
 }
 
 export function flattenCostOf(crossing: RoadCrossing): number | null {
-  const { count, touchesTown } = tilesToFlatten(crossing);
+  const { flattened, convertedWater, touchesTown } = workOf(crossing);
   const limit = touchesTown ? CROSSING_MAX_FLATTENED_TILES_AT_TOWN : CROSSING_MAX_FLATTENED_TILES;
-  if (count > limit || hasWaterNear(crossing)) return null;
-  return count;
+  if (flattened > limit || convertedWater > CROSSING_MAX_CONVERTED_WATER_TILES) return null;
+  return flattened + CROSSING_WATER_TILE_FLATTEN_EQUIVALENT * convertedWater;
 }
