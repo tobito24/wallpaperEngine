@@ -347,7 +347,7 @@ Adding an item = a PNG plus one table row, no engine change (the rule of "More a
    largest footprint plus clearance), so no pass has conflicts inside itself. Touching trees use clearance 0 and no jitter.
 2. The item is picked from the pool of the biome by weight, among the items whose `where` fits the ground under the candidate.
 3. **Valid** when every footprint tile has an allowed ground, one level for the whole footprint, no road (and no rim of a road), no stairs or
-   crossing footprint, no cliff piece or inner ring, and no town (plateau, pads, landings and the terrace ring; decided with the user: no deco in the ring for now), and the overhang
+   crossing footprint, no cliff piece (the inner ring of a cliff is allowed; decided with the user 2026-11-17, the cliffs looked bare), and no town (plateau, pads, landings and the terrace ring; decided with the user: no deco in the ring for now), and the overhang
    covers no road, stairs or town and covers cliffs or deco only when the item allows it.
 4. **Accepted** when valid and no *accepted* item of an earlier pass overlaps its footprint plus clearance. The accepted items of the earlier
    pass depend only on terrain and on still earlier passes, never on their own pass, so the chain is as long as the number of passes, not unbounded: the result of one tile
@@ -504,7 +504,7 @@ Each step is built and looked at before the next one starts. The plan is final b
   - [x] 3. Placement core without drawing: passes, hashes, validity, acceptance, a measure script (items per 100 tiles per biome, rejection reasons, two chunkings give the same items), a debug overlay of footprints
   - [x] 4. Deco pass in the renderer: layers, sorting, frames, the ring of neighbouring chunks; first items (a tree, a flower)
   - [x] 5. Forests (grove pass), meadow blobs, densities tuned by eye
-  - [ ] 6. Strips (1 x N): the cliff ridge, tree rows with crown modules
+  - [x] 6. Strips (1 x N): the cliff ridge (done); tree rows with crown modules (still open)
   - [ ] 7. Fields (tall grass, 9 pieces, rectangles) as an overlay
   - [ ] 8. Water and cliff overhang review, items with parts, the final numbers in `docs/deco.md`
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`

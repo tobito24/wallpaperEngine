@@ -1,4 +1,5 @@
 import { DECO_TILE_SIZE_PX } from '../config/constants';
+import { DECO_STRIP_PARTS } from './decoTable';
 import type { DecoItem } from './decoTable';
 
 const SHEET_DIRECTORY = '../../assets/deco/';
@@ -10,6 +11,12 @@ const spriteUrls = import.meta.glob<string>('../../assets/deco/*.png', {
 });
 
 const imageByFile = new Map<string, HTMLImageElement>();
+
+export type DecoStripImages = Readonly<Record<(typeof DECO_STRIP_PARTS)[number], HTMLImageElement>>;
+
+export function decoStripFileName(item: DecoItem, part: (typeof DECO_STRIP_PARTS)[number]): string {
+  return `${item.name}-${part}.png`;
+}
 
 export function decoFileName(item: DecoItem, variant: number): string {
   return item.variants === 1 ? `${item.name}.png` : `${item.name}-${variant}.png`;
@@ -31,6 +38,13 @@ export function decoImage(item: DecoItem, variant: number): HTMLImageElement | u
   return image && image.complete && image.naturalWidth > 0 ? image : undefined;
 }
 
+export function decoStripImages(item: DecoItem): DecoStripImages | undefined {
+  const images = DECO_STRIP_PARTS.map((part) => imageOf(decoStripFileName(item, part)));
+  if (images.some((image) => !image || !image.complete || image.naturalWidth === 0)) return undefined;
+  const [left, middle, right] = images as HTMLImageElement[];
+  return { left, middle, right };
+}
+
 export interface DecoSpriteSize {
   readonly widthTiles: number;
   readonly heightTiles: number;
@@ -44,6 +58,11 @@ export function decoSpriteSize(item: DecoItem, image: HTMLImageElement): DecoSpr
 }
 
 export function decoFilesMissing(item: DecoItem): string[] {
+  if (item.strip) {
+    return DECO_STRIP_PARTS.map((part) => decoStripFileName(item, part)).filter(
+      (file) => !spriteUrls[SHEET_DIRECTORY + file],
+    );
+  }
   const files: string[] = [];
   for (let variant = 0; variant < item.variants; variant++) {
     const file = decoFileName(item, variant);

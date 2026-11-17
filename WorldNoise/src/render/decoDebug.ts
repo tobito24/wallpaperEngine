@@ -1,5 +1,5 @@
 import type { Camera } from '../core/Camera';
-import { peekDecoOfChunk } from '../deco/decoPlacement';
+import { decoFootprintOf, decoSpriteOf, peekDecoOfChunk } from '../deco/decoPlacement';
 import type { DecoInstance } from '../deco/decoPlacement';
 import type { Chunk } from '../world/Chunk';
 
@@ -26,22 +26,24 @@ function drawInstance(
   size: number,
   instance: DecoInstance,
 ): void {
-  const { item, x, y } = instance;
+  const { item, x, y, length } = instance;
+  const sprite = decoSpriteOf(item, x, y, length);
+  const footprint = decoFootprintOf(item, x, y, length);
   ctx.strokeStyle = SPRITE_COLOR;
   ctx.lineWidth = 1;
   drawRectangle(ctx, camera, viewportWidth, viewportHeight, size, {
-    left: x - item.anchorColumn,
-    top: y + item.footprint.height - item.sprite.height,
-    width: item.sprite.width,
-    height: item.sprite.height,
+    left: sprite.left,
+    top: sprite.top,
+    width: sprite.right - sprite.left,
+    height: sprite.bottom - sprite.top,
   });
   ctx.strokeStyle = FOOTPRINT_COLOR;
   ctx.lineWidth = 2;
   drawRectangle(ctx, camera, viewportWidth, viewportHeight, size, {
-    left: x,
-    top: y,
-    width: item.footprint.width,
-    height: item.footprint.height,
+    left: footprint.left,
+    top: footprint.top,
+    width: footprint.right - footprint.left,
+    height: footprint.bottom - footprint.top,
   });
 }
 

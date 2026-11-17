@@ -1,6 +1,11 @@
-import { CHUNK_SIZE, DECO_CACHE_EVICTED_SHARE, DECO_CACHE_MAX_ENTRIES, SEED } from '../config/constants';
+import {
+  CHUNK_SIZE,
+  DECO_CACHE_EVICTED_SHARE,
+  DECO_CACHE_MAX_ENTRIES,
+  DECO_REGION_CHUNKS,
+  SEED,
+} from '../config/constants';
 import { createFractalNoise2D } from '../core/noise';
-import { NO_INNER_RING } from '../elevation/cliffLayout';
 import { WATER_LEVEL } from '../elevation/heightLevel';
 import { ROAD_TILE_MARK } from '../road/roadMask';
 import type { BiomeId } from '../biome/biome';
@@ -16,11 +21,11 @@ import {
   DECO_CELL_SIZE_BY_PASS,
   DECO_CLUSTER_FREQUENCY_BY_PASS,
   DECO_CLUSTER_STRENGTH,
-  DECO_CONFLICT_REACH_TILES,
   DECO_DENSITY_BY_PASS_AND_BIOME,
   DECO_ITEMS,
   DECO_MARGIN_TILES,
   DECO_PASS_DENSITY,
+  DECO_PASS_EXPANSION_TILES,
   DECO_PASS_ORDER,
 } from './decoTable';
 import type { DecoItem, DecoPass } from './decoTable';
@@ -30,6 +35,7 @@ export interface DecoInstance {
   readonly variant: number;
   readonly x: number;
   readonly y: number;
+  readonly length: number;
   readonly level: number;
 }
 
@@ -55,7 +61,7 @@ interface Pool {
   readonly total: number;
 }
 
-interface Rectangle {
+export interface Rectangle {
   readonly left: number;
   readonly top: number;
   readonly right: number;
@@ -67,7 +73,7 @@ interface Masks {
   readonly roadNear: Uint8Array;
   readonly stairs: Uint8Array;
   readonly stairsNear: Uint8Array;
-  readonly cliff: Uint8Array;
+  readonly cliffPiece: Uint8Array;
   readonly town: Uint8Array;
 }
 
@@ -137,15 +143,11 @@ function masksOf(block: TerrainBlock): Masks {
   const count = block.size * block.size;
   const road = new Uint8Array(count);
   const stairs = new Uint8Array(count);
-  const cliff = new Uint8Array(count);
+  const cliffPiece = new Uint8Array(count);
   const town = new Uint8Array(count);
   for (let index = 0; index < count; index++) {
     road[index] = block.roads[index] === ROAD_TILE_MARK ? 1 : 0;
-    cliff[index] =
-      block.cliffLayout.cliffTypes[index] !== null ||
-      block.cliffLayout.innerRingIndices[index] !== NO_INNER_RING
-        ? 1
-        : 0;
+    cliffPiece[index] = block.cliffLayout.cliffTypes[index] !== null ? 1 : 0;
     town[index] = block.townInfos[index] !== null ? 1 : 0;
   }
   for (const key of block.stairs.keys()) {
@@ -158,19 +160,21 @@ function masksOf(block: TerrainBlock): Masks {
     roadNear: dilate(road, block.size, ROAD_CLEARANCE_TILES),
     stairs,
     stairsNear: dilate(stairs, block.size, STAIRS_CLEARANCE_TILES),
-    cliff,
+    cliffPiece,
     town,
   };
 }
 
-function footprintOf(item: DecoItem, x: number, y: number): Rectangle {
-  return { left: x, top: y, right: x + item.footprint.width, bottom: y + item.footprint.height };
+export function decoFootprintOf(item: DecoItem, x: number, y: number, length: number): Rectangle {
+  const width = item.strip ? length : item.footprint.width;
+  return { left: x, top: y, right: x + width, bottom: y + item.footprint.height };
 }
 
-function spriteOf(item: DecoItem, x: number, y: number): Rectangle {
+export function decoSpriteOf(item: DecoItem, x: number, y: number, length: number): Rectangle {
+  const width = item.strip ? length : item.sprite.width;
   const left = x - item.anchorColumn;
   const bottom = y + item.footprint.height;
-  return { left, top: bottom - item.sprite.height, right: left + item.sprite.width, bottom };
+  return { left, top: bottom - item.sprite.height, right: left + width, bottom };
 }
 
 function expanded(rectangle: Rectangle, reach: number): Rectangle {
@@ -229,11 +233,12 @@ function invalidReason(
   item: DecoItem,
   x: number,
   y: number,
+  length: number,
   block: TerrainBlock,
   masks: Masks,
 ): string | null {
-  const footprint = footprintOf(item, x, y);
-  const sprite = spriteOf(item, x, y);
+  const footprint = decoFootprintOf(item, x, y, length);
+  const sprite = decoSpriteOf(item, x, y, length);
   const firstIndex = indexOf(block, x, y);
   if (firstIndex < 0) return 'outside';
   const level = block.levels[firstIndex];
@@ -246,7 +251,7 @@ function invalidReason(
     if (masks.stairs[index] || (!isFlat && masks.stairsNear[index])) return 'stairs';
     if (block.levels[index] !== level || (level === WATER_LEVEL) !== (item.surface === 'water'))
       return 'level';
-    if (masks.cliff[index]) return 'cliff';
+    if (masks.cliffPiece[index]) return 'cliff';
     return null;
   };
   for (let row = footprint.top; row < footprint.bottom; row++) {
@@ -261,14 +266,21 @@ function invalidReason(
   const overhangClear = everyTile(block, sprite, (index, column, row) => {
     if (insideFootprint(footprint, column, row)) return true;
     if (masks.town[index] || masks.road[index] || masks.stairs[index]) return false;
-    return item.overlapsCliff || !masks.cliff[index];
+    return item.overlapsCliff || !masks.cliffPiece[index];
   });
   return overhangClear ? null : 'overhang';
 }
 
-function conflicts(item: DecoItem, x: number, y: number, block: TerrainBlock, occupancy: Occupancy): boolean {
-  const footprint = footprintOf(item, x, y);
-  const sprite = spriteOf(item, x, y);
+function conflicts(
+  item: DecoItem,
+  x: number,
+  y: number,
+  length: number,
+  block: TerrainBlock,
+  occupancy: Occupancy,
+): boolean {
+  const footprint = decoFootprintOf(item, x, y, length);
+  const sprite = decoSpriteOf(item, x, y, length);
   if (
     anyTile(
       block,
@@ -295,8 +307,15 @@ function conflicts(item: DecoItem, x: number, y: number, block: TerrainBlock, oc
   );
 }
 
-function occupy(item: DecoItem, x: number, y: number, block: TerrainBlock, occupancy: Occupancy): void {
-  const footprint = footprintOf(item, x, y);
+function occupy(
+  item: DecoItem,
+  x: number,
+  y: number,
+  length: number,
+  block: TerrainBlock,
+  occupancy: Occupancy,
+): void {
+  const footprint = decoFootprintOf(item, x, y, length);
   forEachTile(block, footprint, (index) => {
     occupancy.footprint[index] = 1;
   });
@@ -306,7 +325,7 @@ function occupy(item: DecoItem, x: number, y: number, block: TerrainBlock, occup
     });
   }
   if (!item.overlapsDeco) {
-    forEachTile(block, spriteOf(item, x, y), (index, column, row) => {
+    forEachTile(block, decoSpriteOf(item, x, y, length), (index, column, row) => {
       if (!insideFootprint(footprint, column, row)) occupancy.coveredBySprite[index] = 1;
     });
   }
@@ -370,14 +389,19 @@ function candidateAt(
   }
   const { item } = pickEntry(pool, decoHash(passIndex, cellX, cellY, 3));
   const variant = Math.floor(decoHash(passIndex, cellX, cellY, 4) * item.variants);
+  const length = item.strip
+    ? item.strip.minLength +
+      Math.floor(decoHash(passIndex, cellX, cellY, 5) * (item.strip.maxLength - item.strip.minLength + 1))
+    : item.footprint.width;
+  const spriteWidth = item.strip ? length : item.sprite.width;
   const lowestX = item.overlapsDeco ? originX : originX + item.anchorColumn;
   const highestX = item.overlapsDeco
-    ? originX + cell - item.footprint.width
-    : originX + cell - item.sprite.width + item.anchorColumn;
+    ? originX + cell - length
+    : originX + cell - spriteWidth + item.anchorColumn;
   const lowestY = item.overlapsDeco ? originY : originY + item.sprite.height - item.footprint.height;
   const x = clamp(pointX, lowestX, highestX);
   const y = clamp(pointY, lowestY, originY + cell - item.footprint.height);
-  return { item, variant, x, y, level: block.levels[indexOf(block, x, y)] };
+  return { item, variant, x, y, length, level: block.levels[indexOf(block, x, y)] };
 }
 
 export function decoInRegion(minX: number, minY: number, size: number, stats?: DecoStats): DecoInstance[] {
@@ -397,7 +421,7 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
   const blobs = blobsOverlapping(block.minX, block.minY, block.minX + block.size, block.minY + block.size);
 
   DECO_PASS_ORDER.forEach((pass, passIndex) => {
-    const reach = (DECO_PASS_ORDER.length - 1 - passIndex) * DECO_CONFLICT_REACH_TILES;
+    const reach = DECO_PASS_EXPANSION_TILES[pass];
     const cell = DECO_CELL_SIZE_BY_PASS[pass];
     const firstCellX = Math.floor((minX - reach) / cell);
     const lastCellX = Math.floor((minX + size + reach - 1) / cell);
@@ -408,12 +432,19 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
       for (let cellX = firstCellX; cellX <= lastCellX; cellX++) {
         const candidate = candidateAt(pass, passIndex, cellX, cellY, block, blobs, stats);
         if (!candidate) continue;
-        const reason = invalidReason(candidate.item, candidate.x, candidate.y, block, masks);
+        const reason = invalidReason(
+          candidate.item,
+          candidate.x,
+          candidate.y,
+          candidate.length,
+          block,
+          masks,
+        );
         if (reason) {
           if (stats) stats.rejected[reason] = (stats.rejected[reason] ?? 0) + 1;
           continue;
         }
-        if (conflicts(candidate.item, candidate.x, candidate.y, block, occupancy)) {
+        if (conflicts(candidate.item, candidate.x, candidate.y, candidate.length, block, occupancy)) {
           if (stats) stats.rejected.conflict = (stats.rejected.conflict ?? 0) + 1;
           continue;
         }
@@ -421,7 +452,9 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
         if (stats) stats.accepted++;
       }
     }
-    for (const instance of acceptedInPass) occupy(instance.item, instance.x, instance.y, block, occupancy);
+    for (const instance of acceptedInPass) {
+      occupy(instance.item, instance.x, instance.y, instance.length, block, occupancy);
+    }
     accepted.push(...acceptedInPass);
   });
 
@@ -447,9 +480,27 @@ export function computeDecoOfChunk(chunkX: number, chunkY: number): readonly Dec
   const cached = chunkCache.get(key);
   if (cached) return cached;
   if (chunkCache.size >= DECO_CACHE_MAX_ENTRIES) evictOldestChunks();
-  const instances = decoInRegion(chunkX * CHUNK_SIZE, chunkY * CHUNK_SIZE, CHUNK_SIZE);
-  chunkCache.set(key, instances);
-  return instances;
+
+  const firstChunkX = Math.floor(chunkX / DECO_REGION_CHUNKS) * DECO_REGION_CHUNKS;
+  const firstChunkY = Math.floor(chunkY / DECO_REGION_CHUNKS) * DECO_REGION_CHUNKS;
+  const instances = decoInRegion(
+    firstChunkX * CHUNK_SIZE,
+    firstChunkY * CHUNK_SIZE,
+    DECO_REGION_CHUNKS * CHUNK_SIZE,
+  );
+  const byChunk = new Map<string, DecoInstance[]>();
+  for (let offsetY = 0; offsetY < DECO_REGION_CHUNKS; offsetY++) {
+    for (let offsetX = 0; offsetX < DECO_REGION_CHUNKS; offsetX++) {
+      byChunk.set(`${firstChunkX + offsetX},${firstChunkY + offsetY}`, []);
+    }
+  }
+  for (const instance of instances) {
+    byChunk
+      .get(`${Math.floor(instance.x / CHUNK_SIZE)},${Math.floor(instance.y / CHUNK_SIZE)}`)
+      ?.push(instance);
+  }
+  for (const [chunkKey, chunkInstances] of byChunk) chunkCache.set(chunkKey, chunkInstances);
+  return chunkCache.get(key) ?? [];
 }
 
 export function peekDecoOfChunk(chunkX: number, chunkY: number): readonly DecoInstance[] | undefined {
