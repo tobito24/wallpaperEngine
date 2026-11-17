@@ -1,9 +1,9 @@
 import { TOWN_BIOME, biomeAt } from '../biome/biome';
 import type { Biome } from '../biome/biome';
-import { CHUNK_SIZE } from '../config/constants';
+import { CHUNK_SIZE, ELEVATION_SEA_LEVEL } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { CLIFF_LAYOUT_REACH_TILES, NO_INNER_RING, layoutCliffs } from '../elevation/cliffLayout';
-import { heightLevelAt } from '../elevation/heightLevel';
+import { WATER_LEVEL, heightLevelAt } from '../elevation/heightLevel';
 import {
   LEVEL_CLEANUP_REACH_TILES,
   WATER_LIMIT_REACH_TILES,
@@ -43,6 +43,8 @@ const QUARTER_NEIGHBOUR_OFFSETS: readonly (readonly [number, number, number, num
   [0, 1, -1, 0, -1, 1],
   [0, 1, 1, 0, 1, 1],
 ];
+
+const RECLAIMED_LAND_ELEVATION = ELEVATION_SEA_LEVEL + 0.001;
 
 export class Chunk {
   readonly chunkX: number;
@@ -96,8 +98,11 @@ export class Chunk {
         const index = py * PADDED_SIZE + px;
         const blockIndex =
           (py + LEVEL_BLOCK_MARGIN - PADDING) * LEVEL_BLOCK_SIZE + px + LEVEL_BLOCK_MARGIN - PADDING;
-        elevations[index] = blockElevations[blockIndex];
         levels[index] = blockCleanedLevels[blockIndex];
+        elevations[index] =
+          levels[index] > WATER_LEVEL && blockElevations[blockIndex] <= ELEVATION_SEA_LEVEL
+            ? RECLAIMED_LAND_ELEVATION
+            : blockElevations[blockIndex];
         const townInfo = blockTownInfos[blockIndex];
         insideTowns.push(townInfo?.inside ? townInfo.town : null);
         biomes.push(

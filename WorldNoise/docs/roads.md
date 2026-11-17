@@ -43,7 +43,7 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
   - a level change between two land tiles is allowed only as a crossing: straight ahead, after the 4 straight tiles, not within
     `ROAD_MIN_CROSSING_GAP_TILES` (4) tiles of the last crossing (the 3 tiles each side of two footprints leave a consistent plan
     then: the band between has one level), one level apart, and `flattenCostOf` accepts it (at most `CROSSING_MAX_FLATTENED_TILES`
-    tiles to flatten, no water near; cached per crossing). Its cost is `ROAD_CROSSING_COST` plus `ROAD_FLATTENED_TILE_COST` per flattened
+    tiles to flatten, at most `CROSSING_MAX_CONVERTED_WATER_TILES` water tiles to turn into land; cached per crossing). Its cost is `ROAD_CROSSING_COST` plus `ROAD_FLATTENED_TILE_COST` per flattened
     tile. Any other level change costs `ROAD_UNPLANNED_CROSSING_COST` (60 tiles of detour), so a path always exists and is clean where
     the terrain allows;
   - a north/south crossing is an ordinary step; an east/west crossing is a step to the diagonal tile one row south
@@ -83,8 +83,12 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
   crossing the bulge: the tile next to the boundary on the lower side (`bulgeColumnOf`) is raised to the upper level for 4 rows (lane - 1
   to lane + 2), so the cliff pieces of the bulge come out of the normal rule (two inner corners, two outer corners, two edges).
   `flattenCostOf(crossing)`: the tiles of the footprint whose natural level differs from the straight plan (without the bulge), or null when it is
-  more than `CROSSING_MAX_FLATTENED_TILES` (8, or `CROSSING_MAX_FLATTENED_TILES_AT_TOWN` 16 when the footprint touches a town plateau or ring; of 42 tiles, of 48 for an east/west footprint) or when water lies within the footprint plus
-  the clearance the water limit demands for the two levels (`waterClearanceTiles` minus 1: none for 2/1, 2 for 3/2, 4 for 4/3). Towns are no
+  more than `CROSSING_MAX_FLATTENED_TILES` (8, or `CROSSING_MAX_FLATTENED_TILES_AT_TOWN` 16 when the footprint touches a town plateau or ring; of 42 tiles, of 48 for an east/west footprint) or when more than
+  `CROSSING_MAX_CONVERTED_WATER_TILES` (24) water tiles lie in the water zone (`waterZoneOf`: the footprint plus the clearance the water limit demands for the
+  two levels, `waterClearanceTiles` minus 1: none for 2/1, 2 for 3/2, 4 for 4/3). Water in that zone is turned into land by `flattenCrossings` (the
+  level of its side of the crossing, `Chunk` gives such a tile the elevation just above the sea level so it is beach, not water), so the water limit finds no
+  water inside the clearance and keeps the stairs; the coast moves back by a few tiles there. Every converted tile counts `CROSSING_WATER_TILE_FLATTEN_EQUIVALENT` (3) flattened tiles in the cost, so
+  the planner prefers a dry spot. Measured: 17 of 1 201 crossings convert water (at most 5 tiles each). Towns are no
   exclusion: a footprint may lie on the terrace ring and on the plateau of a town, so stairs lead into a town, and it may change plateau
   tiles (at the plateau edge the straight boundary runs through the outline, ring tiles are raised to the plateau level, a notch of the
   outline may be lowered). The town layout (`computeLayout`) keeps the whole footprint of every crossing free of buildings. Crossings of
@@ -105,7 +109,7 @@ straight, so the footprints are untouched.
 
 ## Measured with the planner
 
-On the 392 edges that `roadEdgesIn` returns for 1 024 x 1 024 tiles (one seed): 1 166 crossings and 70 level changes without stairs (58 edges; before the gates came first and the flatten limit at towns rose: 82, 64 edges), most of them
+On the 392 edges that `roadEdgesIn` returns for 1 024 x 1 024 tiles (one seed): 1 201 crossings and 37 level changes without stairs (36 edges; with the gates first and the higher flatten limit at towns: 70; before: 82, 64 edges), most of them
 within 9 tiles of a town (the terrace ring of a town has a cliff every 4 tiles, `TOWN_RING_TERRACE_STEP_TILES`); 328 of the 392 edges have no level
 change without stairs. The planning of all edges takes 5 s (13 ms per edge, once, cached), about 112 tiles per edge (107 after the smoothing: the cut corners are shorter), 49 points per polyline, 22 of the 154 edges that lie fully inside the area have a wave. Of 672 whole footprints 5 differ after
 the cleanup (another crossing touches them) and 40 have a road tile too many or too few around the stairs (a second road runs near);
