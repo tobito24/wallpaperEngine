@@ -38,6 +38,10 @@ export function groundOf(biomeId: BiomeId, context: GroundContext): Ground {
   return biomeId === 'deepWater' || biomeId === 'shallowWater' ? 'bridge' : 'road';
 }
 
+export function isRoadGround(ground: Ground): boolean {
+  return ground === 'road' || ground === 'bridge' || ground === 'cityStreet';
+}
+
 export function fallbackColorOf(ground: Ground): string {
   return FALLBACK_COLOR[ground];
 }

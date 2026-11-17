@@ -22,7 +22,7 @@ import { levelWithTown, townInfoAt } from '../town/townTerrain';
 import type { TownTileInfo } from '../town/townTerrain';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import type { SheetTile } from '../tileset/outsideSheet';
-import { groundOf } from '../tileset/ground';
+import { groundOf, isRoadGround } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { lowerNeighbourGround } from '../tileset/cliffUnderlay';
 import { continuesInto, underlayGround } from '../tileset/groundRank';
@@ -130,13 +130,14 @@ export class Chunk {
         const index = (ly + 1) * PADDED_SIZE + (lx + 1);
         const level = levels[index];
         const layoutIndex = (ly + LEVEL_BLOCK_MARGIN) * LEVEL_BLOCK_SIZE + lx + LEVEL_BLOCK_MARGIN;
-        const cliffType = cliffLayout.cliffTypes[layoutIndex];
-        const innerRingIndex = cliffLayout.innerRingIndices[layoutIndex];
+        const ground = grounds[index];
+        const roadCoversCliff = isRoadGround(ground);
+        const cliffType = roadCoversCliff ? null : cliffLayout.cliffTypes[layoutIndex];
+        const innerRingIndex = roadCoversCliff ? NO_INNER_RING : cliffLayout.innerRingIndices[layoutIndex];
 
         const town = insideTowns[index];
         const decoration: SheetTile | null = town ? townDecorationAt(town, originX + lx, originY + ly) : null;
 
-        const ground = grounds[index];
         let neighbourMask = 0;
         for (const { dx, dy, bit } of NEIGHBOUR_OFFSETS) {
           if (continuesInto(ground, grounds[index + dy * PADDED_SIZE + dx])) neighbourMask |= bit;
