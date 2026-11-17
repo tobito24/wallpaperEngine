@@ -1,4 +1,4 @@
-import { CHUNK_SIZE, DECO_CHUNKS_PER_FRAME } from '../config/constants';
+import { CHUNK_SIZE, DECO_CHUNKS_PER_FRAME, DECO_MIN_TILE_SIZE_PX } from '../config/constants';
 import type { Camera, TileBounds } from '../core/Camera';
 import { decoImage } from '../deco/decoSheets';
 import { computeDecoOfChunk, peekDecoOfChunk } from '../deco/decoPlacement';
@@ -22,7 +22,8 @@ function compareInstances(first: DecoInstance, second: DecoInstance): number {
   if (layer !== 0) return layer;
   const row = first.y + first.item.footprint.height - (second.y + second.item.footprint.height);
   if (row !== 0) return row;
-  return first.x - second.x;
+  if (first.x !== second.x) return first.x - second.x;
+  return first.y - second.y;
 }
 
 function chunkRangeOf(bounds: TileBounds): ChunkRange {
@@ -48,6 +49,7 @@ export class DecoRenderer {
     size: number,
     animationFrame: number,
   ): void {
+    if (camera.tileSize < DECO_MIN_TILE_SIZE_PX) return;
     const range = chunkRangeOf(bounds);
     this.computeMissingChunks(range, camera);
     const key = `${range.minChunkX},${range.maxChunkX},${range.minChunkY},${range.maxChunkY}:${this.computedCount}`;
