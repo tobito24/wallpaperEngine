@@ -56,7 +56,7 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
   The result before the smoothing is the polyline (the tile centres at the corners, plus the two points of a vertical step at the boundary of an east/west
   crossing, collinear points dropped), the crossings (`RoadCrossing`: axis, boundary, lane = the row or column of the road on the upper
   side, side and levels of the upper level, so the stairs, the footprint and the road mask agree) and the level changes that were no
-  crossing (`unplanned`). The search buffers are reused between calls (up to a few million states for a long edge).
+  crossing (`unplanned`). **Tiered limit:** `planRoad` plans an edge with the normal flatten limits first; only when that leaves an `unplanned` crossing it plans the edge again with the relaxed limits (`Grid.relaxed`, part of the crossing choice cache key) and takes the result with fewer unplanned crossings. Measured on 2148 edges (41 x 41 cells): unplanned crossings 29 before, 4 now, stairs 6219 -> 6254, road length unchanged; 11 of the 12 failures on 779 edges were stairs refused by the flatten limit (the water limit was not the cause: 24 -> 48 changed nothing). The search buffers are reused between calls (up to a few million states for a long edge).
 - **`road/roadSmoothing.ts`** (new) — `smoothPolyline(points, crossings, ground)`: the planned polyline has right-angle corners and long straights;
   this makes it softer without moving a stair. A corner is cut by a quadratic curve (the corner as control point, `ROAD_CORNER_RADIUS_TILES`
   3 at most, half of the shorter adjacent segment at most), and never closer to a crossing than its straight stretch of
@@ -82,8 +82,8 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
   it is closed by the cleanup, measured: 35 of the east/west footprints). `plannedLevelAt`: the straight edge, and for an east/west
   crossing the bulge: the tile next to the boundary on the lower side (`bulgeColumnOf`) is raised to the upper level for 4 rows (lane - 1
   to lane + 2), so the cliff pieces of the bulge come out of the normal rule (two inner corners, two outer corners, two edges).
-  `flattenCostOf(crossing)`: the tiles of the footprint whose natural level differs from the straight plan (without the bulge), or null when it is
-  more than `CROSSING_MAX_FLATTENED_TILES` (8, or `CROSSING_MAX_FLATTENED_TILES_AT_TOWN` 16 when the footprint touches a town plateau or ring; of 42 tiles, of 48 for an east/west footprint) or when more than
+  `flattenCostOf(crossing, relaxed)`: the tiles of the footprint whose natural level differs from the straight plan (without the bulge), or null when it is
+  more than `CROSSING_MAX_FLATTENED_TILES` (8, or `CROSSING_MAX_FLATTENED_TILES_AT_TOWN` 16 when the footprint touches a town plateau or ring; of 42 tiles, of 48 for an east/west footprint; the relaxed limits `CROSSING_RELAXED_MAX_FLATTENED_TILES` 16 and `CROSSING_RELAXED_MAX_FLATTENED_TILES_AT_TOWN` 24 are used by the second planning pass, see `planRoad`) or when more than
   `CROSSING_MAX_CONVERTED_WATER_TILES` (24) water tiles lie in the water zone (`waterZoneOf`: the footprint plus the clearance the water limit demands for the
   two levels, `waterClearanceTiles` minus 1: none for 2/1, 2 for 3/2, 4 for 4/3). Water in that zone is turned into land by `flattenCrossings` (the
   level of its side of the crossing, `Chunk` gives such a tile the elevation just above the sea level so it is beach, not water), so the water limit finds no

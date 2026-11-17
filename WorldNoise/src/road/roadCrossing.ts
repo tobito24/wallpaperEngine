@@ -6,6 +6,8 @@ import {
   CROSSING_MAX_FLATTENED_TILES,
   CROSSING_MAX_CONVERTED_WATER_TILES,
   CROSSING_MAX_FLATTENED_TILES_AT_TOWN,
+  CROSSING_RELAXED_MAX_FLATTENED_TILES,
+  CROSSING_RELAXED_MAX_FLATTENED_TILES_AT_TOWN,
   CROSSING_WATER_TILE_FLATTEN_EQUIVALENT,
 } from '../config/constants';
 import { elevationNoise } from '../elevation/elevationNoise';
@@ -119,9 +121,15 @@ function workOf(crossing: RoadCrossing): FootprintWork {
   return { flattened, convertedWater, touchesTown };
 }
 
-export function flattenCostOf(crossing: RoadCrossing): number | null {
+export function flattenCostOf(crossing: RoadCrossing, relaxed = false): number | null {
   const { flattened, convertedWater, touchesTown } = workOf(crossing);
-  const limit = touchesTown ? CROSSING_MAX_FLATTENED_TILES_AT_TOWN : CROSSING_MAX_FLATTENED_TILES;
+  const limit = relaxed
+    ? touchesTown
+      ? CROSSING_RELAXED_MAX_FLATTENED_TILES_AT_TOWN
+      : CROSSING_RELAXED_MAX_FLATTENED_TILES
+    : touchesTown
+      ? CROSSING_MAX_FLATTENED_TILES_AT_TOWN
+      : CROSSING_MAX_FLATTENED_TILES;
   if (flattened > limit || convertedWater > CROSSING_MAX_CONVERTED_WATER_TILES) return null;
   return flattened + CROSSING_WATER_TILE_FLATTEN_EQUIVALENT * convertedWater;
 }
