@@ -13,12 +13,12 @@ Part of [WorldNoise](../CLAUDE.md). Source folder: `src/tileset/`. Constants: `C
   when the neighbour continues the ground) to the tile index. A diagonal that matters only when both adjacent edges
   are set is already folded into the table.
 - **`tileset/ground.ts`** (new) — `Ground`: the ground a tile is drawn with, the 14 `BiomeId`s (every biome is its own ground)
-  plus the two `OverlayGround`s `road` and `bridge` (a road on water). `groundWithRoad(biomeId, isRoad)` makes the final ground;
+  plus the `OverlayGround`s `road`, `bridge` (a road on water) and the town grounds `city` (paving), `cityGrass` (lawn, not used by the generator yet) and `cityStreet` (streets and side paths, one sheet). `groundOf(biomeId, { isRoad, isInsideTown, isStairs })` makes the final ground: inside a town plateau a road tile is `cityStreet`, every other tile `city`; outside, a road tile is `road` or `bridge`; a stairs tile is never road, so the road ends in front of the stairs and its last tile gets the end cap from the rim against the lower ground (the stairs are drawn on top);
   `fallbackColorOf(ground)` is the flat color for a ground without a sheet.
 - **`tileset/groundRank.ts`** (new) — the fixed rank of the grounds, a higher rank draws its rim over a lower one. The rule: wetter
   and warmer covers (2 x moisture band + temperature band, the warmer wins a tie), water below everything, mountain and snow peak
   above all land: deep water 0, shallow water 1, beach 2, snow field 3, steppe 4, tundra 5, desert 6, meadow 7, snow forest 8,
-  savanna 9, forest 10, jungle 11, mountain 12, snow peak 13, road 14, bridge 15. `continuesInto(ground, neighbour)`: a
+  savanna 9, forest 10, jungle 11, mountain 12, snow peak 13, road 14, bridge 15, city 16, cityGrass 17, cityStreet 18. `continuesInto(ground, neighbour)`: a
   neighbour counts as set when its rank is the same or higher, so a ground draws its own rim against lower grounds and a lower
   ground shows plain fill next to a higher one, never a rim on both sides; a road has a rim on every ground it crosses.
   `underlayGround(ground, firstEdge, secondEdge, diagonal)` gives the ground below the rim of a quarter: the higher of the lower

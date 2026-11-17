@@ -24,6 +24,9 @@ const SHEET_FILE_BY_GROUND: Readonly<Record<Ground, string>> = {
   snowPeak: 'snow-peak.png',
   road: 'brick-path.png',
   bridge: 'bridge.png',
+  cityStreet: 'city-street.png',
+  city: 'city.png',
+  cityGrass: 'city-grass.png',
 };
 
 const sheetUrls = import.meta.glob<string>('../../assets/autotiles/*.png', {

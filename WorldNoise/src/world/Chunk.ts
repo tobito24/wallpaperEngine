@@ -22,7 +22,7 @@ import { levelWithTown, townInfoAt } from '../town/townTerrain';
 import type { TownTileInfo } from '../town/townTerrain';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
 import type { SheetTile } from '../tileset/outsideSheet';
-import { groundWithRoad } from '../tileset/ground';
+import { groundOf } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { lowerNeighbourGround } from '../tileset/cliffUnderlay';
 import { continuesInto, underlayGround } from '../tileset/groundRank';
@@ -115,7 +115,13 @@ export class Chunk {
 
     const roads = roadTilesIn(originX - 1, originY - 1, PADDED_SIZE, PADDED_SIZE);
     const grounds: Ground[] = biomes.map((biome, index) =>
-      groundWithRoad(biome.id, roads[index] === ROAD_TILE_MARK),
+      groundOf(biome.id, {
+        isRoad: roads[index] === ROAD_TILE_MARK,
+        isInsideTown: insideTowns[index] !== null,
+        isStairs: stairs.has(
+          tileKey(originX + (index % PADDED_SIZE) - 1, originY + Math.floor(index / PADDED_SIZE) - 1),
+        ),
+      }),
     );
 
     const tiles: Tile[] = [];

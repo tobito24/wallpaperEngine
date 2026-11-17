@@ -17,6 +17,9 @@ const GROUND_RANK: Readonly<Record<Ground, number>> = {
   snowPeak: 13,
   road: 14,
   bridge: 15,
+  city: 16,
+  cityGrass: 17,
+  cityStreet: 18,
 };
 
 export function continuesInto(ground: Ground, neighbourGround: Ground): boolean {
