@@ -366,9 +366,25 @@ function reachOfPass(pass: DecoPass): number {
   return reaches.length > 0 ? Math.max(...reaches) : 0;
 }
 
+function leftOfPass(pass: DecoPass): number {
+  const lefts = DECO_ITEMS.filter((entry) => entry.pass === pass).map((entry) => entry.anchorColumn);
+  return lefts.length > 0 ? Math.max(...lefts) : 0;
+}
+
 export const DECO_PASS_REACH_TILES: Readonly<Record<DecoPass, number>> = Object.fromEntries(
   DECO_PASS_ORDER.map((pass) => [pass, reachOfPass(pass)]),
 ) as Record<DecoPass, number>;
+
+export const DECO_PASS_LEFT_TILES: Readonly<Record<DecoPass, number>> = Object.fromEntries(
+  DECO_PASS_ORDER.map((pass) => [pass, leftOfPass(pass)]),
+) as Record<DecoPass, number>;
+
+function linkBetween(first: DecoPass, second: DecoPass): number {
+  return Math.max(
+    DECO_PASS_REACH_TILES[first] + DECO_PASS_LEFT_TILES[second],
+    DECO_PASS_REACH_TILES[second] + DECO_PASS_LEFT_TILES[first],
+  );
+}
 
 function expansionsOfPasses(): Record<DecoPass, number> {
   const expansions = {} as Record<DecoPass, number>;
@@ -377,8 +393,7 @@ function expansionsOfPasses(): Record<DecoPass, number> {
     let longest = 0;
     for (let later = index + 1; later < DECO_PASS_ORDER.length; later++) {
       const laterPass = DECO_PASS_ORDER[later];
-      const link = Math.max(DECO_PASS_REACH_TILES[pass], DECO_PASS_REACH_TILES[laterPass]);
-      longest = Math.max(longest, expansions[laterPass] + link);
+      longest = Math.max(longest, expansions[laterPass] + linkBetween(pass, laterPass));
     }
     expansions[pass] = longest;
   }
@@ -388,8 +403,10 @@ function expansionsOfPasses(): Record<DecoPass, number> {
 export const DECO_PASS_EXPANSION_TILES: Readonly<Record<DecoPass, number>> = expansionsOfPasses();
 
 export const DECO_CONFLICT_REACH_TILES = Math.max(
-  ...DECO_PASS_ORDER.map((pass) => DECO_PASS_REACH_TILES[pass]),
+  ...DECO_PASS_ORDER.map((pass) => DECO_PASS_REACH_TILES[pass] + DECO_PASS_LEFT_TILES[pass]),
 );
 export const DECO_MARGIN_TILES = Math.max(
-  ...DECO_PASS_ORDER.map((pass) => DECO_PASS_EXPANSION_TILES[pass] + DECO_PASS_REACH_TILES[pass]),
+  ...DECO_PASS_ORDER.map(
+    (pass) => DECO_PASS_EXPANSION_TILES[pass] + DECO_PASS_REACH_TILES[pass] + DECO_PASS_LEFT_TILES[pass],
+  ),
 );
