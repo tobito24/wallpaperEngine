@@ -59,6 +59,9 @@ ITEMS = [
     Cut('boulder-water', 6, 3, 2, 2),
     Cut('tree-oak', 0, 36, 4, 3),
     Cut('palm', 0, 39, 4, 3),
+    Cut('cliff-ridge-left', 5, 0, 1, 1),
+    Cut('cliff-ridge-middle', 6, 0, 1, 1),
+    Cut('cliff-ridge-right', 7, 0, 1, 1),
 ]
 
 

@@ -2,13 +2,20 @@ import type { BiomeId } from '../biome/biome';
 import type { Ground } from '../tileset/ground';
 
 export type DecoLayer = 'flat' | 'object' | 'overhead';
-export type DecoPass = 'grove' | 'large' | 'medium' | 'small' | 'flat';
+export type DecoPass = 'grove' | 'large' | 'strip' | 'medium' | 'small' | 'flat';
 export type DecoSurface = 'land' | 'water';
 
 export interface DecoSize {
   readonly width: number;
   readonly height: number;
 }
+
+export interface DecoStrip {
+  readonly minLength: number;
+  readonly maxLength: number;
+}
+
+export const DECO_STRIP_PARTS = ['left', 'middle', 'right'] as const;
 
 export interface DecoItem {
   readonly name: string;
@@ -27,21 +34,24 @@ export interface DecoItem {
   readonly overlapsDeco: boolean;
   readonly overlapsCliff: boolean;
   readonly blob: boolean;
+  readonly strip?: DecoStrip;
 }
 
 export const DECO_CELL_SIZE_BY_PASS: Readonly<Record<DecoPass, number>> = {
   grove: 2,
   large: 6,
+  strip: 10,
   medium: 4,
   small: 2,
   flat: 1,
 };
 
-export const DECO_PASS_ORDER: readonly DecoPass[] = ['grove', 'large', 'medium', 'small', 'flat'];
+export const DECO_PASS_ORDER: readonly DecoPass[] = ['grove', 'large', 'strip', 'medium', 'small', 'flat'];
 
 export const DECO_PASS_DENSITY: Readonly<Record<DecoPass, number>> = {
   grove: 0.5,
   large: 0.3,
+  strip: 0.5,
   medium: 0.4,
   small: 0.5,
   flat: 0.35,
@@ -50,6 +60,7 @@ export const DECO_PASS_DENSITY: Readonly<Record<DecoPass, number>> = {
 export const DECO_CLUSTER_STRENGTH: Readonly<Record<DecoPass, number>> = {
   grove: 2.2,
   large: 0.8,
+  strip: 0.4,
   medium: 0.5,
   small: 0.3,
   flat: 0.2,
@@ -58,6 +69,7 @@ export const DECO_CLUSTER_STRENGTH: Readonly<Record<DecoPass, number>> = {
 export const DECO_CLUSTER_FREQUENCY_BY_PASS: Readonly<Record<DecoPass, number>> = {
   grove: 0.02,
   large: 0.03,
+  strip: 0.03,
   medium: 0.03,
   small: 0.03,
   flat: 0.03,
@@ -150,6 +162,15 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     footprint: TWO_BY_ONE,
     surface: 'water',
     biomes: { shallowWater: 1, deepWater: 0.3 },
+  }),
+  item({
+    name: 'cliff-ridge',
+    pass: 'strip',
+    layer: 'object',
+    sprite: { width: 8, height: 1 },
+    footprint: { width: 8, height: 1 },
+    strip: { minLength: 3, maxLength: 8 },
+    biomes: { meadow: 1, forest: 1, steppe: 1, savanna: 1, mountain: 1, tundra: 1, jungle: 1 },
   }),
   item({
     name: 'log',
@@ -296,6 +317,28 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
     ) {
       throw new RangeError(`Deco item ${entry.name} has a footprint outside its sprite`);
     }
+    if (entry.strip) {
+      const { minLength, maxLength } = entry.strip;
+      if (
+        !Number.isInteger(minLength) ||
+        !Number.isInteger(maxLength) ||
+        minLength < 2 ||
+        maxLength < minLength
+      ) {
+        throw new RangeError(`Deco item ${entry.name} has a wrong strip length`);
+      }
+      if (
+        entry.footprint.width !== maxLength ||
+        entry.sprite.width !== maxLength ||
+        entry.footprint.height !== 1 ||
+        entry.sprite.height !== 1 ||
+        entry.anchorColumn !== 0 ||
+        entry.variants !== 1 ||
+        entry.frames !== 1
+      ) {
+        throw new RangeError(`Deco item ${entry.name}: a strip is one row of its maximum length`);
+      }
+    }
     if (entry.variants < 1 || entry.frames < 1) {
       throw new RangeError(`Deco item ${entry.name} needs a variant and a frame`);
     }
@@ -316,7 +359,54 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
 
 validateDecoTable(DECO_ITEMS);
 
-export const DECO_CONFLICT_REACH_TILES =
-  Math.max(...DECO_ITEMS.map((entry) => Math.max(entry.sprite.width, entry.sprite.height))) +
-  Math.max(...DECO_ITEMS.map((entry) => entry.clearance));
-export const DECO_MARGIN_TILES = DECO_PASS_ORDER.length * DECO_CONFLICT_REACH_TILES;
+function reachOfPass(pass: DecoPass): number {
+  const reaches = DECO_ITEMS.filter((entry) => entry.pass === pass).map(
+    (entry) => Math.max(entry.sprite.width, entry.sprite.height) + entry.clearance,
+  );
+  return reaches.length > 0 ? Math.max(...reaches) : 0;
+}
+
+function leftOfPass(pass: DecoPass): number {
+  const lefts = DECO_ITEMS.filter((entry) => entry.pass === pass).map((entry) => entry.anchorColumn);
+  return lefts.length > 0 ? Math.max(...lefts) : 0;
+}
+
+export const DECO_PASS_REACH_TILES: Readonly<Record<DecoPass, number>> = Object.fromEntries(
+  DECO_PASS_ORDER.map((pass) => [pass, reachOfPass(pass)]),
+) as Record<DecoPass, number>;
+
+export const DECO_PASS_LEFT_TILES: Readonly<Record<DecoPass, number>> = Object.fromEntries(
+  DECO_PASS_ORDER.map((pass) => [pass, leftOfPass(pass)]),
+) as Record<DecoPass, number>;
+
+function linkBetween(first: DecoPass, second: DecoPass): number {
+  return Math.max(
+    DECO_PASS_REACH_TILES[first] + DECO_PASS_LEFT_TILES[second],
+    DECO_PASS_REACH_TILES[second] + DECO_PASS_LEFT_TILES[first],
+  );
+}
+
+function expansionsOfPasses(): Record<DecoPass, number> {
+  const expansions = {} as Record<DecoPass, number>;
+  for (let index = DECO_PASS_ORDER.length - 1; index >= 0; index--) {
+    const pass = DECO_PASS_ORDER[index];
+    let longest = 0;
+    for (let later = index + 1; later < DECO_PASS_ORDER.length; later++) {
+      const laterPass = DECO_PASS_ORDER[later];
+      longest = Math.max(longest, expansions[laterPass] + linkBetween(pass, laterPass));
+    }
+    expansions[pass] = longest;
+  }
+  return expansions;
+}
+
+export const DECO_PASS_EXPANSION_TILES: Readonly<Record<DecoPass, number>> = expansionsOfPasses();
+
+export const DECO_CONFLICT_REACH_TILES = Math.max(
+  ...DECO_PASS_ORDER.map((pass) => DECO_PASS_REACH_TILES[pass] + DECO_PASS_LEFT_TILES[pass]),
+);
+export const DECO_MARGIN_TILES = Math.max(
+  ...DECO_PASS_ORDER.map(
+    (pass) => DECO_PASS_EXPANSION_TILES[pass] + DECO_PASS_REACH_TILES[pass] + DECO_PASS_LEFT_TILES[pass],
+  ),
+);

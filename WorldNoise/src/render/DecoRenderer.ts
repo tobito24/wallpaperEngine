@@ -1,7 +1,7 @@
-import { CHUNK_SIZE, DECO_CHUNKS_PER_FRAME, DECO_MIN_TILE_SIZE_PX } from '../config/constants';
+import { CHUNK_SIZE, DECO_MIN_TILE_SIZE_PX, DECO_REGIONS_PER_FRAME } from '../config/constants';
 import type { Camera, TileBounds } from '../core/Camera';
-import { decoImage } from '../deco/decoSheets';
-import { computeDecoOfChunk, peekDecoOfChunk } from '../deco/decoPlacement';
+import { decoImage, decoStripImages } from '../deco/decoSheets';
+import { computeDecoOfChunk, decoSpriteOf, peekDecoOfChunk } from '../deco/decoPlacement';
 import type { DecoInstance } from '../deco/decoPlacement';
 import { DECO_CONFLICT_REACH_TILES } from '../deco/decoTable';
 import type { DecoLayer } from '../deco/decoTable';
@@ -75,8 +75,12 @@ export class DecoRenderer {
       }
     }
     missing.sort((first, second) => first.distance - second.distance);
-    for (const { chunkX, chunkY } of missing.slice(0, DECO_CHUNKS_PER_FRAME)) {
+    let regionsComputed = 0;
+    for (const { chunkX, chunkY } of missing) {
+      if (peekDecoOfChunk(chunkX, chunkY)) continue;
+      if (regionsComputed >= DECO_REGIONS_PER_FRAME) break;
       computeDecoOfChunk(chunkX, chunkY);
+      regionsComputed++;
       this.computedCount++;
     }
   }
@@ -102,26 +106,37 @@ export class DecoRenderer {
     animationFrame: number,
     instance: DecoInstance,
   ): void {
-    const { item, variant, x, y, level } = instance;
-    const left = x - item.anchorColumn;
-    const top = y + item.footprint.height - item.sprite.height;
+    const { item, variant, x, y, length, level } = instance;
+    const sprite = decoSpriteOf(item, x, y, length);
     if (
-      left > bounds.maxX ||
-      left + item.sprite.width <= bounds.minX ||
-      top > bounds.maxY ||
-      top + item.sprite.height <= bounds.minY
+      sprite.left > bounds.maxX ||
+      sprite.right <= bounds.minX ||
+      sprite.top > bounds.maxY ||
+      sprite.bottom <= bounds.minY
     ) {
       return;
     }
+    const shade = shadeForHeightLevel(level);
+    const tinted = (image: HTMLImageElement): CanvasImageSource =>
+      shade ? tintedSprite(image, shade) : image;
+
+    if (item.strip) {
+      const pieces = decoStripImages(item);
+      if (!pieces) return;
+      for (let column = 0; column < length; column++) {
+        const piece = column === 0 ? pieces.left : column === length - 1 ? pieces.right : pieces.middle;
+        const origin = camera.worldToScreen(x + column, y, viewportWidth, viewportHeight);
+        ctx.drawImage(tinted(piece), origin.x, origin.y, size, size);
+      }
+      return;
+    }
+
     const image = decoImage(item, variant);
     if (!image) return;
-
-    const shade = shadeForHeightLevel(level);
-    const source = shade ? tintedSprite(image, shade) : image;
     const frameWidth = image.naturalWidth / item.frames;
-    const origin = camera.worldToScreen(left, top, viewportWidth, viewportHeight);
+    const origin = camera.worldToScreen(sprite.left, sprite.top, viewportWidth, viewportHeight);
     ctx.drawImage(
-      source,
+      tinted(image),
       (animationFrame % item.frames) * frameWidth,
       0,
       frameWidth,
