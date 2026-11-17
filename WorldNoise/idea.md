@@ -310,10 +310,77 @@ Discrete height levels belong to the Pokemon look, so they are part of the plan,
 - Biome and level stay independent: the level is only the shape, the biome table decides the ground (higher elevation still gives
   more rock and snow).
 
-### Decoration
+### Decoration (plan of 2026-11-17, to be confirmed before the first line of code)
 
-Rule-based, not WFC: density per biome, minimum distance through a jittered grid, no decoration on water, path or town. Reason: a
-rule on `(seed, x, y)` is consistent across chunk borders without extra work, which WFC was not in `InfinityWalker`.
+The world should look lived in, so there is a lot of decoration: big things (trees, boulders) with small things (flowers, tufts,
+pebbles) between them. It is rule-based, not WFC, and a pure function of `(seed, position)` plus the terrain layers before it
+(ground, levels, cliffs, roads, towns); the terrain never reads the decoration. Reason: a rule on `(seed, x, y)` is consistent
+across chunk borders without extra work, which WFC was not in `InfinityWalker` (its deco layer there is described in
+`InfinityWalker/js/tiles.js`: 1 x 1, 1 x 2, 2 x 2, 1 x infinite strips, infinite x infinite tall grass with edge variants, water deco,
+"overlappable" deco that was a TODO, trees with repeatable middle parts, palms on the beach).
+
+**What decoration needs to know** (the properties of one item, the user's list):
+
+| Property | Meaning |
+|---|---|
+| size | the sprite is the PNG (width and height in tiles = pixels / 32); the **footprint** (tiles that must be valid and are blocked) is separate and may be smaller: a tree has a footprint of 1 x 1 or 1 x 2 and a sprite of 3 x 4 |
+| anchor | where the footprint sits in the sprite (default: the bottom row, centred) |
+| layer | `flat` (under everything that stands: flowers, pebbles, lilies), `object` (trees, rocks, sorted by the row of the footprint), `overhead` (crowns, hanging parts, above objects and cliffs) |
+| parts | an item may be several parts with their own layer and offset (stacking): a tree = trunk on `object` + crown on `overhead` |
+| where | biomes with a weight each (the density and the pool), allowed grounds (default: the natural grounds of those biomes; `beach`, `shallowWater` and so on explicit), surface `land`, `water` or `both`, optional level range, optional "near water" |
+| repeat | may touch its own family (trees side by side, a hedge) or needs `clearance` free tiles around the footprint |
+| overlap | whether its sprite may cover other deco (`overlapsDeco`) and cliffs (`overlapsCliff`: the footprint never stands on a cliff, only the overhang may reach over it); a footprint never overlaps another footprint; roads, stairs and towns are never covered |
+| variants, frames | `variants` = several PNGs of the same item (picked by hash), `frames` = animation frames side by side like the water (same frame clock) |
+| weight, size class | weight in the pool, and the size class decides the pass (below) |
+
+**Files.** `WorldNoise/assets/deco/` (git-ignored like every asset) holds **one PNG per item or variant** (`<name>.png`,
+`<name>-<variant>.png`). The description of all items is one table, `src/deco/decoTable.ts` (committed, typed): data about the art,
+not art, so a clone knows the items; a missing PNG draws nothing (a rectangle in debug mode), so the table may run ahead of the art.
+Adding an item = a PNG plus one table row, no engine change (the rule of "More assets must be addable later").
+
+**Placement, in passes from big to small.** Each size class is a pass with its own jittered grid:
+`large` (cell 6: trees, boulders), `medium` (cell 4), `small` (cell 2), `flat` (cell 1). In a pass:
+
+1. A cell draws a hash of `(seed, pass, cell)`: it is filled with the probability `density(biome, pass) x cluster`, where `cluster`
+   is a low-frequency noise (groves and clearings, so trees stand in groups and not evenly); the position inside the cell is jittered
+   by the free room (cell size minus footprint minus clearance). **By construction two candidates of one pass never overlap** (the cell is as big as the
+   largest footprint plus clearance), so no pass has conflicts inside itself. Touching trees use clearance 0 and no jitter.
+2. The item is picked from the pool of the biome by weight, among the items whose `where` fits the ground under the candidate.
+3. **Valid** when every footprint tile has an allowed ground, one level for the whole footprint, no road (and no rim of a road), no stairs or
+   crossing footprint, no cliff piece or inner ring, and no town (plateau, pads, landings; the terrace ring too in the first version), and the overhang
+   covers no road, stairs or town and covers cliffs or deco only when the item allows it.
+4. **Accepted** when valid and no *accepted* item of an earlier pass overlaps its footprint plus clearance. The accepted items of the earlier
+   pass depend only on terrain and on still earlier passes, never on their own pass, so the chain is three passes long, not unbounded: the result of one tile
+   depends on a bounded neighbourhood, and every chunk computes the same answer. Small items thereby fill the gaps between the big ones.
+
+Density, pools and clustering are per biome (a table next to the items). "Lots of decoration" means high first values (`large` 0.3,
+`medium` 0.4, `small` 0.5, `flat` 0.35 of the cells, to be judged by eye); a Wallpaper Engine property for a global density factor is possible later.
+
+**Terrain context and chunk locality.** An item belongs to the chunk of its anchor but needs the terrain around the chunk: the margin is twice the
+largest sprite reach (the neighbours of the neighbours decide). `Chunk` computes its grounds today for the chunk plus one tile; the plan is to extract a
+**terrain block** function (grounds, final levels, cliff flags, road mask, town info, stairs for a chunk plus a margin) that `Chunk` and the deco share, and a
+`decoOfChunk(cx, cy)` cache of its own. Whether the larger block is affordable is measured in step 2 (the chunk budget of 3 ms for roads stays; if the margin is too
+expensive the deco is computed per block of 2 x 2 chunks and cached). A guard like the one for the town ring checks that the largest reach plus
+the margin stays inside what the terrain block provides.
+
+**Rendering.** A **deco pass after all tiles** of the visible chunks (the tile pass stays as it is: ground, cliffs, stairs, town pieces, level shade): all items of the
+chunks in view plus the ring of chunks whose items reach into the view, sorted by `(layer, row of the footprint, column, hash)`, drawn
+scaled with `drawImage`. The sort is cached while the set of chunks does not change. Overhead parts come after all object parts, so a crown covers a
+neighbour's trunk and a cliff, like in the Pokemon games. The level shade (a tint per tile) is **not** applied to deco in the first version (judged by eye).
+Items with frames use the animation clock of the water.
+
+**Water and cliffs.** Surface `water` items (lilies on shallow water, rocks that stand out of the water) have a footprint on water tiles, layer `flat` or `object`, and are drawn
+after the water because the deco pass is last. A tree whose crown hangs over a cliff edge uses `overlapsCliff` and an overhead part; its footprint stays on level ground.
+
+**Fields (later, separate mechanism).** Tall grass and flower meadows are areas, not objects: a noise mask per biome and a transparent **autotile** (the same 96 x 128 sheet format as the
+grounds) drawn as an overlay under the objects, with its own rim. It reuses the autotile code, not the item code.
+
+**Not part of this plan:** big structures (houses, ruins, wells; "prefab stamping" with a margin of its own), decoration inside towns (that is the town layout: trees along
+streets, fences), animals, collision. The table is built so that a structure is later one more item with a large footprint and `parts`.
+
+**Done when** (measured, then looked at): the same items stand at the same tiles whichever chunk computes them (compare two chunkings of one area), no item
+stands on water (unless it is a water item), road, stairs, cliff piece or town, the number of items per 100 tiles per biome is in the wanted range, one chunk stays within its time budget, and a new item
+needs only a PNG and a table row.
 
 ### Autotiling and tileset
 
@@ -423,7 +490,15 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] A straight cliff edge where a road meets a cliff (road crossings: road straightened, level map flattened)
 - [x] Stairs where a road crosses a cliff, north/south: overlay of `stairs.png` on the straight cliff piece
 - [x] Stairs, east/west: bulge in the level map, 2 x 4 overlay, road one row south of the road above
-- [ ] Rule-based decoration
+- [ ] Rule-based decoration (plan in "Decoration")
+  - [ ] 1. `assets/deco/` and `src/deco/decoTable.ts`: types, loader (one PNG per item or variant, a missing PNG draws nothing), a small dev set (a one-off script may cut items from `InfinityWalker/img/tileset.png` by the cells in `InfinityWalker/js/tiles.js`)
+  - [ ] 2. Terrain block shared by `Chunk` and the deco (grounds, final levels, cliff flags, roads, towns, stairs, with a margin); measure the chunk time before and after
+  - [ ] 3. Placement core without drawing: passes, hashes, validity, acceptance, a measure script (items per 100 tiles per biome, rejection reasons, two chunkings give the same items), a debug overlay of footprints
+  - [ ] 4. Deco pass in the renderer: layers, sorting, frames, the ring of neighbouring chunks; first items (a tree, a flower)
+  - [ ] 5. Biome pools, densities and clustering, tuned by eye to "lots of decoration"
+  - [ ] 6. Water items, cliff overhang, `overlapsDeco`, items with parts (trunk and crown)
+  - [ ] 7. Fields (tall grass, flower meadows) as an autotile overlay
+  - [ ] 8. `docs/deco.md`, numbers of the measure script into the doc
 - [x] Own autotile tooling: base sheet generated from a texture in `/autotile-preview.html`, template and rules in `DesignCorner/autotile-template/`
 - [x] A ground per biome: one ground per biome (rank order, sheet table into `assets/autotiles/`), flat color where a sheet is missing
 - [ ] Second ground per biome (bare earth beside the natural cover) and small secret paths inside a biome
@@ -455,6 +530,11 @@ roads that always lead on and connect towns, and the seed can be changed from th
 - Town layouts: the Pokewiki city list (https://www.pokewiki.de/St%C3%A4dteverzeichnis) is the inspiration, above all the old
   towns. Marmoria City is the first model; further models are not chosen yet. Open: the template format, the share of
   designed towns, and the rules of the generated layout (first proposal in Design).
+- **Deco: where the item table lives** (decision of the user needed): `src/deco/decoTable.ts` (committed, typed; my proposal) or a `deco.json` in the git-ignored
+  `assets/deco/` next to the PNGs (quicker for the artist, but lost on a fresh clone).
+- **Deco: the art of the first version.** Cut from `InfinityWalker/img/tileset.png` by a script, or the Alienor trees, or own PNGs; sizes of trees and rocks decide the cell sizes of the passes.
+- **Deco: the level shade** on objects (first version: none) and whether the terrace ring of a town may carry deco (first version: no).
+- **Deco: a global density property** for the Wallpaper Engine panel.
 - The list of town shapes beyond 2 x 2, 3 x 3, L and T.
 - Which properties are worth exposing besides the seed (ocean share and noise zoom rebuild all chunks). A water animation
   speed property needs its own animation clock; scaling `nowMs` would make the frame jump whenever the value changes.
