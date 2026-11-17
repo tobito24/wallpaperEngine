@@ -2,6 +2,7 @@ import { ANIMATED_AUTOTILE_FRAME_DURATION_MS, CHUNK_SIZE } from '../config/const
 import type { Camera } from '../core/Camera';
 import type { World } from '../world/World';
 import { drawCrossingMarkers } from './crossingDebug';
+import { drawDecoFootprints } from './decoDebug';
 
 export class WorldRenderer {
   render(
@@ -32,6 +33,7 @@ export class WorldRenderer {
     if (!debugEnabled) return;
 
     drawCrossingMarkers(ctx, camera, viewportWidth, viewportHeight, size);
+    drawDecoFootprints(ctx, camera, chunks, viewportWidth, viewportHeight, size);
 
     for (const chunk of chunks) {
       const origin = camera.worldToScreen(

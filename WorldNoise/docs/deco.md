@@ -1,7 +1,7 @@
 # Decoration
 
 The plan, the properties of an item, the placement passes and the reasons are in [idea.md](../idea.md) ("Decoration"). This doc
-describes what exists in the code. Built so far: step 1 (table, loader, dev art). Not built: terrain block, placement, rendering.
+describes what exists in the code. Built so far: step 1 (table, loader, dev art), step 2 (terrain block), step 3 (placement and a debug overlay). Not built: the deco render pass, biome tuning, water/overhang details, fields.
 
 - **`src/deco/decoTable.ts`** — `DecoItem` and `DECO_ITEMS`, the one table of all items: `name` (the file stem), `variants` (files
   `<name>-<i>.png`, one file `<name>.png` when 1), `frames`, `pass` (`large`, `medium`, `small`, `flat`), `layer`, `footprint` and `anchorColumn` (where the
@@ -15,4 +15,18 @@ describes what exists in the code. Built so far: step 1 (table, loader, dev art)
   boulders, shells, lilies, the oak, the palm) into `assets/deco/`, 31 files. Run from `WorldNoise/` with `python scripts/cut_infinitywalker_deco.py` (needs Pillow). The art is
   not cleared for publishing, so `assets/` stays git-ignored; a clone runs the script once.
 - **Terrain block (step 2, done).** The deco reads the terrain through `world/terrainBlock.ts` (see [world-and-render.md](world-and-render.md)), the same function `Chunk` uses, with a margin around the chunk. Measured on 400 chunks (cold = first time, with the road and town caches empty; warm = caches full): a block of the chunk (16 tiles) 14.1 ms cold, 2.2 ms warm; with a margin of 8 tiles (32) 17.0 / 4.6 ms; with a margin of 12 tiles (40) 18.1 / 6.0 ms. So the margin costs about 5 ms per chunk once, when it is created, not per frame. If that is too much the deco is computed per block of 2 x 2 chunks and cached.
+- **Sprite size in the table (step 3).** `DecoItem.sprite` states the sprite size in tiles in the table as well as the PNG: the placement must not depend on whether an image has loaded yet. The table is the truth for
+  placement, the PNG for drawing; they have to agree (the sixteen dev items were compared with their PNGs: no mismatch).
+- **`src/deco/decoHash.ts`** — `decoHash(a, b, c, d)`: a fast integer hash (murmur style, seeded with `SEED`) to a number in [0, 1). The string-keyed `randomValue` makes a new `Alea` per call, too slow for thousands of cells per chunk.
+- **`src/deco/decoPlacement.ts`** — `decoInRegion(minX, minY, size, stats?)` and `decoOfChunk(cx, cy)` (cached). The result is a list of `DecoInstance` (`item`, `variant`, `x`, `y` = top left of the footprint); an item belongs to the region that holds its footprint corner.
+  Per region it takes a terrain block with a margin of `DECO_MARGIN_TILES` (16 = 4 passes x the largest sprite of 4 tiles: three links of the acceptance chain plus the sprite reach) and goes through the passes `large`, `medium`, `small`, `flat`:
+  1. the cells of the pass (6, 4, 2, 1 tiles) in the region expanded by `(passes - 1 - index) x DECO_CONFLICT_REACH_TILES`, so later passes need less;
+  2. per cell: a hash decides the point in the cell; the pool of the pass and of the ground under the point (`item.biomes`, weights) must exist; the fill probability is `DECO_PASS_DENSITY[pass] x DECO_BIOME_FACTOR[biome] x cluster` (cluster = `1 + DECO_CLUSTER_STRENGTH x (2 noise - 1)`, a fractal noise of frequency `DECO_CLUSTER_FREQUENCY`); a hash picks the item by weight and the variant; the footprint is moved so the **sprite stays inside its cell**, so candidates of one pass never touch;
+  3. **valid** when every footprint tile has a ground that is a biome of the item, no town info (plateau, pad, landing or ring), no road, no stairs, one level (water level only for water items), no cliff piece or inner ring; items that are not `flat` also keep one tile from a road and three from stairs; the overhang (sprite minus footprint) covers no town, road or stairs and no cliff unless `overlapsCliff`;
+  4. **accepted** when it does not conflict with an accepted item of an earlier pass: footprints do not overlap, not inside the clearance of the other (`clearance` both ways), the footprint is not under the sprite of an item without `overlapsDeco`, and its own sprite does not cover a footprint unless it has `overlapsDeco`.
+  `DecoStats` counts candidates, cells without a pool, gated cells, accepted items and the rejection reasons (`ground`, `town`, `road`, `stairs`, `level`, `cliff`, `overhang`, `conflict`).
+- **`src/render/decoDebug.ts`** — with the debug mode (`r`) the footprints (cyan) and the sprite rectangles (white) of the accepted items are drawn over the visible chunks.
+- **Measured (step 3, 144 chunks, one seed):** two ways to compute the same area agree (a 32 x 32 region at once against four chunks: 1661 items, 0 differences), no item stands on a wrong ground, road, town, stairs tile or on another item (0 violations, 0 overlaps),
+  items per 100 tiles by the ground under the footprint corner: meadow 27, forest 29, steppe 23, savanna 37, beach 33, mountain 8, tundra 8, jungle 7, desert 4, shallow water 16, deep water 0.1; 74560 candidates: 41406 without a pool for that ground, 21442 not filled, 6794 accepted, 4918 rejected
+  (most by cliff 2426, town 850, conflict 525, ground 406). About 13 ms per chunk including the terrain block (cold, with the measuring code), the block itself being the larger part.
 - Sprites are 32 px per tile. The oak and the palm are 4 x 3 tiles with a footprint of 2 x 1 at column 1 (the trunk stands on the two middle tiles of the bottom row).

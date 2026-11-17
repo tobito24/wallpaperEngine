@@ -14,6 +14,8 @@ export const ANIMATED_AUTOTILE_FRAME_DURATION_MS = 250;
 export const CLIFF_SHEET_TILE_SIZE_PX = 32;
 export const OUTSIDE_SHEET_TILE_SIZE_PX = 32;
 export const DECO_TILE_SIZE_PX = 32;
+export const DECO_CACHE_MAX_ENTRIES = 600;
+export const DECO_CLUSTER_FREQUENCY = 0.03;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;
