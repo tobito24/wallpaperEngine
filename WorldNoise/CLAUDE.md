@@ -57,7 +57,7 @@ New topic: new file in `docs/` and a row here.
 
 ## Controls (dev/debug, unchanged from TileGridBase for now)
 
-`w`/`a`/`s`/`d`/arrows pan (shift sprints), wheel/`q`/`e` zoom, `r` toggles debug HUD + chunk borders, mouse-drag/
+`w`/`a`/`s`/`d`/arrows pan (shift sprints), wheel/`q`/`e` zoom, `r` toggles debug HUD + chunk borders, `g` (debug on) jumps: `cx,cy` for a chunk as in the debug labels, `t x,y` for a tile, mouse-drag/
 touch pan, pinch zoom. **Keyboard only works while developing** — once applied as a real desktop wallpaper, only
 mouse/touch and WE properties reach the page (confirmed via `TileGridBase`, see [wallpaper-engine-integration](../docs/wallpaper-engine-integration.md)).
 

@@ -1,6 +1,7 @@
 import { TILE_SIZE_DEFAULT, PAN_SPEED_TILES_PER_SEC } from '../config/constants';
 import { Camera } from './Camera';
 import {
+  attachJumpControl,
   attachMouseDragControls,
   attachTouchControls,
   attachZoomControls,
@@ -37,6 +38,7 @@ export class App {
     attachZoomControls(this.camera, this.canvas);
     attachMouseDragControls(this.camera, this.canvas);
     attachTouchControls(this.camera, this.canvas);
+    attachJumpControl(this.camera, this.debugState);
     attachWallpaperPropertyListener(this.camera, this.ticker);
     window.addEventListener('resize', () => this.resize());
     this.resize();
@@ -98,7 +100,7 @@ export class App {
     );
     this.ctx.fillText(`chunks loaded: ${this.world.loadedChunkCount}`, 8, 48);
     this.ctx.fillText(`ticks: ${this.tickCount} (${this.ticker.tickIntervalMs}ms interval)`, 8, 64);
-    this.ctx.fillText('debug: on (r to toggle)', 8, 80);
+    this.ctx.fillText('debug: on (r toggle, g jump)', 8, 80);
     drawCrossingLegend(this.ctx, 8, 92);
   }
 
