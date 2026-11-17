@@ -74,8 +74,8 @@ Paths and towns.
   not depend on the road graph.
 - **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint. The road layer reads
   these; the town does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not
-  built yet. The planned road (`road/roadPlanner.ts`) starts at the gate straight along its axis; inside the plateau
-  the road runs from the gate to a point a few tiles inside it and straight to the node, until the street grid of the layout step exists. Known limits the layout step has to deal with: `Chunk` hard-codes the
+  built yet. The planned road (`road/roadPlanner.ts`) starts at the gate straight along its axis; the road of the graph ends at the gate, and inside the plateau the
+  streets of `town/townStreets.ts` take over (`townStreets(town)`, a list of polylines, cached per town, added to `roadEdgesIn` as edges without crossings so the road mask paints them like roads): four gates give two crossing straight streets (west-east, north-south), three gates the straight street of the opposite pair plus a straight branch from the third gate at a right angle to it, two opposite gates one straight street, two neighbouring gates one street with a right-angled corner, one gate a dead end up to the centre line (never built so far: every node has at least two edges). Opposite gates share a lane, so the streets are straight; a jog in the middle exists in the code for the case that they do not. Measured on 1507 towns: no street leaves the footprint. Known limits the layout step has to deal with: `Chunk` hard-codes the
   town ground (`TOWN_BIOME` inside a footprint) and `roadTilesIn` paints roads over the whole footprint, so a layout that
   owns its ground and roads needs a town-layer call that can replace or veto both; `townInfoAt` only says inside or ring
   (a fence or stairs step also needs the distance to the footprint edge and the base level); `Tile.elevation` stays the

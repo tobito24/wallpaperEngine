@@ -1,11 +1,11 @@
-import { ROAD_EDGE_CACHE_MAX_ENTRIES, ROAD_RUN_BEFORE_CROSSING_TILES } from '../config/constants';
+import { ROAD_EDGE_CACHE_MAX_ENTRIES } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import { cellIndexOf, edgeExists, edgeKey, isEdgeOrdered } from '../skeleton/cellGrid';
 import type { Point } from '../skeleton/cellGrid';
 import { gateDirection, gateSideOf, townGate } from '../town/townGates';
 import { nodePosition } from '../town/townNodes';
 import { townOfCell } from '../town/townPlacement';
-import { townInfoAt } from '../town/townTerrain';
+import { townStreets } from '../town/townStreets';
 import type { CrossingOutcome, RoadCrossing } from './roadCrossing';
 import { planRoad } from './roadPlanner';
 import type { PlanEnd } from './roadPlanner';
@@ -35,16 +35,6 @@ const CELL_PADDING = 2;
 
 const edgeCache = new Map<string, RoadEdge>();
 
-function straightApproach(gate: Point, step: readonly [number, number]): Point {
-  let approach = gate;
-  for (let tiles = 1; tiles <= ROAD_RUN_BEFORE_CROSSING_TILES; tiles++) {
-    const candidate = { x: gate.x - step[0] * tiles, y: gate.y - step[1] * tiles };
-    if (!townInfoAt(Math.floor(candidate.x), Math.floor(candidate.y))?.inside) break;
-    approach = candidate;
-  }
-  return approach;
-}
-
 function edgeEnd(cx: number, cy: number, towardCx: number, towardCy: number): EdgeEnd {
   const town = townOfCell(cx, cy);
   if (!town) return { plan: { point: nodePosition(cx, cy), outward: null }, insidePoints: [] };
@@ -53,7 +43,7 @@ function edgeEnd(cx: number, cy: number, towardCx: number, towardCy: number): Ed
   const outward = gateDirection(side);
   return {
     plan: { point: gate, outward },
-    insidePoints: [town.center, straightApproach(gate, outward)],
+    insidePoints: [],
   };
 }
 
@@ -78,6 +68,10 @@ function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
   };
 }
 
+function streetEdge(street: readonly Point[]): RoadEdge {
+  return { polyline: street, crossings: [], candidateOutcomes: [] };
+}
+
 export function roadEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
   return remember(edgeCache, ROAD_EDGE_CACHE_MAX_ENTRIES, edgeKey(ax, ay, bx, by), () =>
     buildEdge(ax, ay, bx, by),
@@ -95,6 +89,8 @@ export function roadEdgesIn(minX: number, minY: number, width: number, height: n
       for (const [dx, dy] of EDGE_DIRECTIONS) {
         if (edgeExists(cx, cy, cx + dx, cy + dy)) edges.push(roadEdge(cx, cy, cx + dx, cy + dy));
       }
+      const town = townOfCell(cx, cy);
+      if (town) edges.push(...townStreets(town).map(streetEdge));
     }
   }
   return edges;
