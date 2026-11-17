@@ -1,5 +1,5 @@
 import type { Camera } from '../core/Camera';
-import { decoOfChunk } from '../deco/decoPlacement';
+import { peekDecoOfChunk } from '../deco/decoPlacement';
 import type { DecoInstance } from '../deco/decoPlacement';
 import type { Chunk } from '../world/Chunk';
 
@@ -54,7 +54,7 @@ export function drawDecoFootprints(
   size: number,
 ): void {
   for (const chunk of chunks) {
-    for (const instance of decoOfChunk(chunk.chunkX, chunk.chunkY)) {
+    for (const instance of peekDecoOfChunk(chunk.chunkX, chunk.chunkY) ?? []) {
       drawInstance(ctx, camera, viewportWidth, viewportHeight, size, instance);
     }
   }
