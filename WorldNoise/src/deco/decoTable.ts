@@ -288,7 +288,7 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
 
 validateDecoTable(DECO_ITEMS);
 
-export const DECO_CONFLICT_REACH_TILES = Math.max(
-  ...DECO_ITEMS.map((entry) => Math.max(entry.sprite.width, entry.sprite.height)),
-);
+export const DECO_CONFLICT_REACH_TILES =
+  Math.max(...DECO_ITEMS.map((entry) => Math.max(entry.sprite.width, entry.sprite.height))) +
+  Math.max(...DECO_ITEMS.map((entry) => entry.clearance));
 export const DECO_MARGIN_TILES = DECO_PASS_ORDER.length * DECO_CONFLICT_REACH_TILES;

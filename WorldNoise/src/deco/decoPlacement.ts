@@ -379,6 +379,7 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
     const lastCellX = Math.floor((minX + size + reach - 1) / cell);
     const firstCellY = Math.floor((minY - reach) / cell);
     const lastCellY = Math.floor((minY + size + reach - 1) / cell);
+    const acceptedInPass: DecoInstance[] = [];
     for (let cellY = firstCellY; cellY <= lastCellY; cellY++) {
       for (let cellX = firstCellX; cellX <= lastCellX; cellX++) {
         const candidate = candidateAt(pass, passIndex, cellX, cellY, block, stats);
@@ -392,11 +393,12 @@ export function decoInRegion(minX: number, minY: number, size: number, stats?: D
           if (stats) stats.rejected.conflict = (stats.rejected.conflict ?? 0) + 1;
           continue;
         }
-        occupy(candidate.item, candidate.x, candidate.y, block, occupancy);
-        accepted.push(candidate);
+        acceptedInPass.push(candidate);
         if (stats) stats.accepted++;
       }
     }
+    for (const instance of acceptedInPass) occupy(instance.item, instance.x, instance.y, block, occupancy);
+    accepted.push(...acceptedInPass);
   });
 
   return accepted.filter(
