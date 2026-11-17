@@ -27,7 +27,7 @@ export const DECO_BLOB_MAX_ROUGH = 0.35;
 export const DECO_BLOB_MIN_DITHER = 0.15;
 export const DECO_BLOB_MAX_DITHER = 0.5;
 export const DECO_BLOB_EDGE_NOISE_FREQUENCY = 0.3;
-export const DECO_BLOB_REACH_TILES = 12;
+export const DECO_BLOB_REACH_TILES = 13;
 
 export const CHUNK_SIZE = 16;
 export const CELL_SIZE_CHUNKS = 5;

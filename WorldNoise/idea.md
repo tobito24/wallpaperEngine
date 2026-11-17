@@ -350,7 +350,7 @@ Adding an item = a PNG plus one table row, no engine change (the rule of "More a
    crossing footprint, no cliff piece or inner ring, and no town (plateau, pads, landings and the terrace ring; decided with the user: no deco in the ring for now), and the overhang
    covers no road, stairs or town and covers cliffs or deco only when the item allows it.
 4. **Accepted** when valid and no *accepted* item of an earlier pass overlaps its footprint plus clearance. The accepted items of the earlier
-   pass depend only on terrain and on still earlier passes, never on their own pass, so the chain is three passes long, not unbounded: the result of one tile
+   pass depend only on terrain and on still earlier passes, never on their own pass, so the chain is as long as the number of passes, not unbounded: the result of one tile
    depends on a bounded neighbourhood, and every chunk computes the same answer. Small items thereby fill the gaps between the big ones.
 
 Density, pools and clustering are per biome (a table next to the items). "Lots of decoration" means high first values (`large` 0.3,
