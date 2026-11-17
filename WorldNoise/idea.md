@@ -219,19 +219,20 @@ Rules, by number of gates (a gate exists only on a side with a graph edge, so 1 
 - **Continuous with the outside:** a gate stays where the road of the graph arrives (same lane, same width), so no change of
   the road planner is needed except that its edge ends at the gate and the straight stretch to the node goes away.
 
-Ground. The plateau gets its own **town ground** (grey paving, plaza) instead of the biome ground, and the streets and side
-paths get **town road** art. The edge of the plateau stays a cliff or a hedge/fence line; where the town ground meets the biome
-ground (open edge) an autotile rim blends them like any other ground pair.
+Ground. The plateau gets its own grounds instead of the biome ground. Decided with the user (2026-11-17): streets and side
+paths use **one** autotile (`city-street.png`), so a side path is just a narrower street (1 to 2 tiles); the paving of the
+plateau is `city.png`; the plaza fields are `city-grass.png`. The three sheets are made (96 x 128 px, the format of the other
+grounds in `assets/autotiles/`, git-ignored). The edge of the plateau stays a cliff or a hedge/fence line; where a town ground meets the
+biome ground (open edge) an autotile rim blends them like any other ground pair. Still to supply later, for the layout rules:
+a plaza fountain, lamps, hedge/fence pieces (single tiles or pieces on the `Outside` sheet). Development art may come from
+`DesignCorner/private/`, the public version gets own art ("Two asset versions").
 
-Art the user supplies (development: from the Essentials/Platinum art in `DesignCorner/private/`, public version: own art, see
-"Two asset versions"):
-
-1. **Town ground**, an autotile in the same XP layout as the other grounds (128 x 96 px, `assets/autotiles/`), the paving of
-   the town. Optional second one: a park/grass variant for the plaza fields.
-2. **Town road**, an autotile in the same layout, the asphalt/cobble of the streets (the existing `brick-path.png` stays the
-   road outside).
-3. **Town side path**, an autotile for the 1 to 2 tile paths (may be the same sheet as the ground with another rank).
-4. Later, for the layout rules: a plaza fountain, lamps, hedge/fence pieces (single tiles or pieces on the `Outside` sheet).
+Rounded corners. The corners of the town streets are rounded like the roads outside (radius 3, a smaller one where the segment is
+short). The road outside is rounded in front of a gate as well: the planner already rounds every corner of a path except next to
+stairs, so a corner near a gate is rounded up to the room left; the last straight run into a gate and the footprint of stairs on
+the terrace ring stay exact, because the street, the stairs and the road must meet at a right angle on one lane. How much room
+that leaves in front of a gate is looked at when step (2) is built; if it is too little, the straight run in front of a gate gets
+shorter (a constant) before anything else changes.
 
 Built in this order, each step looked at before the next: (1) the gate lanes: opposite gates share a lane, (2) the street
 planner as a pure function of the town and its gates (a list of straight segments inside the footprint), with a debug overlay,
