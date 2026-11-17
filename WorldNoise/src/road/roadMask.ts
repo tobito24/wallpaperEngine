@@ -41,10 +41,25 @@ function markPolyline(
   }
 }
 
-export function roadTilesIn(minX: number, minY: number, width: number, height: number): Uint8Array {
+function paintedRoadTilesIn(minX: number, minY: number, width: number, height: number): Uint8Array {
   const mask = new Uint8Array(width * height);
   for (const edge of roadEdgesIn(minX, minY, width, height)) {
     markPolyline(mask, edge.polyline, minX, minY, width, height);
+  }
+  return mask;
+}
+
+export function roadTilesIn(minX: number, minY: number, width: number, height: number): Uint8Array {
+  const paddedWidth = width + 2;
+  const painted = paintedRoadTilesIn(minX - 1, minY - 1, paddedWidth, height + 2);
+  const isRoad = (x: number, y: number): boolean => painted[(y + 1) * paddedWidth + x + 1] === ROAD_TILE_MARK;
+  const mask = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const fillsInnerCorner =
+        (isRoad(x, y - 1) || isRoad(x, y + 1)) && (isRoad(x - 1, y) || isRoad(x + 1, y));
+      if (isRoad(x, y) || fillsInnerCorner) mask[y * width + x] = ROAD_TILE_MARK;
+    }
   }
   return mask;
 }

@@ -96,7 +96,10 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
 - **`road/roadMask.ts`** (new) — `roadTilesIn(minX, minY, width, height)`: marks the tiles whose centre is within
   `ROAD_HALF_WIDTH_TILES` (1.5, about 3 tiles wide) of a road (the polyline of every edge of `roadEdgesIn`). A pure function of the coordinates: two overlapping rectangles agree on every shared tile (0 of
   57 200 compared tiles differed), so roads have no seams at chunk borders. Roads are 5.2 % of the world, one chunk
-  costs about 0.03 ms.
+  costs about 0.03 ms. After the marking, a tile with a road tile on one vertical and one horizontal neighbour is
+  added: it fills the inner side of a bend and the notch where the road jogs sideways (curves and waves), so the road does
+  not look thin there. The painting runs one tile beyond the rectangle so the fill needs no neighbour chunk (overlapping
+  rectangles still agree, checked on 4 areas of 160 x 160 tiles). Stair stretches are straight, so the footprints are untouched.
 
 ## Measured with the planner
 
