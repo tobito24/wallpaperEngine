@@ -243,6 +243,34 @@ planner as a pure function of the town and its gates (a list of straight segment
 say, no street leaves the footprint or touches a cliff, a chunk takes at most the 3 ms budget of the road planning, and a chunk
 equals the whole map.
 
+### Gate pads and the house path network (decided 2026-11-17, not built yet)
+
+Why: 17 of 239 gates (measured on 97 towns) still have a road crossing a cliff without stairs close to the gate. A gate often
+lies right behind a cliff, so the road planner has to find a place for stairs in an uncontrolled spot and sometimes bends
+strangely towards the cliff edge. The fix is to give the planner a controlled spot.
+
+- **Gate pad.** Every gate that has a road gets a **pad**: a square of 6 x 6 tiles outside the plateau edge, centred on the gate
+  lane, at the plateau level P. Its ground is town paving (`city`). Water inside a pad becomes land (like the stairs do); the gate lane cost
+  (water, level variation) stays as it is, so a pad is rarely on water. The plateau edge at the gate then has no cliff, the pad
+  edge is straight, and the cliff (if any) lies at the outer edge of the pad, where the stairs go. Stairs are only tried there first
+  ("let us try it like this").
+- **Order of the town platform** (each step reads only the earlier ones; a step is one function of the town):
+  1. footprint and plateau level (as today);
+  2. gate lanes (as today: shared lane per opposite pair, cost from water and level variation, reading the base ground only);
+  3. pads (new): from the gates, the pad tiles at level P;
+  4. terrace ring: the distance is measured from the union of plateau and pads, so a pad cliff is at most one step high (ring
+     width 8 plus pad 6 is 14 tiles, inside the 16 tile buffer of a cell);
+  5. town streets inside the plateau and across the pad, to the outer edge of the pad (the road of the graph starts there);
+  6. road planner: its end is the outer edge of the pad, with the straight run and the stairs rules as today;
+  7. crossings (stairs, flattening), water limit, level cleanup, cliffs, grounds, buildings and paths.
+- **Rim of roads outside.** A road tile that lies on a cliff piece or an inner ring draws no rim underlay (the ground of the lower
+  neighbour), so the cliff shows through the rim. Done (the sand fringe at the inner ring edge was the underlay drawn over the cliff top).
+- **House path network, global.** After all buildings are placed, the front strips (2 rows along the whole south edge) and the
+  street form a graph: the nodes are the strips and the sidewalk of the streets, the edges are shortest paths (breadth first over free
+  tiles). The paths are the minimum spanning tree of this graph: every building is connected once, to the street or to a nearer
+  building, and the network reaches the street at as few places as the tree needs. A building whose strip cannot be reached is
+  dropped. The longest connection grows from 10 to 14 tiles so the tree has room (judged by eye). Paths stay 2 tiles wide.
+
 ### Height levels and cliffs
 
 Discrete height levels belong to the Pokemon look, so they are part of the plan, not a later extra.
