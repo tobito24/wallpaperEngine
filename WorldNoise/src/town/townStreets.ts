@@ -81,11 +81,33 @@ function branchStreet(gate: Gate, through: Street, throughAlongX: boolean): Stre
     : [gate.point, { x: lane, y: gate.point.y }];
 }
 
-function cornerStreet(gates: readonly Gate[]): Street {
+function isStreetInside(town: Town, street: Street): boolean {
+  return street.every((point, index) => {
+    if (index === 0) return isFootprintPoint(town, point);
+    const previous = street[index - 1];
+    const tiles = Math.max(Math.abs(point.x - previous.x), Math.abs(point.y - previous.y));
+    for (let step = 0; step <= tiles; step++) {
+      const along = tiles === 0 ? 0 : step / tiles;
+      const sample = {
+        x: previous.x + (point.x - previous.x) * along,
+        y: previous.y + (point.y - previous.y) * along,
+      };
+      if (!isFootprintPoint(town, sample)) return false;
+    }
+    return true;
+  });
+}
+
+function cornerStreet(town: Town, gates: readonly Gate[]): Street {
   const northOrSouth = gates.find((gate) => gateSideGeometry(gate.side).alongX) as Gate;
   const eastOrWest = gates.find((gate) => !gateSideGeometry(gate.side).alongX) as Gate;
-  const corner = { x: northOrSouth.point.x, y: eastOrWest.point.y };
-  return [eastOrWest.point, corner, northOrSouth.point];
+  const viaInnerCorner = [
+    eastOrWest.point,
+    { x: northOrSouth.point.x, y: eastOrWest.point.y },
+    northOrSouth.point,
+  ];
+  if (isStreetInside(town, viaInnerCorner)) return viaInnerCorner;
+  return [eastOrWest.point, { x: eastOrWest.point.x, y: northOrSouth.point.y }, northOrSouth.point];
 }
 
 function deadEndStreet(town: Town, gate: Gate): Street {
@@ -113,7 +135,7 @@ function planStreets(town: Town): Street[] {
     const branches = gates.filter((gate) => !isOnStreet(streets[0], gate));
     return [...streets, ...branches.map((gate) => branchStreet(gate, streets[0], travelsAlongX[0]))];
   }
-  return [cornerStreet(gates)];
+  return [cornerStreet(town, gates)];
 }
 
 function isOnStreet(street: Street, gate: Gate): boolean {

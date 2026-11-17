@@ -22,11 +22,6 @@ export interface RoadEdge {
   readonly candidateOutcomes: readonly CandidateOutcome[];
 }
 
-interface EdgeEnd {
-  readonly plan: PlanEnd;
-  readonly insidePoints: readonly Point[];
-}
-
 const EDGE_DIRECTIONS: readonly (readonly [number, number])[] = [
   [1, 0],
   [0, 1],
@@ -35,16 +30,13 @@ const CELL_PADDING = 2;
 
 const edgeCache = new Map<string, RoadEdge>();
 
-function edgeEnd(cx: number, cy: number, towardCx: number, towardCy: number): EdgeEnd {
+function edgeEnd(cx: number, cy: number, towardCx: number, towardCy: number): PlanEnd {
   const town = townOfCell(cx, cy);
-  if (!town) return { plan: { point: nodePosition(cx, cy), outward: null }, insidePoints: [] };
+  if (!town) return { point: nodePosition(cx, cy), outward: null };
   const side = gateSideOf(towardCx - cx, towardCy - cy);
   const gate = townGate(town, side);
   const outward = gateDirection(side);
-  return {
-    plan: { point: gate, outward },
-    insidePoints: [],
-  };
+  return { point: gate, outward };
 }
 
 function crossingPosition(crossing: RoadCrossing): Point {
@@ -57,9 +49,9 @@ function buildEdge(ax: number, ay: number, bx: number, by: number): RoadEdge {
   const ordered = isEdgeOrdered(ax, ay, bx, by);
   const start = ordered ? edgeEnd(ax, ay, bx, by) : edgeEnd(bx, by, ax, ay);
   const end = ordered ? edgeEnd(bx, by, ax, ay) : edgeEnd(ax, ay, bx, by);
-  const planned = planRoad(start.plan, end.plan);
+  const planned = planRoad(start, end);
   return {
-    polyline: [...start.insidePoints, ...planned.polyline, ...[...end.insidePoints].reverse()],
+    polyline: planned.polyline,
     crossings: planned.crossings,
     candidateOutcomes: [
       ...planned.crossings.map((crossing) => ({ ...crossingPosition(crossing), outcome: 'stairs' as const })),
