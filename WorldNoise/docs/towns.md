@@ -32,7 +32,7 @@ Paths and towns.
 - **`town/townTerrain.ts`** (new) — `townInfoAt(x, y)` (inside the footprint, or in the ring of `TOWN_RING_WIDTH_TILES` (8)
   around it, looked up in the tile's own cell only) and `levelWithTown(baseLevel, info)`: inside the level is the plateau
   level, in the ring a land level is limited to the plateau level minus up to plus `1 + floor(ringDistance / TOWN_RING_TERRACE_STEP_TILES)`
-  (2 tiles per step, so the limit widens by one step every two tiles and neighbouring ring tiles never differ by more than one level),
+  (`TOWN_RING_TERRACE_STEP_TILES` 4 tiles per step, so the limit widens by one step every four tiles and neighbouring ring tiles never differ by more than one level; a step of 2 put a cliff every 2 tiles into the ring, too close for stairs),
   water stays water. `Chunk`
   uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`; a higher ground next to a town, like forest or jungle, draws its rim over it, water in the footprint
   becomes land). The outline is wavy: a tile of the chunk footprint is inside only when its distance to the nearest
@@ -70,8 +70,8 @@ Paths and towns.
   no plateau tile next to them in the direction of the side.
 - **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint. The road layer reads
   these; the town does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not
-  built yet. The road enters the plateau on a straight line from the gate to the node, not along an axis: the bent line from the
-  other node reaches the gate at the angle of the neighbour; the planned roads (road planning 3) arrive along the axis. Known limits the layout step has to deal with: `Chunk` hard-codes the
+  built yet. The planned road (`road/roadPlanner.ts`) starts at the gate straight along its axis; inside the plateau
+  the road runs from the gate to a point a few tiles inside it and straight to the node, until the street grid of the layout step exists. Known limits the layout step has to deal with: `Chunk` hard-codes the
   town ground (`TOWN_BIOME` inside a footprint) and `roadTilesIn` paints roads over the whole footprint, so a layout that
   owns its ground and roads needs a town-layer call that can replace or veto both; `townInfoAt` only says inside or ring
   (a fence or stairs step also needs the distance to the footprint edge and the base level); `Tile.elevation` stays the

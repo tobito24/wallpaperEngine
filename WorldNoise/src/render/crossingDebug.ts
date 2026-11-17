@@ -4,20 +4,12 @@ import type { CrossingOutcome } from '../road/roadCrossing';
 
 const MARKER_COLORS: Readonly<Record<CrossingOutcome, string>> = {
   stairs: '#3ddc4a',
-  noBoundary: '#9aa0a6',
-  overlap: '#ff3b30',
-  tooExpensive: '#ff9500',
-  water: '#0a84ff',
-  curve: '#ff2d92',
+  unplanned: '#ff3b30',
 };
 
 const OUTCOME_LABELS: Readonly<Record<CrossingOutcome, string>> = {
   stairs: 'stairs',
-  noBoundary: 'no straight edge',
-  overlap: 'too close to a stair',
-  tooExpensive: 'too much to flatten',
-  water: 'water near',
-  curve: 'road curve',
+  unplanned: 'level change without stairs',
 };
 
 const MARKER_SCALE = 1.4;

@@ -108,7 +108,7 @@ Reason for the shape: an endless world has no global view, so every decision mus
 - **The terrace ring** keeps every cliff one step high where the plateau meets terrain that is two levels away (with three
   levels, plateau 3 next to terrain 1, or the other way round). Around the footprint lies a ring of about 8 tiles (width
   judged by eye). Inside the footprint the level is the plateau level P. Inside the ring the level of a land tile is the base
-  terrain level t limited to P - d .. P + d, d = 1 + floor(distance / 2) widening from the footprint outwards (with three levels a fixed
+  terrain level t limited to P - d .. P + d, d = 1 + floor(distance / 4) widening from the footprint outwards (it was 2 tiles per step until the stairs of the road planning needed cliffs 4 tiles apart) (with three levels a fixed
   d = 1 was enough; with four a fixed one left jumps of two at the outer edge of the ring); water tiles stay water (the ring rule is for land only, so a shore stays a shore
   and the limit never turns water into land next to a high land tile). Then the plateau and the ring differ by at most one
   step, and the ring and the terrain behind it differ by at most one step, because the widening limit is one step Lipschitz and beyond the ring
@@ -167,16 +167,17 @@ Decisions:
      (the prototype found one for all 232 edges); such a crossing is a failure that the debug overlay shows;
    - the result is the list of crossings (the gates of the road) plus the path; the crossing list is no longer found by walking
      the road. The planner reads the level field without crossings; crossings of different edges that meet near a node or a gate
-     are not coordinated, as today (sorted by id, the later one flattens last).
+     are not coordinated (sorted by id, the later one flattens last).
 4. **Smooth curves, no return to a raw road.** The corners of the path are rounded (radius 2, the straights at a crossing stay
    exact), and on a straight of 24 tiles or more outside towns the road gets a gentle wave (amplitude at most 2 tiles, about 32
-   tiles long, zero near its ends and near every crossing) wherever the wave stays on one level. The result is a polyline as
-   today, so the road mask, the stairs and the overlay do not change.
+   tiles long, zero near its ends and near every crossing) wherever the wave stays on one level. The result stays a polyline, so
+   the road mask, the stairs and the overlay do not change.
 5. **Stairs may be closer.** A footprint is 6 tiles long (3 each side of the boundary) and stays so, but two footprints of one
-   road may overlap when their levels agree: the boundaries only need to be 2 tiles apart (north/south) or 4 (east/west, because
-   of the bulge), and the later crossing is checked against the terrain the earlier one made. Today two crossings of one edge need
-   their centres 23 apart (`CROSSING_SPACING_TILES`) or, chained into a run, their boundaries 6 plus twice the lane difference
-   apart. In the planned paths 142 of 428 pairs of consecutive crossings are fewer than 6 tiles of path apart.
+   road may overlap when their levels agree: the boundaries need to be 3 tiles apart (north/south) or 4 (east/west, because
+   of the bulge, built with 4 for both), the band between has one level. Built: the planner keeps 4 tiles
+   between two crossings. Before the planner two crossings of one edge needed their centres 23 apart or, chained into a run, their
+   boundaries 6 plus twice the lane difference apart; in the prototype paths 142 of 428 pairs of consecutive crossings were fewer
+   than 6 tiles of path apart.
 6. **Chunk locality.** A planned edge is cached like an edge today. The box of the search lies inside the two cells of the edge,
    and `roadEdgesIn` looks one cell further (2 cells around the rectangle instead of 1), because a footprint can reach out of
    the two cells. Costs are integers (scaled by 10) so the result does not depend on rounding. Measured prototype: about 26 ms
@@ -318,9 +319,9 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Stairs where a road crosses a level change (crossings of the bent road, see Road planning for the next stage)
 - [x] Road planning 1: waypoint nodes on the best land (largest clearance of 48 hashed candidates)
 - [x] Road planning 2: town gates, one per side with an edge, the bent line ends there (straight road to the node inside until the street grid exists)
-- [ ] Road planning 3: grid path finder with stairs as crossing rules, replacing the bent line, the walk for crossings and the straightening
+- [x] Road planning 3: grid path finder with stairs as crossing rules, replacing the bent line, the walk for crossings and the straightening (`road/roadPlanner.ts`, with a gap of 4 tiles between two crossings of a road, so step 5 is done as far as the footprints allow)
 - [ ] Road planning 4: rounded corners and gentle waves on long straights outside towns
-- [ ] Road planning 5: stairs closer together (north/south 2 tiles, east/west 4, levels must agree)
+- [x] Road planning 5: stairs closer together: 4 tiles apart for all crossings (a footprint is 3 tiles each side of its boundary, two footprints stay consistent when the boundaries are 3 apart for north/south and 4 for east/west because of the bulge; 3 for north/south is a later small gain)
 - [x] Larger terrain features (base frequency 0.01) so that towns of 2 x 2 to 3 x 3 chunks fit into landmasses
 - [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)

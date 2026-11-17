@@ -21,6 +21,11 @@ const SIDE_GEOMETRY: Readonly<Record<GateSide, SideGeometry>> = {
 
 const gateCache = new Map<string, Point>();
 
+export function gateDirection(side: GateSide): readonly [number, number] {
+  const { alongX, outward } = SIDE_GEOMETRY[side];
+  return alongX ? [0, outward] : [outward, 0];
+}
+
 export function gateSideOf(cellStepX: number, cellStepY: number): GateSide {
   if (cellStepX !== 0) return cellStepX > 0 ? 'east' : 'west';
   return cellStepY > 0 ? 'south' : 'north';
