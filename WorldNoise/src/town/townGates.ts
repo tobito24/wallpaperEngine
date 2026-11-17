@@ -87,21 +87,65 @@ function waterNear(lane: EdgeLane, side: GateSide): number {
   return count;
 }
 
-function findGate(town: Town, side: GateSide): Point {
-  const lanes = edgeLanes(town, side);
+const OPPOSITE_SIDE: Readonly<Record<GateSide, GateSide>> = {
+  east: 'west',
+  west: 'east',
+  south: 'north',
+  north: 'south',
+};
+
+function middleThird(lanes: readonly EdgeLane[]): EdgeLane[] {
   const firstLane = lanes[0].lane;
   const span = lanes[lanes.length - 1].lane - firstLane + 1;
   const middle = lanes.filter(
     (candidate) => candidate.lane >= firstLane + span / 3 && candidate.lane <= firstLane + (2 * span) / 3,
   );
-  const scored = (middle.length > 0 ? middle : lanes).map((candidate) => ({
-    candidate,
-    water: waterNear(candidate, side),
-  }));
+  return middle.length > 0 ? middle : [...lanes];
+}
+
+function pickWithFewestWater(
+  candidates: readonly EdgeLane[],
+  waterOf: (candidate: EdgeLane) => number,
+  key: string,
+): EdgeLane {
+  const scored = candidates.map((candidate) => ({ candidate, water: waterOf(candidate) }));
   const fewestWater = Math.min(...scored.map((entry) => entry.water));
   const best = scored.filter((entry) => entry.water === fewestWater);
-  const pick = Math.floor(randomValue(`gate:${town.cx}:${town.cy}:${side}`) * best.length);
-  return best[pick].candidate.point;
+  return best[Math.floor(randomValue(key) * best.length)].candidate;
+}
+
+function sharedLaneKey(town: Town, side: GateSide): string {
+  const pair = [side, OPPOSITE_SIDE[side]].sort().join('-');
+  return `gate:${town.cx}:${town.cy}:${pair}`;
+}
+
+function findGate(town: Town, side: GateSide): Point {
+  const opposite = OPPOSITE_SIDE[side];
+  const ownLanes = edgeLanes(town, side);
+  const oppositeLanes = edgeLanes(town, opposite);
+  const oppositeByLane = new Map(oppositeLanes.map((candidate) => [candidate.lane, candidate]));
+  const commonLanes = ownLanes.filter((candidate) => oppositeByLane.has(candidate.lane));
+
+  if (commonLanes.length > 0) {
+    const ownMiddle = new Set(middleThird(ownLanes).map((candidate) => candidate.lane));
+    const oppositeMiddle = new Set(middleThird(oppositeLanes).map((candidate) => candidate.lane));
+    const preferred = commonLanes.filter(
+      (candidate) => ownMiddle.has(candidate.lane) && oppositeMiddle.has(candidate.lane),
+    );
+    const waterOnBothSides = (candidate: EdgeLane): number =>
+      waterNear(candidate, side) + waterNear(oppositeByLane.get(candidate.lane) as EdgeLane, opposite);
+    return pickWithFewestWater(
+      preferred.length > 0 ? preferred : commonLanes,
+      waterOnBothSides,
+      sharedLaneKey(town, side),
+    ).point;
+  }
+
+  return pickWithFewestWater(
+    middleThird(ownLanes),
+    (candidate) => waterNear(candidate, side),
+    `gate:${town.cx}:${town.cy}:${side}`,
+  ).point;
 }
 
 export function townGate(town: Town, side: GateSide): Point {
