@@ -1,6 +1,5 @@
 import type { BiomeId } from '../biome/biome';
 import { DECO_FIELD_CELL_TILES } from '../config/constants';
-import type { Ground } from '../tileset/ground';
 
 export type DecoLayer = 'flat' | 'object' | 'overhead';
 export type DecoPass = 'grove' | 'large' | 'strip' | 'medium' | 'small' | 'flat';
@@ -39,9 +38,7 @@ export interface DecoItem {
   readonly anchorColumn: number;
   readonly surface: DecoSurface;
   readonly biomes: Readonly<Partial<Record<BiomeId, number>>>;
-  readonly grounds?: readonly Ground[];
   readonly clearance: number;
-  readonly repeat: boolean;
   readonly overlapsDeco: boolean;
   readonly overlapsCliff: boolean;
   readonly blob: boolean;
@@ -132,7 +129,6 @@ const DEFAULTS = {
   anchorColumn: 0,
   surface: 'land',
   clearance: 0,
-  repeat: false,
   overlapsDeco: false,
   overlapsCliff: false,
   blob: false,
@@ -154,7 +150,6 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     footprint: TWO_BY_ONE,
     anchorColumn: 1,
     biomes: { meadow: 2, forest: 8, steppe: 0.5 },
-    repeat: true,
     overlapsDeco: true,
     overlapsCliff: true,
   }),
