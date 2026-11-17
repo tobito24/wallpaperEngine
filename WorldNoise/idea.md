@@ -167,16 +167,17 @@ Decisions:
      (the prototype found one for all 232 edges); such a crossing is a failure that the debug overlay shows;
    - the result is the list of crossings (the gates of the road) plus the path; the crossing list is no longer found by walking
      the road. The planner reads the level field without crossings; crossings of different edges that meet near a node or a gate
-     are not coordinated, as today (sorted by id, the later one flattens last).
+     are not coordinated (sorted by id, the later one flattens last).
 4. **Smooth curves, no return to a raw road.** The corners of the path are rounded (radius 2, the straights at a crossing stay
    exact), and on a straight of 24 tiles or more outside towns the road gets a gentle wave (amplitude at most 2 tiles, about 32
-   tiles long, zero near its ends and near every crossing) wherever the wave stays on one level. The result is a polyline as
-   today, so the road mask, the stairs and the overlay do not change.
+   tiles long, zero near its ends and near every crossing) wherever the wave stays on one level. The result stays a polyline, so
+   the road mask, the stairs and the overlay do not change.
 5. **Stairs may be closer.** A footprint is 6 tiles long (3 each side of the boundary) and stays so, but two footprints of one
    road may overlap when their levels agree: the boundaries need to be 3 tiles apart (north/south) or 4 (east/west, because
-   of the bulge, built with 4 for both), the band between has one level. Today two crossings of one edge need
-   their centres 23 apart (`CROSSING_SPACING_TILES`) or, chained into a run, their boundaries 6 plus twice the lane difference
-   apart. In the planned paths 142 of 428 pairs of consecutive crossings are fewer than 6 tiles of path apart.
+   of the bulge, built with 4 for both), the band between has one level. Built: the planner keeps 4 tiles
+   between two crossings. Before the planner two crossings of one edge needed their centres 23 apart or, chained into a run, their
+   boundaries 6 plus twice the lane difference apart; in the prototype paths 142 of 428 pairs of consecutive crossings were fewer
+   than 6 tiles of path apart.
 6. **Chunk locality.** A planned edge is cached like an edge today. The box of the search lies inside the two cells of the edge,
    and `roadEdgesIn` looks one cell further (2 cells around the rectangle instead of 1), because a footprint can reach out of
    the two cells. Costs are integers (scaled by 10) so the result does not depend on rounding. Measured prototype: about 26 ms

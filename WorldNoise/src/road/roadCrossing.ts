@@ -51,10 +51,6 @@ export function terrainLevelAt(tileX: number, tileY: number): number {
   return levelWithTown(heightLevelAt(tileX, tileY, elevationNoise(tileX, tileY)), townInfoAt(tileX, tileY));
 }
 
-export function lowerSideLaneOffsetTiles(crossing: RoadCrossing): number {
-  return crossing.travelAxis === 'x' ? 1 : 0;
-}
-
 export function bulgeColumnOf(crossing: RoadCrossing): number {
   return crossing.upperSide === -1 ? crossing.boundary : crossing.boundary - 1;
 }

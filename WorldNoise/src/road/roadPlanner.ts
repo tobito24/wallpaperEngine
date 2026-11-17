@@ -25,7 +25,7 @@ import { levelWithTown, townInfoAt } from '../town/townTerrain';
 import { flattenCostOf } from './roadCrossing';
 import type { RoadCrossing, Side, TravelAxis } from './roadCrossing';
 
-export type Step = readonly [number, number];
+type Step = readonly [number, number];
 
 export interface PlanEnd {
   readonly point: Point;
@@ -311,10 +311,15 @@ function search(grid: Grid, start: PlanEnd, end: PlanEnd): number[] {
         if (!isLandChange(fromLevel, toLevel) || toLevel < fromLevel !== (sideways === 1)) continue;
         const choice = choiceOfMove(moveOf(grid, state.cell, next));
         if (choice === null) continue;
+        const foreignPlateauCost =
+          grid.inside[next] === 1 && next !== endCell && next !== startCell ? ROAD_FOREIGN_PLATEAU_COST : 0;
         relax(
           code,
           { cell: next, direction: state.direction, run: straightRun, lock: ROAD_LOCK_AFTER_CROSSING_TILES },
-          ROAD_STEP_COST + ROAD_CROSSING_COST + ROAD_FLATTENED_TILE_COST * choice.flattenedTiles,
+          ROAD_STEP_COST +
+            ROAD_CROSSING_COST +
+            ROAD_FLATTENED_TILE_COST * choice.flattenedTiles +
+            foreignPlateauCost,
         );
       }
     }
