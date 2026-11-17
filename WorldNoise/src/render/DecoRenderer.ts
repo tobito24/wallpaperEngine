@@ -1,9 +1,14 @@
-import { CHUNK_SIZE, DECO_MIN_TILE_SIZE_PX, DECO_REGIONS_PER_FRAME } from '../config/constants';
+import {
+  CHUNK_SIZE,
+  DECO_MIN_TILE_SIZE_PX,
+  DECO_REGIONS_PER_FRAME,
+  DECO_TILE_SIZE_PX,
+} from '../config/constants';
 import type { Camera, TileBounds } from '../core/Camera';
 import { decoImage, decoStripImages } from '../deco/decoSheets';
 import { computeDecoOfChunk, decoSpriteOf, peekDecoOfChunk } from '../deco/decoPlacement';
 import type { DecoInstance } from '../deco/decoPlacement';
-import { DECO_CONFLICT_REACH_TILES } from '../deco/decoTable';
+import { DECO_VIEW_REACH_TILES } from '../deco/decoTable';
 import type { DecoLayer } from '../deco/decoTable';
 import { tintedSprite } from '../deco/decoTint';
 import { shadeForHeightLevel } from '../elevation/color';
@@ -28,10 +33,10 @@ function compareInstances(first: DecoInstance, second: DecoInstance): number {
 
 function chunkRangeOf(bounds: TileBounds): ChunkRange {
   return {
-    minChunkX: Math.floor((bounds.minX - DECO_CONFLICT_REACH_TILES) / CHUNK_SIZE),
-    maxChunkX: Math.floor((bounds.maxX + DECO_CONFLICT_REACH_TILES) / CHUNK_SIZE),
-    minChunkY: Math.floor((bounds.minY - DECO_CONFLICT_REACH_TILES) / CHUNK_SIZE),
-    maxChunkY: Math.floor((bounds.maxY + DECO_CONFLICT_REACH_TILES) / CHUNK_SIZE),
+    minChunkX: Math.floor((bounds.minX - DECO_VIEW_REACH_TILES) / CHUNK_SIZE),
+    maxChunkX: Math.floor((bounds.maxX + DECO_VIEW_REACH_TILES) / CHUNK_SIZE),
+    minChunkY: Math.floor((bounds.minY - DECO_VIEW_REACH_TILES) / CHUNK_SIZE),
+    maxChunkY: Math.floor((bounds.maxY + DECO_VIEW_REACH_TILES) / CHUNK_SIZE),
   };
 }
 
@@ -106,8 +111,8 @@ export class DecoRenderer {
     animationFrame: number,
     instance: DecoInstance,
   ): void {
-    const { item, variant, x, y, length, level } = instance;
-    const sprite = decoSpriteOf(item, x, y, length);
+    const { item, variant, x, y, length, rows, level } = instance;
+    const sprite = decoSpriteOf(item, x, y, length, rows);
     if (
       sprite.left > bounds.maxX ||
       sprite.right <= bounds.minX ||
@@ -133,6 +138,30 @@ export class DecoRenderer {
 
     const image = decoImage(item, variant);
     if (!image) return;
+
+    if (item.area) {
+      const source = tinted(image);
+      for (let row = 0; row < rows; row++) {
+        const pieceRow = row === 0 ? 0 : row === rows - 1 ? 2 : 1;
+        for (let column = 0; column < length; column++) {
+          const pieceColumn = column === 0 ? 0 : column === length - 1 ? 2 : 1;
+          const origin = camera.worldToScreen(x + column, y + row, viewportWidth, viewportHeight);
+          ctx.drawImage(
+            source,
+            pieceColumn * DECO_TILE_SIZE_PX,
+            pieceRow * DECO_TILE_SIZE_PX,
+            DECO_TILE_SIZE_PX,
+            DECO_TILE_SIZE_PX,
+            origin.x,
+            origin.y,
+            size,
+            size,
+          );
+        }
+      }
+      return;
+    }
+
     const frameWidth = image.naturalWidth / item.frames;
     const origin = camera.worldToScreen(sprite.left, sprite.top, viewportWidth, viewportHeight);
     ctx.drawImage(

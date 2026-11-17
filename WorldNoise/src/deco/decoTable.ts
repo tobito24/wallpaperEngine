@@ -1,4 +1,5 @@
 import type { BiomeId } from '../biome/biome';
+import { DECO_FIELD_CELL_TILES } from '../config/constants';
 import type { Ground } from '../tileset/ground';
 
 export type DecoLayer = 'flat' | 'object' | 'overhead';
@@ -17,11 +18,20 @@ export interface DecoStrip {
 
 export const DECO_STRIP_PARTS = ['left', 'middle', 'right'] as const;
 
+export interface DecoArea {
+  readonly minWidth: number;
+  readonly maxWidth: number;
+  readonly minHeight: number;
+  readonly maxHeight: number;
+}
+
+export type DecoItemPass = DecoPass | 'field';
+
 export interface DecoItem {
   readonly name: string;
   readonly variants: number;
   readonly frames: number;
-  readonly pass: DecoPass;
+  readonly pass: DecoItemPass;
   readonly layer: DecoLayer;
   readonly sprite: DecoSize;
   readonly footprint: DecoSize;
@@ -35,6 +45,7 @@ export interface DecoItem {
   readonly overlapsCliff: boolean;
   readonly blob: boolean;
   readonly strip?: DecoStrip;
+  readonly area?: DecoArea;
 }
 
 export const DECO_CELL_SIZE_BY_PASS: Readonly<Record<DecoPass, number>> = {
@@ -173,6 +184,33 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     biomes: { meadow: 1, forest: 1, steppe: 1, savanna: 1, mountain: 1, tundra: 1, jungle: 1 },
   }),
   item({
+    name: 'tall-grass-light',
+    pass: 'field',
+    layer: 'flat',
+    sprite: { width: 6, height: 5 },
+    footprint: { width: 6, height: 5 },
+    area: { minWidth: 3, maxWidth: 6, minHeight: 3, maxHeight: 5 },
+    biomes: { meadow: 1 },
+  }),
+  item({
+    name: 'tall-grass-dry',
+    pass: 'field',
+    layer: 'flat',
+    sprite: { width: 6, height: 5 },
+    footprint: { width: 6, height: 5 },
+    area: { minWidth: 3, maxWidth: 6, minHeight: 3, maxHeight: 5 },
+    biomes: { steppe: 1, savanna: 1 },
+  }),
+  item({
+    name: 'tall-grass-dark',
+    pass: 'field',
+    layer: 'flat',
+    sprite: { width: 6, height: 5 },
+    footprint: { width: 6, height: 5 },
+    area: { minWidth: 3, maxWidth: 6, minHeight: 3, maxHeight: 5 },
+    biomes: { forest: 1, jungle: 1 },
+  }),
+  item({
     name: 'log',
     variants: 2,
     pass: 'medium',
@@ -300,7 +338,38 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
     ];
     if (!wholeNumbers.every(Number.isInteger))
       throw new RangeError(`Deco item ${entry.name} needs whole numbers`);
-    const cellSize = DECO_CELL_SIZE_BY_PASS[entry.pass];
+    if (entry.area) {
+      const { minWidth, maxWidth, minHeight, maxHeight } = entry.area;
+      const sizes = [minWidth, maxWidth, minHeight, maxHeight];
+      if (
+        !sizes.every(Number.isInteger) ||
+        minWidth < 3 ||
+        minHeight < 3 ||
+        maxWidth < minWidth ||
+        maxHeight < minHeight ||
+        maxWidth > DECO_FIELD_CELL_TILES ||
+        maxHeight > DECO_FIELD_CELL_TILES
+      ) {
+        throw new RangeError(`Deco item ${entry.name} has a wrong area`);
+      }
+      if (
+        entry.pass !== 'field' ||
+        entry.footprint.width !== maxWidth ||
+        entry.footprint.height !== maxHeight ||
+        entry.sprite.width !== maxWidth ||
+        entry.sprite.height !== maxHeight ||
+        entry.anchorColumn !== 0 ||
+        entry.variants !== 1 ||
+        entry.frames !== 1
+      ) {
+        throw new RangeError(
+          `Deco item ${entry.name}: an area is one sprite of its maximum size in the pass field`,
+        );
+      }
+    } else if (entry.pass === 'field') {
+      throw new RangeError(`Deco item ${entry.name} is in the pass field without an area`);
+    }
+    const cellSize = entry.pass === 'field' ? DECO_FIELD_CELL_TILES : DECO_CELL_SIZE_BY_PASS[entry.pass];
     if (
       entry.footprint.width + entry.clearance > cellSize ||
       entry.footprint.height + entry.clearance > cellSize ||
@@ -408,5 +477,15 @@ export const DECO_CONFLICT_REACH_TILES = Math.max(
 export const DECO_MARGIN_TILES = Math.max(
   ...DECO_PASS_ORDER.map(
     (pass) => DECO_PASS_EXPANSION_TILES[pass] + DECO_PASS_REACH_TILES[pass] + DECO_PASS_LEFT_TILES[pass],
+  ),
+);
+
+export const DECO_VIEW_REACH_TILES = Math.max(
+  ...DECO_ITEMS.map((entry) => Math.max(entry.sprite.width, entry.sprite.height) + entry.anchorColumn),
+);
+export const DECO_FIELD_MAX_TILES = Math.max(
+  0,
+  ...DECO_ITEMS.filter((entry) => entry.area).map((entry) =>
+    Math.max(entry.sprite.width, entry.sprite.height),
   ),
 );
