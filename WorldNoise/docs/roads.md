@@ -11,7 +11,7 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
 `ROAD_MIN_NODE_DEGREE`, `ROAD_HALF_WIDTH_TILES`, the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TILES`,
 `CROSSING_LANES_AFTER_TILES`, `CROSSING_EAST_WEST_EXTRA_LANES_AFTER_TILES`, `CROSSING_MAX_FLATTENED_TILES`), the planner constants
 (`ROAD_PLANNING_MARGIN_TILES`, `ROAD_RUN_BEFORE_CROSSING_TILES`, `ROAD_LOCK_AFTER_CROSSING_TILES`, `ROAD_MIN_TURN_RUN_TILES`,
-`ROAD_MIN_CROSSING_GAP_TILES` and the costs `ROAD_STEP_COST`, `ROAD_TURN_COST`, `ROAD_WATER_STEP_COST`, `ROAD_EDGE_HUGGING_COST`,
+`ROAD_MIN_CROSSING_GAP_TILES` and the costs `ROAD_STEP_COST`, `ROAD_TURN_COST`, `ROAD_WATER_STEP_COST`, `ROAD_EDGE_HUGGING_COST`, `ROAD_CLIFF_NEAR_COST`, `ROAD_CLIFF_NEAR_REACH_TILES`,
 `ROAD_CROSSING_COST`, `ROAD_FLATTENED_TILE_COST`, `ROAD_UNPLANNED_CROSSING_COST`, `ROAD_FOREIGN_PLATEAU_COST`), the smoothing constants
 (`ROAD_CORNER_RADIUS_TILES`, `ROAD_WAVE_AMPLITUDE_TILES`, `ROAD_WAVE_LENGTH_TILES`, `ROAD_WAVE_MARGIN_TILES`, `ROAD_WAVE_MIN_LENGTH_TILES`,
 `ROAD_WAVE_SAMPLE_STEP_TILES`) and the cache limits
@@ -50,7 +50,7 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
     (towards the lower level) or north (towards the upper level): the road below the stairs lies one row south of the road above, both
     ending straight at the stairs, so the row of the path changes by the step and no state is needed for it;
   - a water tile costs `ROAD_WATER_STEP_COST` more (a bridge is a last resort); a tile whose side tiles lie on another level costs
-    `ROAD_EDGE_HUGGING_COST` (the road is 3 tiles wide, it should not run along a cliff); a plateau tile of a town costs
+    `ROAD_EDGE_HUGGING_COST` (the road is 3 tiles wide, it should not run along a cliff); every other land step within `ROAD_CLIFF_NEAR_REACH_TILES` (3) of a change between two land levels costs `ROAD_CLIFF_NEAR_COST` (4) more (`road/cliffProximity.ts`: the cells next to a change, spread by the reach in two passes), so a road and its rim keep away from the cliff pieces and the inner ring (measured on 3600 chunks: road tiles on a cliff piece or inner ring without stairs 6.9 % before, 6.0 % with cost 4, 5.8 % with 10, 5.5 % with 20; unplanned crossings on 779 edges 0 / 1 / 4 / 9, so the cost stays small; the rest is mostly the footprint around stairs); a plateau tile of a town costs
     `ROAD_FOREIGN_PLATEAU_COST` unless it is an end (the planner never plans inside a town);
   - a gate end starts (or ends) straight along the gate direction.
   The result before the smoothing is the polyline (the tile centres at the corners, plus the two points of a vertical step at the boundary of an east/west

@@ -1,6 +1,8 @@
 import {
   CELL_BUFFER_CHUNKS,
   CHUNK_SIZE,
+  ROAD_CLIFF_NEAR_COST,
+  ROAD_CLIFF_NEAR_REACH_TILES,
   ROAD_CROSSING_COST,
   ROAD_EDGE_CACHE_MAX_ENTRIES,
   ROAD_EDGE_HUGGING_COST,
@@ -22,6 +24,7 @@ import { elevationNoise } from '../elevation/elevationNoise';
 import { WATER_LEVEL, heightLevelAt } from '../elevation/heightLevel';
 import type { Point } from '../skeleton/cellGrid';
 import { levelWithTown, townInfoAt } from '../town/townTerrain';
+import { cliffProximity } from './cliffProximity';
 import { flattenCostOf } from './roadCrossing';
 import type { RoadCrossing, Side, TravelAxis } from './roadCrossing';
 import { smoothPolyline } from './roadSmoothing';
@@ -64,6 +67,7 @@ interface Grid {
   readonly height: number;
   readonly levels: Int8Array;
   readonly inside: Uint8Array;
+  readonly nearCliff: Uint8Array;
   readonly relaxed: boolean;
 }
 
@@ -128,7 +132,8 @@ function buildGrid(start: Point, end: Point, relaxed: boolean): Grid {
       inside[y * width + x] = info?.inside ? 1 : 0;
     }
   }
-  return { minX, minY, width, height, levels, inside, relaxed };
+  const nearCliff = cliffProximity(levels, width, height, ROAD_CLIFF_NEAR_REACH_TILES);
+  return { minX, minY, width, height, levels, inside, nearCliff, relaxed };
 }
 
 function crossingChoice(
@@ -299,12 +304,9 @@ function search(grid: Grid, start: PlanEnd, end: PlanEnd): number[] {
           stepCost += ROAD_CROSSING_COST + ROAD_FLATTENED_TILE_COST * choice.flattenedTiles;
           nextLock = ROAD_LOCK_AFTER_CROSSING_TILES;
         }
-      } else if (
-        fromLevel === toLevel &&
-        toLevel !== WATER_LEVEL &&
-        sidesDifferFrom(grid, next, direction, toLevel)
-      ) {
-        stepCost += ROAD_EDGE_HUGGING_COST;
+      } else if (fromLevel === toLevel && toLevel !== WATER_LEVEL) {
+        if (sidesDifferFrom(grid, next, direction, toLevel)) stepCost += ROAD_EDGE_HUGGING_COST;
+        if (grid.nearCliff[next] === 1) stepCost += ROAD_CLIFF_NEAR_COST;
       }
       relax(code, { cell: next, direction, run: turning ? 1 : straightRun, lock: nextLock }, stepCost);
     }
