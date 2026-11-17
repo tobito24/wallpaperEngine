@@ -22,10 +22,14 @@ interface ChunkRange {
   readonly maxChunkY: number;
 }
 
+function footprintRows(instance: DecoInstance): number {
+  return instance.item.area ? instance.rows : instance.item.footprint.height;
+}
+
 function compareInstances(first: DecoInstance, second: DecoInstance): number {
   const layer = LAYER_ORDER[first.item.layer] - LAYER_ORDER[second.item.layer];
   if (layer !== 0) return layer;
-  const row = first.y + first.item.footprint.height - (second.y + second.item.footprint.height);
+  const row = first.y + footprintRows(first) - (second.y + footprintRows(second));
   if (row !== 0) return row;
   if (first.x !== second.x) return first.x - second.x;
   return first.y - second.y;

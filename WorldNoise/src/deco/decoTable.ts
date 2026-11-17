@@ -471,10 +471,18 @@ function expansionsOfPasses(): Record<DecoPass, number> {
 
 export const DECO_PASS_EXPANSION_TILES: Readonly<Record<DecoPass, number>> = expansionsOfPasses();
 
+export const DECO_FIELD_MAX_TILES = Math.max(
+  0,
+  ...DECO_ITEMS.filter((entry) => entry.area).map((entry) =>
+    Math.max(entry.sprite.width, entry.sprite.height),
+  ),
+);
+
 export const DECO_CONFLICT_REACH_TILES = Math.max(
   ...DECO_PASS_ORDER.map((pass) => DECO_PASS_REACH_TILES[pass] + DECO_PASS_LEFT_TILES[pass]),
 );
 export const DECO_MARGIN_TILES = Math.max(
+  DECO_FIELD_CELL_TILES + DECO_FIELD_MAX_TILES,
   ...DECO_PASS_ORDER.map(
     (pass) => DECO_PASS_EXPANSION_TILES[pass] + DECO_PASS_REACH_TILES[pass] + DECO_PASS_LEFT_TILES[pass],
   ),
@@ -482,10 +490,4 @@ export const DECO_MARGIN_TILES = Math.max(
 
 export const DECO_VIEW_REACH_TILES = Math.max(
   ...DECO_ITEMS.map((entry) => Math.max(entry.sprite.width, entry.sprite.height) + entry.anchorColumn),
-);
-export const DECO_FIELD_MAX_TILES = Math.max(
-  0,
-  ...DECO_ITEMS.filter((entry) => entry.area).map((entry) =>
-    Math.max(entry.sprite.width, entry.sprite.height),
-  ),
 );
