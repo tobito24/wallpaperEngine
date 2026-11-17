@@ -238,7 +238,7 @@ or of the corner smoothing outside (radius 3 stays as built); it is a change of 
 
 Built in this order, each step looked at before the next: (1) the gate lanes: opposite gates share a lane (built), (2) the street
 planner as a pure function of the town and its gates (a list of straight segments inside the footprint), built (the road mask paints the streets, so no extra overlay is needed),
-(3) street mask and town ground/road in the ground layer (built: paving `city` and `cityStreet` inside the plateau, roads end in front of stairs; `cityGrass` waits for the plaza fields of step 5), (4) buildings with a door path to a street (built together with the side paths: a building needs a path from its door to the street, one tile wide, drawn as `cityStreet`),
+(3) street mask and town ground/road in the ground layer (built: paving `city` and `cityStreet` inside the plateau, roads end in front of stairs; `cityGrass` waits for the plaza fields of step 5), (4) buildings with a path to a street (built together with the side paths: a building needs a street 2 tiles wide along its whole south edge and a connection to the street, drawn as `cityStreet`; not every town has a Center or Mart),
 (5) plazas, fountains, lamps, trees and fences. Good when: every gate of every town is joined to the others as the rules
 say, no street leaves the footprint or touches a cliff, a chunk takes at most the 3 ms budget of the road planning, and a chunk
 equals the whole map.

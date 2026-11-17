@@ -132,9 +132,8 @@ export class Chunk {
         const level = levels[index];
         const layoutIndex = (ly + LEVEL_BLOCK_MARGIN) * LEVEL_BLOCK_SIZE + lx + LEVEL_BLOCK_MARGIN;
         const ground = grounds[index];
-        const roadCoversCliff = isRoadGround(ground);
-        const cliffType = roadCoversCliff ? null : cliffLayout.cliffTypes[layoutIndex];
-        const innerRingIndex = roadCoversCliff ? NO_INNER_RING : cliffLayout.innerRingIndices[layoutIndex];
+        const cliffType = cliffLayout.cliffTypes[layoutIndex];
+        const innerRingIndex = cliffLayout.innerRingIndices[layoutIndex];
 
         const town = insideTowns[index];
         const decoration: SheetTile | null = town ? townDecorationAt(town, originX + lx, originY + ly) : null;
@@ -196,6 +195,9 @@ export class Chunk {
             innerRingIndex === NO_INNER_RING ? null : innerRingIndex,
             stairs.get(tileKey(originX + lx, originY + ly)) ?? null,
             decoration,
+            isRoadGround(ground)
+              ? groundOf(biomes[index].id, { isRoad: false, isInsideTown: town !== null, isStairs: false })
+              : null,
           ),
         );
       }
