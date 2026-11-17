@@ -40,6 +40,8 @@ const outlineNoise = createFractalNoise2D(
   2,
 );
 
+const MAX_OUTLINE_WOBBLE_TILES = TOWN_OUTLINE_WOBBLE_TILES + 1;
+
 function outlineWobbleAt(x: number, y: number): number {
   const share = Math.min(1, Math.max(0, outlineNoise(x, y)));
   return Math.floor(share * (TOWN_OUTLINE_WOBBLE_TILES + 1));
@@ -99,10 +101,9 @@ export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
   }
   if (nearest === 0) {
     const distanceToOutside = distanceToOutsideOfTown(x, y, town);
-    const wobble = outlineWobbleAt(x, y);
     const inside =
-      distanceToOutside > TOWN_OUTLINE_WOBBLE_TILES ||
-      distanceToOutside > gateTaperedWobble(tileX, tileY, town, wobble);
+      distanceToOutside > MAX_OUTLINE_WOBBLE_TILES ||
+      distanceToOutside > gateTaperedWobble(tileX, tileY, town, outlineWobbleAt(x, y));
     return { town, inside, ringDistance: 0 };
   }
   return nearest <= TOWN_RING_WIDTH_TILES ? { town, inside: false, ringDistance: nearest } : null;
