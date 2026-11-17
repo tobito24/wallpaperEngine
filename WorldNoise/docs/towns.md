@@ -34,7 +34,7 @@ Paths and towns.
   level, in the ring a land level is limited to the plateau level minus up to plus `1 + floor(ringDistance / TOWN_RING_TERRACE_STEP_TILES)`
   (`TOWN_RING_TERRACE_STEP_TILES` 4 tiles per step, so the limit widens by one step every four tiles and neighbouring ring tiles never differ by more than one level; a step of 2 put a cliff every 2 tiles into the ring, too close for stairs),
   water stays water. `Chunk`
-  uses it for the final level, and inside a footprint the ground is the meadow (`TOWN_BIOME`; a higher ground next to a town, like forest or jungle, draws its rim over it, water in the footprint
+  uses it for the final level, and inside a footprint the ground is `city` paving, or `cityStreet` on a road tile (`groundOf`; the biome is still `TOWN_BIOME`, the meadow, for the decoration; a higher ground next to a town, like forest or jungle, draws its rim over it, water in the footprint
   becomes land). The outline is wavy: a tile of the chunk footprint is inside only when its distance to the nearest
   non-town chunk is larger than a stepped noise value of 0 to `TOWN_OUTLINE_WOBBLE_TILES` (4, `outlineNoise`, frequency
   0.05, 1 octave: calm waves of about 20 tiles); eroded tiles count as ring, so the footprint only shrinks and the ring still reaches 8 tiles outside
@@ -76,7 +76,7 @@ Paths and towns.
   these; the town does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not
   built yet. The planned road (`road/roadPlanner.ts`) starts at the gate straight along its axis; the road of the graph ends at the gate, and inside the plateau the
   streets of `town/townStreets.ts` take over (`townStreets(town)`, a list of polylines, cached per town, added to `roadEdgesIn` as edges without crossings so the road mask paints them like roads): four gates give two crossing straight streets (west-east, north-south), three gates the straight street of the opposite pair plus a straight branch from the third gate at a right angle to it, two opposite gates one straight street, two neighbouring gates one street with a right-angled corner, one gate a dead end up to the centre line (never built so far: every node has at least two edges). Opposite gates share a lane, so the streets are straight; a jog in the middle exists in the code for the case that they do not. Measured on 1507 towns: no street leaves the footprint. Known limits the layout step has to deal with: `Chunk` hard-codes the
-  town ground (`TOWN_BIOME` inside a footprint) and `roadTilesIn` paints roads over the whole footprint, so a layout that
+  town ground (`city` and `cityStreet` inside a footprint, no `cityGrass` yet) and `roadTilesIn` paints roads over the whole footprint, so a layout that
   owns its ground and roads needs a town-layer call that can replace or veto both; `townInfoAt` only says inside or ring
   (a fence or stairs step also needs the distance to the footprint edge and the base level); `Tile.elevation` stays the
   base value, so inside a footprint that was water it disagrees with the level and the ground (decoration must use the

@@ -1,6 +1,6 @@
 import type { BiomeId } from '../biome/biome';
 
-export type OverlayGround = 'road' | 'bridge';
+export type OverlayGround = 'road' | 'bridge' | 'cityStreet' | 'city' | 'cityGrass';
 
 export type Ground = BiomeId | OverlayGround;
 
@@ -21,10 +21,20 @@ const FALLBACK_COLOR: Readonly<Record<Ground, string>> = {
   snowPeak: '#ffffff',
   road: '#9a8f7a',
   bridge: '#8b5a2b',
+  cityStreet: '#8d8f99',
+  city: '#c9ccd2',
+  cityGrass: '#9fd68a',
 };
 
-export function groundWithRoad(biomeId: BiomeId, isRoad: boolean): Ground {
-  if (!isRoad) return biomeId;
+export interface GroundContext {
+  readonly isRoad: boolean;
+  readonly isInsideTown: boolean;
+  readonly isStairs: boolean;
+}
+
+export function groundOf(biomeId: BiomeId, context: GroundContext): Ground {
+  if (context.isInsideTown) return context.isRoad && !context.isStairs ? 'cityStreet' : 'city';
+  if (!context.isRoad || context.isStairs) return biomeId;
   return biomeId === 'deepWater' || biomeId === 'shallowWater' ? 'bridge' : 'road';
 }
 
