@@ -123,18 +123,22 @@ function findGate(town: Town, side: GateSide): Point {
   const opposite = OPPOSITE_SIDE[side];
   const ownLanes = edgeLanes(town, side);
   const oppositeLanes = edgeLanes(town, opposite);
-  const oppositeLaneNumbers = new Set(oppositeLanes.map((candidate) => candidate.lane));
-  const sharedLanes = middleThird(ownLanes).filter((candidate) => oppositeLaneNumbers.has(candidate.lane));
-  const sharedOnBothMiddles = new Set(middleThird(oppositeLanes).map((candidate) => candidate.lane));
-  const sharedInBothMiddles = sharedLanes.filter((candidate) => sharedOnBothMiddles.has(candidate.lane));
-  const shared = sharedInBothMiddles.length > 0 ? sharedInBothMiddles : sharedLanes;
+  const oppositeByLane = new Map(oppositeLanes.map((candidate) => [candidate.lane, candidate]));
+  const commonLanes = ownLanes.filter((candidate) => oppositeByLane.has(candidate.lane));
 
-  if (shared.length > 0) {
-    const waterOnBothSides = (candidate: EdgeLane): number => {
-      const counterpart = oppositeLanes.find((other) => other.lane === candidate.lane);
-      return waterNear(candidate, side) + (counterpart ? waterNear(counterpart, opposite) : 0);
-    };
-    return pickWithFewestWater(shared, waterOnBothSides, sharedLaneKey(town, side)).point;
+  if (commonLanes.length > 0) {
+    const ownMiddle = new Set(middleThird(ownLanes).map((candidate) => candidate.lane));
+    const oppositeMiddle = new Set(middleThird(oppositeLanes).map((candidate) => candidate.lane));
+    const preferred = commonLanes.filter(
+      (candidate) => ownMiddle.has(candidate.lane) && oppositeMiddle.has(candidate.lane),
+    );
+    const waterOnBothSides = (candidate: EdgeLane): number =>
+      waterNear(candidate, side) + waterNear(oppositeByLane.get(candidate.lane) as EdgeLane, opposite);
+    return pickWithFewestWater(
+      preferred.length > 0 ? preferred : commonLanes,
+      waterOnBothSides,
+      sharedLaneKey(town, side),
+    ).point;
   }
 
   return pickWithFewestWater(
