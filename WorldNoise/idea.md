@@ -249,7 +249,7 @@ Why: 17 of 239 gates (measured on 97 towns) still have a road crossing a cliff w
 lies right behind a cliff, so the road planner has to find a place for stairs in an uncontrolled spot and sometimes bends
 strangely towards the cliff edge. The fix is to give the planner a controlled spot.
 
-- **Gate pad.** Every gate that has a road gets a **pad**: a rectangle 6 deep and 7 wide (built: 7 so it covers the 7 lanes of a stairs footprint) outside the plateau edge, centred on the gate
+- **Gate pad.** Every gate that has a road gets a **pad**: a rectangle 4 deep and 8 wide (built; the same for all four sides, it covers the 7 to 8 lanes of a stairs footprint and 3 tiles of its length) outside the plateau edge, centred on the gate
   lane, at the plateau level P. Its ground is town paving (`city`). Water inside a pad becomes land (like the stairs do); the gate lane cost
   (water, level variation) stays as it is, so a pad is rarely on water. The plateau edge at the gate then has no cliff, the pad
   edge is straight, and the cliff (if any) lies at the outer edge of the pad, where the stairs go. Stairs are only tried there first
