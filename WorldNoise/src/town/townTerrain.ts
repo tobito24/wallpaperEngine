@@ -5,6 +5,7 @@ import {
   SEED,
   TOWN_OUTLINE_NOISE_FREQUENCY,
   TOWN_OUTLINE_NOISE_OCTAVES,
+  TOWN_GATE_STRAIGHT_HALF_WIDTH_TILES,
   TOWN_OUTLINE_WOBBLE_TILES,
   TOWN_RING_TERRACE_STEP_TILES,
   TOWN_RING_WIDTH_TILES,
@@ -12,6 +13,7 @@ import {
 import { createFractalNoise2D } from '../core/noise';
 import { WATER_LEVEL } from '../elevation/heightLevel';
 import { cellIndexOf } from '../skeleton/cellGrid';
+import { GATE_SIDES, gateSideGeometry, townGate } from './townGates';
 import { townOfCell } from './townPlacement';
 import type { Town } from './townPlacement';
 import { TOWN_BLOCK_CHUNKS } from './townShapes';
@@ -72,6 +74,19 @@ function distanceToOutsideOfTown(x: number, y: number, town: Town): number {
   return nearest;
 }
 
+function gateTaperedWobble(tileX: number, tileY: number, town: Town, wobble: number): number {
+  let tapered = wobble;
+  for (const side of GATE_SIDES) {
+    const gate = townGate(town, side);
+    const { alongX } = gateSideGeometry(side);
+    const alongGate = Math.abs((alongX ? tileX : tileY) + 0.5 - (alongX ? gate.x : gate.y));
+    const depthFromGate = Math.abs((alongX ? tileY : tileX) + 0.5 - (alongX ? gate.y : gate.x));
+    if (depthFromGate > TOWN_OUTLINE_WOBBLE_TILES) continue;
+    tapered = Math.min(tapered, Math.max(0, Math.floor(alongGate - TOWN_GATE_STRAIGHT_HALF_WIDTH_TILES)));
+  }
+  return tapered;
+}
+
 export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
   const town = townOfCell(cellIndexOf(tileX), cellIndexOf(tileY));
   if (!town) return null;
@@ -83,7 +98,12 @@ export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
     nearest = Math.min(nearest, distanceToChunk(x, y, chunkX, chunkY));
   }
   if (nearest === 0) {
-    return { town, inside: distanceToOutsideOfTown(x, y, town) > outlineWobbleAt(x, y), ringDistance: 0 };
+    const distanceToOutside = distanceToOutsideOfTown(x, y, town);
+    const wobble = outlineWobbleAt(x, y);
+    const inside =
+      distanceToOutside > TOWN_OUTLINE_WOBBLE_TILES ||
+      distanceToOutside > gateTaperedWobble(tileX, tileY, town, wobble);
+    return { town, inside, ringDistance: 0 };
   }
   return nearest <= TOWN_RING_WIDTH_TILES ? { town, inside: false, ringDistance: nearest } : null;
 }

@@ -83,7 +83,7 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
   crossing the bulge: the tile next to the boundary on the lower side (`bulgeColumnOf`) is raised to the upper level for 4 rows (lane - 1
   to lane + 2), so the cliff pieces of the bulge come out of the normal rule (two inner corners, two outer corners, two edges).
   `flattenCostOf(crossing)`: the tiles of the footprint whose natural level differs from the straight plan (without the bulge), or null when it is
-  more than `CROSSING_MAX_FLATTENED_TILES` (8; of 42 tiles, of 48 for an east/west footprint) or when water lies within the footprint plus
+  more than `CROSSING_MAX_FLATTENED_TILES` (8, or `CROSSING_MAX_FLATTENED_TILES_AT_TOWN` 16 when the footprint touches a town plateau or ring; of 42 tiles, of 48 for an east/west footprint) or when water lies within the footprint plus
   the clearance the water limit demands for the two levels (`waterClearanceTiles` minus 1: none for 2/1, 2 for 3/2, 4 for 4/3). Towns are no
   exclusion: a footprint may lie on the terrace ring and on the plateau of a town, so stairs lead into a town, and it may change plateau
   tiles (at the plateau edge the straight boundary runs through the outline, ring tiles are raised to the plateau level, a notch of the
@@ -105,7 +105,7 @@ straight, so the footprints are untouched.
 
 ## Measured with the planner
 
-On the 392 edges that `roadEdgesIn` returns for 1 024 x 1 024 tiles (one seed): 1 141 crossings (508 east/west) and 82 level changes without stairs, 77 of them
+On the 392 edges that `roadEdgesIn` returns for 1 024 x 1 024 tiles (one seed): 1 166 crossings and 70 level changes without stairs (58 edges; before the gates came first and the flatten limit at towns rose: 82, 64 edges), most of them
 within 9 tiles of a town (the terrace ring of a town has a cliff every 4 tiles, `TOWN_RING_TERRACE_STEP_TILES`); 328 of the 392 edges have no level
 change without stairs. The planning of all edges takes 5 s (13 ms per edge, once, cached), about 112 tiles per edge (107 after the smoothing: the cut corners are shorter), 49 points per polyline, 22 of the 154 edges that lie fully inside the area have a wave. Of 672 whole footprints 5 differ after
 the cleanup (another crossing touches them) and 40 have a road tile too many or too few around the stairs (a second road runs near);

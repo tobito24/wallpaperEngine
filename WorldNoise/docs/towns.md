@@ -64,10 +64,14 @@ Paths and towns.
 - **`town/townGates.ts`** (new) — `townGate(town, side)`: the gate of a town on a side (`gateSideOf(stepX, stepY)` turns the step to the
   neighbouring cell into east, west, south or north). Only the sides that have an edge are asked, so a town has as many gates as roads
   (measured on 76 towns of 13 x 13 cells: 35 with 2 gates, 28 with 3, 13 with 4; every node has at least two edges). The gate is a plateau tile
-  (`townInfoAt` inside) taken from the outermost tile of every lane of the footprint's bounding box along that side; the lanes whose outermost tile
-  is within `TOWN_OUTLINE_WOBBLE_TILES` of the deepest one count as facing that way (so a notch of an L or T shape does not), the middle third of
-  them is the choice, one is picked by hash (`gate:cx:cy:side`); cached per town and side. Measured: all 206 gates lie on the plateau and have
-  no plateau tile next to them in the direction of the side.
+  on the straight footprint edge, chosen before the outline wobble is built: the lanes of the outermost footprint tiles of that side (the
+  deepest row of the bounding box, so a notch of an L or T shape does not count), the middle third of them, and among those the lane with the
+  fewest water tiles in a strip of `TOWN_GATE_WATER_HALF_WIDTH_TILES` (4) each side and `TOWN_GATE_WATER_DEPTH_TILES` (14) outward (stairs
+  need dry land); a tie is broken by hash (`gate:cx:cy:side`); cached per town and side. It does not read the plateau outline, so
+  `townTerrain` can read the gates: `gateTaperedWobble` takes the outline wobble down to 0 within `TOWN_GATE_STRAIGHT_HALF_WIDTH_TILES` (4)
+  of the gate lane and lets it grow by one per tile beyond that, so the plateau edge is straight where the stairs go and the gate tile is always
+  plateau (measured: all 304 gates of 76 towns). The taper is built for all four sides, whether the side has a road or not, so the plateau does
+  not depend on the road graph.
 - **`town/townNodes.ts`** (new) — `nodePosition(cx, cy)`: the centre of the town of the cell, else the waypoint. The road layer reads
   these; the town does not read the road. What is inside a town beyond lawn and the straight roads (houses, fountain, fences) is not
   built yet. The planned road (`road/roadPlanner.ts`) starts at the gate straight along its axis; inside the plateau
