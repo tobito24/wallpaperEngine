@@ -1,13 +1,15 @@
 export const SEED = '12345678';
 
 export const TILE_SIZE_DEFAULT = 32;
-export const MIN_TILE_SIZE = 0.5;
+export const MIN_TILE_SIZE = 1;
 export const MAX_TILE_SIZE = 128;
 
 export const ZOOM_STEP_PX = 4;
 export const ZOOM_REFERENCE_TILE_SIZE_PX = 32;
 export const MAX_ZOOM_FACTOR_PER_STEP = 2;
-export const OVERVIEW_BELOW_TILE_SIZE_PX = 8;
+export const OVERVIEW_BELOW_TILE_SIZE_PX = 10;
+export const OVERVIEW_TOWN_OUTLINE_COLOR = '#ff4fa3';
+export const OVERVIEW_TOWN_OUTLINE_WIDTH_PX = 1.5;
 export const OVERVIEW_SAMPLE_MIN_SCREEN_PX = 4;
 export const OVERVIEW_BLOCK_SAMPLES = 32;
 export const OVERVIEW_CACHE_MAX_BLOCKS = 1500;

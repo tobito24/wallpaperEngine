@@ -21,12 +21,16 @@ export interface ScreenPoint {
 export class Camera {
   x: number;
   y: number;
-  tileSize: number;
+  private exactTileSize: number;
 
   constructor(x = 0, y = 0, tileSize = 32) {
     this.x = x;
     this.y = y;
-    this.tileSize = tileSize;
+    this.exactTileSize = tileSize;
+  }
+
+  get tileSize(): number {
+    return Math.round(this.exactTileSize);
   }
 
   centerOn(tileX: number, tileY: number): void {
@@ -35,13 +39,13 @@ export class Camera {
   }
 
   setTileSize(tileSize: number): void {
-    this.tileSize = Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, tileSize));
+    this.exactTileSize = Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, tileSize));
   }
 
   zoomBy(deltaTileSize: number): void {
     const factor = 1 + deltaTileSize / ZOOM_REFERENCE_TILE_SIZE_PX;
     this.setTileSize(
-      this.tileSize * Math.min(MAX_ZOOM_FACTOR_PER_STEP, Math.max(1 / MAX_ZOOM_FACTOR_PER_STEP, factor)),
+      this.exactTileSize * Math.min(MAX_ZOOM_FACTOR_PER_STEP, Math.max(1 / MAX_ZOOM_FACTOR_PER_STEP, factor)),
     );
   }
 

@@ -15,7 +15,7 @@
         "order": 1,
         "text": "Tile size",
         "type": "slider",
-        "value": 75
+        "value": 71
       },
       "slider_tickrate": {
         "fraction": false,

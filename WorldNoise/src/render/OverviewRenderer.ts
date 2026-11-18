@@ -1,10 +1,13 @@
 import { biomeAt } from '../biome/biome';
 import {
+  CHUNK_SIZE,
   ELEVATION_SEA_LEVEL,
   OVERVIEW_BLOCK_BUDGET_MS,
   OVERVIEW_BLOCK_SAMPLES,
   OVERVIEW_CACHE_MAX_BLOCKS,
   OVERVIEW_ROAD_MIN_WIDTH_PX,
+  OVERVIEW_TOWN_OUTLINE_COLOR,
+  OVERVIEW_TOWN_OUTLINE_WIDTH_PX,
   OVERVIEW_SAMPLE_MIN_SCREEN_PX,
   TOWN_MARGIN_TILES,
 } from '../config/constants';
@@ -95,6 +98,7 @@ export class OverviewRenderer {
     }
 
     this.drawRoads(ctx, camera, bounds, viewportWidth, viewportHeight);
+    this.drawTowns(ctx, camera, bounds, viewportWidth, viewportHeight);
   }
 
   private drawFallback(
@@ -164,6 +168,60 @@ export class OverviewRenderer {
       }
     }
     return canvas;
+  }
+
+  private drawTowns(
+    ctx: CanvasRenderingContext2D,
+    camera: Camera,
+    bounds: TileBounds,
+    viewportWidth: number,
+    viewportHeight: number,
+  ): void {
+    const pavingColor = fallbackColorOf('city');
+    const outline = new Path2D();
+    for (let cy = cellIndexOf(bounds.minY) - 1; cy <= cellIndexOf(bounds.maxY) + 1; cy++) {
+      for (let cx = cellIndexOf(bounds.minX) - 1; cx <= cellIndexOf(bounds.maxX) + 1; cx++) {
+        const town = townOfCell(cx, cy);
+        if (!town) continue;
+        const inTown = new Set(town.chunks.map(([chunkX, chunkY]) => `${chunkX},${chunkY}`));
+        for (const [chunkX, chunkY] of town.chunks) {
+          const from = camera.worldToScreen(
+            chunkX * CHUNK_SIZE,
+            chunkY * CHUNK_SIZE,
+            viewportWidth,
+            viewportHeight,
+          );
+          const to = camera.worldToScreen(
+            (chunkX + 1) * CHUNK_SIZE,
+            (chunkY + 1) * CHUNK_SIZE,
+            viewportWidth,
+            viewportHeight,
+          );
+          ctx.fillStyle = pavingColor;
+          ctx.fillRect(from.x, from.y, to.x - from.x, to.y - from.y);
+          if (!inTown.has(`${chunkX},${chunkY - 1}`)) {
+            outline.moveTo(from.x, from.y);
+            outline.lineTo(to.x, from.y);
+          }
+          if (!inTown.has(`${chunkX},${chunkY + 1}`)) {
+            outline.moveTo(from.x, to.y);
+            outline.lineTo(to.x, to.y);
+          }
+          if (!inTown.has(`${chunkX - 1},${chunkY}`)) {
+            outline.moveTo(from.x, from.y);
+            outline.lineTo(from.x, to.y);
+          }
+          if (!inTown.has(`${chunkX + 1},${chunkY}`)) {
+            outline.moveTo(to.x, from.y);
+            outline.lineTo(to.x, to.y);
+          }
+        }
+      }
+    }
+    ctx.strokeStyle = OVERVIEW_TOWN_OUTLINE_COLOR;
+    ctx.lineWidth = OVERVIEW_TOWN_OUTLINE_WIDTH_PX;
+    ctx.lineCap = 'square';
+    ctx.stroke(outline);
   }
 
   private drawRoads(
