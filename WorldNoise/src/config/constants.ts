@@ -46,8 +46,8 @@ export const DECO_BLOB_EDGE_NOISE_FREQUENCY = 0.3;
 export const DECO_BLOB_REACH_TILES = 13;
 
 export const CHUNK_SIZE = 16;
-export const CELL_SIZE_CHUNKS = 5;
-export const CELL_BUFFER_CHUNKS = 1;
+export const CELL_SIZE_CHUNKS = 7;
+export const CELL_BUFFER_CHUNKS = 2;
 export const ROAD_EDGE_PROBABILITY = 0.55;
 export const ROAD_MIN_NODE_DEGREE = 2;
 export const ROAD_HALF_WIDTH_TILES = 1.5;

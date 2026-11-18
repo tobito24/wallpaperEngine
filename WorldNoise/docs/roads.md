@@ -5,7 +5,7 @@ Part of [WorldNoise](../CLAUDE.md). Source folders: `src/skeleton/`, `src/road/`
 
 ## Constants
 
-`config/constants.ts`: `CELL_SIZE_CHUNKS`, `CELL_BUFFER_CHUNKS` (1: the buffer around a town and around a waypoint node inside
+`config/constants.ts`: `CELL_SIZE_CHUNKS`, `CELL_BUFFER_CHUNKS` (2: the buffer around a town and around a waypoint node inside
 its cell; the town shapes need a block of 3 x 3 chunks, so `CELL_SIZE_CHUNKS` minus twice the buffer must be 3, and the ring
 of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the modules load), `ROAD_EDGE_PROBABILITY`,
 `ROAD_MIN_NODE_DEGREE`, `ROAD_HALF_WIDTH_TILES`, the crossing constants (`CROSSING_HALF_LENGTH_TILES`, `CROSSING_LANES_BEFORE_TILES`,
@@ -19,8 +19,8 @@ of `TOWN_RING_WIDTH_TILES` must fit into the buffer; both are checked when the m
 
 ## Modules
 
-- **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (5) chunks, one
-  node per cell inside the inner 3 x 3 chunks (a buffer of one chunk, `nodeAreaOf`); where in that area a waypoint lies is
+- **`skeleton/cellGrid.ts`** (new) — the Mystery Dungeon style cell grid: cells of `CELL_SIZE_CHUNKS` (7) chunks (112 tiles), one
+  node per cell inside the inner 3 x 3 chunks (a buffer of two chunks, `nodeAreaOf`); where in that area a waypoint lies is
   decided by `town/waypointNodes.ts`, the grid itself is topology only. Node candidates and edges are hashes of the seed and the
   cell (`core/keyedRandom.ts`: `randomValue(key)` is a fresh `Alea` stream per key, so a value depends on its key only;
   results are cached by `core/boundedCache.ts`, which clears a cache at `SKELETON_CACHE_MAX_ENTRIES` (20 000) entries

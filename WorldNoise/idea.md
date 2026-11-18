@@ -41,7 +41,7 @@ why chunk borders never show seams.
 
 Reason for the shape: an endless world has no global view, so every decision must be computable from a small neighbourhood.
 
-- A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon (**changes to 7 x 7 chunks with a margin around the town, see "Town margin and the 7 x 7 cell"; the text below describes the state built so far**): **5 x 5 chunks per cell** (80 tiles; a chunk is
+- A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon (**now 7 x 7 chunks (done); the margin around the town is still to come, see "Town margin and the 7 x 7 cell"; the text below describes the 5 x 5 state**): **5 x 5 chunks per cell** (80 tiles; a chunk is
   16 tiles). Reason: a 3 x 3 chunk town in a 5 x 5 chunk cell always leaves a buffer of one chunk (16 tiles) on every side, so
   two towns of neighbouring cells are at least 32 tiles apart (more if they are smaller or sit off centre), the 8 tile terrace
   ring around a town stays inside its cell, and no two plateaus can touch. Longer roads between towns are wanted. Each cell
@@ -409,6 +409,7 @@ Built in this order, each step measured and looked at before the next:
 
 1. **The 7 x 7 cell with the buffer of 2 chunks**, no margin yet: constants, node area, shapes check; measured: towns, nodes and roads per
    area, the time of a chunk (budget 3 ms for the roads) and of an edge, no plateau touches another.
+   **Built (2026-11-18).** Measured on 24 x 24 cells (one seed): towns in 42.5 % of the cells (245; 4 chunks 83, 5 chunks 89, 6 chunks 46, 9 chunks 27), the smallest gap between two footprints 64 tiles (at least 48 needed once the margin exists), 1540 road edges (2.7 per cell), 29 ms per edge when planned cold.
 2. **The margin:** zone in `townInfoAt`, the rounded dilation with the wobble on the margin, water to land, the clearance, gates, pads, ring and
    streets on the new edge, the ground of the margin; measured: no level jump of two around a town (as before), the plateaus at least 48 tiles
    apart, every gate straight, a chunk equals the whole map, the time budget.
