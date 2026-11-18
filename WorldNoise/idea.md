@@ -334,7 +334,8 @@ Built in this order, each step measured and looked at before the next:
    which size a town of 2 x 2, 3 x 3, L and T has, no street leaves the plateau, no street touches a cliff, a chunk equals the whole map.
 3. **Assignment with conditions:** required and unique items, weights, empty lots; measured: share of lots filled, towns without Center.
    **Built (2026-11-18), first version:** unique items on the best lots (through-street frontage, then near the centre), weighted houses on all other lots that fit, the side streets painted as paths, no conditions beyond size, `unique` and `minTownChunks` yet (the table has only seven items); measured: every lot filled, every town has Center and Mart; see docs/towns.md.
-4. **Entrances and paths:** door paths from the entrance tile, the house path network for the rest.
+4. **Entrances and paths (built in part, 2026-11-18, decided with the user):** the whole south row of a lot without a street is paved (front strip), a house may stand up to 2 rows back and then a one tile wide path leads from the front strip to the door column of its sprite (`doorColumn` in the table); measured on 124 towns: all 2 231 buildings connected, every front strip and every door tile paved, no overlap. Open: doors that are not at the south, the entrance as a condition, plazas in front.
+   (original text:) **Entrances and paths:** door paths from the entrance tile, the house path network for the rest.
 5. **Props:** plazas, fountain, lamps, trees, hedges and fences, open edges.
 6. **Designed towns** use the same catalog (a template is a fixed set of placements) and come after step 5.
 
