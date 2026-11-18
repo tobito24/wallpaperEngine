@@ -30,7 +30,7 @@ function computeGrid(town: Town): TownGrid {
   const usable = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const isInside = townInfoAt(minX + x, minY + y)?.inside === true;
+      const isInside = townInfoAt(minX + x, minY + y)?.zone === 'core';
       usable[y * width + x] = isInside && roads[y * width + x] !== ROAD_TILE_MARK ? 1 : 0;
     }
   }

@@ -356,7 +356,7 @@ Decided with the user (2026-11-18):
   and a pinch of a block or lot under the minimum is merged into a neighbour or becomes park). Curves are the later layout; step 2
   starts with straight side streets, and the thin-spot rule is measured the same way for both.
 
-### Town margin and the 7 x 7 cell (plan of 2026-11-18, to be confirmed before the first line of code)
+### Town margin and the 7 x 7 cell (plan of 2026-11-18, confirmed by the user, steps 1 and 2 built)
 
 Why: with the lots (see above) the buildings stand right on the edge of the plateau, which later looks unclean and leaves no room
 for a ring of trees, hedges or fences. A margin around the town is the room for that ring. The cell gets bigger so that the larger
@@ -410,9 +410,10 @@ Built in this order, each step measured and looked at before the next:
 1. **The 7 x 7 cell with the buffer of 2 chunks**, no margin yet: constants, node area, shapes check; measured: towns, nodes and roads per
    area, the time of a chunk (budget 3 ms for the roads) and of an edge, no plateau touches another.
    **Built (2026-11-18).** Measured on 24 x 24 cells (one seed): towns in 42.5 % of the cells (245; 4 chunks 83, 5 chunks 89, 6 chunks 46, 9 chunks 27), the smallest gap between two footprints 64 tiles (at least 48 needed once the margin exists), 1540 road edges (2.7 per cell), 29 ms per edge when planned cold.
-2. **The margin:** zone in `townInfoAt`, the rounded dilation with the wobble on the margin, water to land, the clearance, gates, pads, ring and
+2. **The margin (built 2026-11-18):** zone in `townInfoAt`, the rounded dilation with the wobble on the margin, water to land, the clearance, gates, pads, ring and
    streets on the new edge, the ground of the margin; measured: no level jump of two around a town (as before), the plateaus at least 48 tiles
    apart, every gate straight, a chunk equals the whole map, the time budget.
+   **Measured (78 towns, 14 x 14 cells, one seed):** plateaus of 52 x 56 (4 chunks), 72 x 72 (5), 52 x 68 (6) and 68 x 68 tiles (9 chunks); the outline lies at least 4.3 tiles from the core; no level jump of two around any town (terrain levels before the cleanup); all 211 gates straight (3 before to 4 after the gate, 4 deep) once lanes with a short straight edge are skipped; 0 of 1594 crossings on 640 road edges without stairs; 8 347 water tiles of the margins became land; a cold terrain block takes as long as before (1.7 to 2.5 s for the first ones in a fresh page, same with and without the margin). Lots and the town layout read the core only (`townGrid` `usable` is `zone === 'core'`, so step 3 is already done for the grid).
 3. **The plan reads the core:** `townGrid.ts` and the lots as described above; the old layout keeps working on the core.
 
 Good when: lots, streets and buildings never touch the outline of the plateau, the margin is at least 4 tiles wide everywhere (the wobble
@@ -630,7 +631,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
   - [x] First buildings: Center, Mart and houses from the private `Outside` sheet placed along the existing roads (`townLayout.ts`)
   - [x] Town streets inside the plateau (through streets, side paths to the houses)
-  - [ ] Town margin and the 7 x 7 cell (plan in "Town margin and the 7 x 7 cell": cell and buffer, the margin, the plan reads the core); before the layout uses the lots
+  - [ ] Town margin (steps 1 and 2 built, the lots read the core) and the 7 x 7 cell (plan in "Town margin and the 7 x 7 cell": cell and buffer, the margin, the plan reads the core); before the layout uses the lots
   - [ ] Town layout and urban catalog (plan in "Town layout and the urban catalog": catalog and renderer, side streets, blocks and lots, assignment with conditions, entrances, props)
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
