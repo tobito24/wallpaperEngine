@@ -272,6 +272,90 @@ strangely towards the cliff edge. The fix is to give the planner a controlled sp
   building, and the network reaches the street at as few places as the tree needs. A building whose strip cannot be reached is
   dropped. The longest connection grew from 10 to 14 tiles so the tree has room (judged by eye). Paths stay 2 tiles wide.
 
+### Town layout and the urban catalog (plan of 2026-11-18, to be confirmed before the first line of code)
+
+Why: the through streets, the gates, the pads and the first buildings exist, but the layout is a random try-and-reject placement of
+seven fixed 5 x 4 rectangles of the private `Outside` sheet (`townLayout.ts`). That cannot carry larger buildings with
+conditions ("on a corner lot", "only in towns of 3 x 3 chunks", "at most one", "needs a plaza in front"). The layout becomes a
+planner with lots, and the buildings become a catalog, like the decoration.
+
+**Pipeline of a town** (a pure function of the town, cached per town; each step reads only the earlier ones; the terrain never
+reads it):
+
+1. **Through streets** (exist): gates joined by `townStreets`.
+2. **Side streets and blocks:** from the through streets, side streets branch off at right angles at a hashed spacing
+   (`TOWN_BLOCK_MIN_TILES` .. `TOWN_BLOCK_MAX_TILES`, to be measured by eye), 2 tiles wide (the through streets stay 3). A side street
+   ends at a block edge, at another street, or as a dead end with a small plaza. The space between streets is a **block**.
+   Only straight segments and right angles, like the through streets; no street leaves the plateau.
+3. **Lots:** a block is cut into **lots**: rectangles that touch a street with their frontage (the side towards the street, at
+   least the width of the smallest building). A lot has width, depth, the side of its street and a distance to the town centre
+   (centre or edge). Lots are a pure function of the blocks and the town hash, so they are stable.
+4. **Assignment:** the catalog items are matched to lots by their conditions (below). First the required and unique ones (Center,
+   Mart, town hall) on the best lots, then the others by weight; a lot that no item fits becomes a garden, a park, a small plaza or
+   stays empty (trees, fence). Nothing is placed on guesses: an item whose conditions fail is skipped, never forced.
+5. **Entrances and paths:** the entrance of every placed building is connected to its street, the house path network (exists) joins
+   what is left over. The entrance comes from the item, not from a guess about the sprite.
+6. **Props:** plazas, fountains, lamps along streets, trees, hedges and fences, fences at the open edge of the plateau.
+
+**Catalog.** `WorldNoise/assets/urban/` (git-ignored like every asset) holds **one PNG per item or variant** (`<name>.png`,
+`<name>-<variant>.png`), `src/urban/urbanTable.ts` (committed, typed) describes them, the same two rules as `deco`: a missing PNG
+draws a rectangle in debug mode, and a new item is a PNG plus one table row, no engine change. The deco and the urban catalog share
+the parts that mean the same thing (sprite size, footprint, anchor, layer, parts, variants, frames) and the sprite renderer; the
+urban table adds what a building needs:
+
+| Property | Meaning |
+|---|---|
+| kind | `building`, `prop`, `plaza`, `ground` (a patch of own paving or lawn), `fence` (a strip like the cliff ridge); the planner step that places it |
+| sprite, footprint, anchor | as in the deco table; a roof or an overhanging part is an `overhead` part, the footprint is the blocked base |
+| front | the side with the entrance (default south: the Pokemon view has doors on the south) and the **entrance tile**, the column on the front edge where the door path starts |
+| lot | the lot it needs: minimum frontage and depth, free tiles in front (the door yard), corner lot or not, distance to the centre (`centre`, `edge`, `any`) |
+| town | which towns: minimum and maximum chunks, shapes, plateau level, the biome of the town cell, generated or designed |
+| count | `unique` (at most one per town), `min`, `max`, or only a weight; `required` items are placed first |
+| near, excludes | needs a street, plaza or another item within N tiles; must not stand next to a given item or the same item |
+| parts | an item may be several parts with their own layer and offset (body, roof, chimney, sign, garden, fence): **all parts valid or the item is not placed** (atomic), so complex items stay one table row |
+| variants, weight | a look picked by hash; weight in the pool of its kind |
+
+A condition is a declarative field, evaluated by one generic matcher; there is no code per item. If an item needs a rule the
+fields cannot say, the field is added to the matcher for all items (the table stays data), after talking about it.
+
+**Rendering.** Buildings and props go through the sprite pass of the deco (sorted by `(layer, row, column)`, level shade, overhead
+parts), so large buildings with roofs work with the cliffs, trees and stairs without extra code. The tile pieces of the `Outside`
+sheet (`townDecorationAt`) disappear in step 1 after the seven buildings have been cut into `assets/urban/`.
+
+**Chunk locality.** The layout of a town is computed once per town (cache `TOWN_CACHE_MAX_ENTRIES`), as it is today, and a chunk asks
+the town for the items that reach into it. The reach of the largest building is bounded by the footprint of the town, so the guard of
+the deco (largest reach plus margin inside the terrain block) is checked for towns too.
+
+Built in this order, each step measured and looked at before the next:
+
+1. **Catalog and renderer:** `urbanTable.ts`, the loader, the seven existing buildings cut into `assets/urban/` by a one-off script,
+   drawn through the sprite pass; the layout still places them as today (no visible change, the proof that the catalog works).
+2. **Side streets, blocks and lots** with a debug overlay (streets, blocks, lots with their frontage); measured: how many lots of
+   which size a town of 2 x 2, 3 x 3, L and T has, no street leaves the plateau, no street touches a cliff, a chunk equals the whole map.
+3. **Assignment with conditions:** required and unique items, weights, empty lots; measured: share of lots filled, towns without Center.
+4. **Entrances and paths:** door paths from the entrance tile, the house path network for the rest.
+5. **Props:** plazas, fountain, lamps, trees, hedges and fences, open edges.
+6. **Designed towns** use the same catalog (a template is a fixed set of placements) and come after step 5.
+
+Good when: every building has an entrance connected to a street, no item stands on a street, a stair, a cliff or the edge of the
+plateau, two chunkings of one town give the same layout, a chunk stays within the time budget, and a new building needs only a
+PNG and a table row.
+
+Decided with the user (2026-11-18):
+
+- **Facing:** buildings face south by default (the `front` field exists for exceptions, an item with another front has its own sprite).
+- **Sizes:** the smallest house is 4 x 3 tiles, a large one 7 x 6 or 7 x 7; no building is wider than 9 or taller than 10 tiles
+  (`URBAN_MAX_WIDTH_TILES` 9, `URBAN_MAX_HEIGHT_TILES` 10; the table rejects larger sprites). A lot is therefore at least 4 x 3 and at most
+  9 x 10 plus the door yard, and the reach guard uses 9 x 10.
+- **Catalog start:** Center, Mart and houses, then shopping centre, apartment block, high-rise, mansion and gyms (the larger buildings
+  are `unique` or `max` limited and want the `centre` lots or a big lot).
+- **Art:** the first art comes from the private `Outside` sheet (`assets/tilesets/outside.png`, not cleared for publishing, so dev only,
+  see "Two asset versions"); the public version gets its own art through the same table.
+- **Side streets may be curved.** One rule bounds it: no thin spots, so a street, a block and a lot never get narrower than their
+  minimum (a street keeps its width of 2 along its whole course, a block between two streets is at least as deep as the smallest lot,
+  and a pinch of a block or lot under the minimum is merged into a neighbour or becomes park). Curves are the later layout; step 2
+  starts with straight side streets, and the thin-spot rule is measured the same way for both.
+
 ### Height levels and cliffs
 
 Discrete height levels belong to the Pokemon look, so they are part of the plan, not a later extra.
@@ -483,13 +567,13 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [x] Town candidates, land check, footprint shapes, gates (the gates are where the straight roads enter the footprint)
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
   - [x] First buildings: Center, Mart and houses from the private `Outside` sheet placed along the existing roads (`townLayout.ts`)
-  - [ ] Town streets inside the plateau (rules in "Town streets": no centre, opposite gates joined straight, third gate by the shortest way, one gate a dead end), then side paths, plazas, fountains, lamps, trees and fences; houses follow the streets of that layout
+  - [x] Town streets inside the plateau (through streets, side paths to the houses)
+  - [ ] Town layout and urban catalog (plan in "Town layout and the urban catalog": catalog and renderer, side streets, blocks and lots, assignment with conditions, entrances, props)
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
 - [ ] Fences or trees where the edge of a town is open (no cliff wall)
 - [x] Town outline: wavy and stepped; the footprint only loses area (`TOWN_OUTLINE_WOBBLE_TILES` = 4, stepped noise), so it never leaves the chunk block and towns never overlap. Layout, gates and roads still treat the whole chunk footprint as the town (the layout step has to follow the outline)
 - [x] Smooth the town outline at the gates (a straight edge where a road enters, because the stairs go there): gates first on the footprint edge, then the wobble tapers to 0 around them
-- [ ] If the InfinityWalker tileset is used outside towns (own autotiles with cliff edges are the alternative), use `InfinityWalker/js/tiles.js` as the index of which tile lies where in the sheet
 - [x] Cliff pieces for the east, west and north side from the rock kit of the private `Outside` tileset; corners by laying two pieces over each other
 - [x] Cliffs redone with the 12 stone pieces of `InfinityWalker/img/tileset.png` (edges, outer and inner corners, one set per level); the Outside rim pieces did not fit together
 - [x] Plateaus and lower land at least 2 tiles wide (`elevation/levelCleanup.ts`), the base for the 16-pattern cliff pieces
@@ -512,7 +596,6 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Second ground per biome (bare earth beside the natural cover) and small secret paths inside a biome
 - [x] Draw the lower ground under a tile with a transparent autotile rim (`Tile.draw`), so own sheets show the neighbour and no background
 - [ ] First own ground (grass) decorated in Photoshop and checked in the preview, then the other grounds
-- [ ] Alienor sheet converted to the XP layout by a script (license text into `publishing.md` first)
 - [ ] Replace every development-only asset by a cleared one, and own town templates; check that `dist/` embeds only cleared assets (it embeds everything in `assets/`; no asset is committed)
 - [ ] Wallpaper Engine properties (at least the seed)
 - [ ] Preview, `publishing.md` text, publish
