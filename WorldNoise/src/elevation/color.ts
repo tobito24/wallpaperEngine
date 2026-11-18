@@ -2,7 +2,7 @@ import { HEIGHT_LEVEL_THRESHOLDS } from '../config/constants';
 
 const SHADE_BY_HEIGHT_LEVEL: ReadonlyArray<string | null> = [
   null,
-  'rgba(0, 0, 0, 0.18)',
+  null,
   null,
   'rgba(255, 255, 255, 0.14)',
   'rgba(255, 255, 255, 0.26)',
