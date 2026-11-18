@@ -21,6 +21,7 @@ import { distanceToCore } from '../town/townCore';
 import { townOfCell } from '../town/townPlacement';
 
 const RECLAIMED_LAND_ELEVATION = ELEVATION_SEA_LEVEL + 0.001;
+const OVERVIEW_FALLBACK_STEP_FACTORS: readonly number[] = [4, 2, 0.5, 0.25];
 const NEIGHBOUR_CELL_STEPS: readonly (readonly [number, number])[] = [
   [1, 0],
   [0, 1],
@@ -74,7 +75,10 @@ export class OverviewRenderer {
         canvas = this.buildBlock(block.x * blockTiles, block.y * blockTiles, step);
         this.remember(key, canvas);
       }
-      if (!canvas) continue;
+      if (!canvas) {
+        this.drawFallback(ctx, camera, block, step, blockTiles, viewportWidth, viewportHeight);
+        continue;
+      }
       const from = camera.worldToScreen(
         block.x * blockTiles,
         block.y * blockTiles,
@@ -91,6 +95,47 @@ export class OverviewRenderer {
     }
 
     this.drawRoads(ctx, camera, bounds, viewportWidth, viewportHeight);
+  }
+
+  private drawFallback(
+    ctx: CanvasRenderingContext2D,
+    camera: Camera,
+    block: { x: number; y: number },
+    step: number,
+    blockTiles: number,
+    viewportWidth: number,
+    viewportHeight: number,
+  ): void {
+    const left = block.x * blockTiles;
+    const top = block.y * blockTiles;
+    for (const factor of OVERVIEW_FALLBACK_STEP_FACTORS) {
+      const otherStep = step * factor;
+      if (otherStep < 1) continue;
+      const span = OVERVIEW_BLOCK_SAMPLES * otherStep;
+      for (let by = Math.floor(top / span); by <= Math.floor((top + blockTiles - 1) / span); by++) {
+        for (let bx = Math.floor(left / span); bx <= Math.floor((left + blockTiles - 1) / span); bx++) {
+          const canvas = this.blocks.get(`${otherStep}:${bx}:${by}`);
+          if (!canvas) continue;
+          const minX = Math.max(left, bx * span);
+          const minY = Math.max(top, by * span);
+          const maxX = Math.min(left + blockTiles, (bx + 1) * span);
+          const maxY = Math.min(top + blockTiles, (by + 1) * span);
+          const from = camera.worldToScreen(minX, minY, viewportWidth, viewportHeight);
+          const to = camera.worldToScreen(maxX, maxY, viewportWidth, viewportHeight);
+          ctx.drawImage(
+            canvas,
+            (minX - bx * span) / otherStep,
+            (minY - by * span) / otherStep,
+            (maxX - minX) / otherStep,
+            (maxY - minY) / otherStep,
+            from.x,
+            from.y,
+            to.x - from.x,
+            to.y - from.y,
+          );
+        }
+      }
+    }
   }
 
   private remember(key: string, canvas: HTMLCanvasElement): void {

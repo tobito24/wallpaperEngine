@@ -6,6 +6,7 @@ export const MAX_TILE_SIZE = 128;
 
 export const ZOOM_STEP_PX = 4;
 export const ZOOM_REFERENCE_TILE_SIZE_PX = 32;
+export const MAX_ZOOM_FACTOR_PER_STEP = 2;
 export const OVERVIEW_BELOW_TILE_SIZE_PX = 8;
 export const OVERVIEW_SAMPLE_MIN_SCREEN_PX = 4;
 export const OVERVIEW_BLOCK_SAMPLES = 32;

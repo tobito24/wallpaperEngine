@@ -1,4 +1,9 @@
-import { MIN_TILE_SIZE, MAX_TILE_SIZE, ZOOM_REFERENCE_TILE_SIZE_PX } from '../config/constants';
+import {
+  MIN_TILE_SIZE,
+  MAX_TILE_SIZE,
+  ZOOM_REFERENCE_TILE_SIZE_PX,
+  MAX_ZOOM_FACTOR_PER_STEP,
+} from '../config/constants';
 
 export interface TileBounds {
   minX: number;
@@ -34,7 +39,10 @@ export class Camera {
   }
 
   zoomBy(deltaTileSize: number): void {
-    this.setTileSize(this.tileSize + (deltaTileSize * this.tileSize) / ZOOM_REFERENCE_TILE_SIZE_PX);
+    const factor = 1 + deltaTileSize / ZOOM_REFERENCE_TILE_SIZE_PX;
+    this.setTileSize(
+      this.tileSize * Math.min(MAX_ZOOM_FACTOR_PER_STEP, Math.max(1 / MAX_ZOOM_FACTOR_PER_STEP, factor)),
+    );
   }
 
   zoomAtScreenPoint(
