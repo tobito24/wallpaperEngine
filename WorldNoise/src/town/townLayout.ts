@@ -63,15 +63,19 @@ function computeLayout(town: Town): TownLayout {
     if (touchesStreet) streetTiles.push(index);
   }
 
-  const yardPlacements = placements.filter((placement) => !placement.onStreet);
-  const strips = yardPlacements.map(({ item, x, y, yardRows }) => {
-    const strip: number[] = [];
-    for (let row = 0; row < yardRows; row++) {
-      for (let column = 0; column < item.sprite.width; column++) {
-        strip.push(indexOf(x + column, y + item.sprite.height + row));
-      }
+  const needsPaths = (placement: Placement): boolean => placement.frontRows + placement.setbackRows > 0;
+  const pathPlacements = placements.filter(needsPaths);
+  const strips = pathPlacements.map(({ item, x, y, lot: lotIndex, frontRows, setbackRows }) => {
+    const lot = plan.lots[lotIndex];
+    const bottomRow = lot.y + lot.depth - 1;
+    const tiles: number[] = [];
+    if (frontRows > 0) {
+      for (let column = lot.x; column < lot.x + lot.width; column++) tiles.push(indexOf(column, bottomRow));
     }
-    return strip;
+    for (let row = 0; row < setbackRows; row++) {
+      tiles.push(indexOf(x + item.doorColumn, y + item.sprite.height + row));
+    }
+    return tiles;
   });
   const network = planPathNetwork({
     width,
@@ -81,10 +85,12 @@ function computeLayout(town: Town): TownLayout {
     strips,
     maxLength: TOWN_DOOR_PATH_MAX_TILES,
   });
-  const connectedYards = new Set<Placement>(yardPlacements.filter((_, index) => network.connected[index]));
+  const connectedPlacements = new Set<Placement>(
+    pathPlacements.filter((_, index) => network.connected[index]),
+  );
 
   const buildings: UrbanInstance[] = placements
-    .filter((placement) => placement.onStreet || connectedYards.has(placement))
+    .filter((placement) => !needsPaths(placement) || connectedPlacements.has(placement))
     .map(({ item, x, y }) => ({ item, x, y, level: town.plateauLevel }));
 
   const paths = new Set<number>(network.tiles);

@@ -1,4 +1,4 @@
-import { TOWN_DOOR_PATH_WIDTH_TILES } from '../config/constants';
+import { TOWN_BUILDING_SETBACK_MAX_TILES } from '../config/constants';
 import { URBAN_ITEMS } from '../urban/urbanTable';
 import type { UrbanItem } from '../urban/urbanTable';
 import type { Lot } from './townLots';
@@ -9,8 +9,8 @@ export interface Placement {
   readonly x: number;
   readonly y: number;
   readonly lot: number;
-  readonly onStreet: boolean;
-  readonly yardRows: number;
+  readonly frontRows: number;
+  readonly setbackRows: number;
 }
 
 const FRONTAGE_RANK: Readonly<Record<'through' | 'side' | 'none', number>> = {
@@ -23,14 +23,12 @@ function frontageRank(lot: Lot): number {
   return FRONTAGE_RANK[lot.frontage ?? 'none'];
 }
 
-function doorYardOf(item: UrbanItem, lot: Lot): number {
-  if (lot.frontage !== null) return 0;
-  return Math.min(TOWN_DOOR_PATH_WIDTH_TILES, lot.depth - item.sprite.height);
+function frontRowsOf(lot: Lot): number {
+  return lot.frontage === null ? 1 : 0;
 }
 
 function fits(item: UrbanItem, lot: Lot): boolean {
-  const needsYard = lot.frontage === null ? 1 : 0;
-  return item.sprite.width <= lot.width && item.sprite.height + needsYard <= lot.depth;
+  return item.sprite.width <= lot.width && item.sprite.height + frontRowsOf(lot) <= lot.depth;
 }
 
 function pickByWeight(items: readonly UrbanItem[], random: () => number): UrbanItem {
@@ -43,16 +41,21 @@ function pickByWeight(items: readonly UrbanItem[], random: () => number): UrbanI
   return items[items.length - 1];
 }
 
-function placementOn(item: UrbanItem, lot: Lot, lotIndex: number): Placement {
-  const yard = doorYardOf(item, lot);
+function placementOn(item: UrbanItem, lot: Lot, lotIndex: number, setbackRows: number): Placement {
+  const frontRows = frontRowsOf(lot);
   return {
     item,
     x: lot.x + Math.floor((lot.width - item.sprite.width) / 2),
-    y: lot.y + lot.depth - yard - item.sprite.height,
+    y: lot.y + lot.depth - frontRows - setbackRows - item.sprite.height,
     lot: lotIndex,
-    onStreet: lot.frontage !== null,
-    yardRows: yard,
+    frontRows,
+    setbackRows,
   };
+}
+
+function randomSetback(item: UrbanItem, lot: Lot, random: () => number): number {
+  const room = lot.depth - frontRowsOf(lot) - item.sprite.height;
+  return Math.floor(random() * (Math.min(TOWN_BUILDING_SETBACK_MAX_TILES, room) + 1));
 }
 
 export function assignBuildings(town: Town, lots: readonly Lot[], random: () => number): Placement[] {
@@ -74,7 +77,7 @@ export function assignBuildings(town: Town, lots: readonly Lot[], random: () => 
       );
     if (candidates.length === 0) continue;
     taken.add(candidates[0]);
-    placements.push(placementOn(item, lots[candidates[0]], candidates[0]));
+    placements.push(placementOn(item, lots[candidates[0]], candidates[0], 0));
   }
 
   const pool = eligible.filter((candidate) => !candidate.unique);
@@ -82,7 +85,8 @@ export function assignBuildings(town: Town, lots: readonly Lot[], random: () => 
     if (taken.has(index)) return;
     const fitting = pool.filter((candidate) => fits(candidate, lot));
     if (fitting.length === 0) return;
-    placements.push(placementOn(pickByWeight(fitting, random), lot, index));
+    const item = pickByWeight(fitting, random);
+    placements.push(placementOn(item, lot, index, randomSetback(item, lot, random)));
   });
   return placements;
 }
