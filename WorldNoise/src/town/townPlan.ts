@@ -11,6 +11,7 @@ import { townStreets } from './townStreets';
 
 export interface TownPlan extends TownLots {
   readonly sideStreets: readonly SideStreet[];
+  readonly streetMask: Uint8Array;
 }
 
 const planCache = new Map<string, TownPlan>();
@@ -19,7 +20,7 @@ function computePlan(town: Town): TownPlan {
   const random = Alea(`${SEED}:townPlan:${town.cx}:${town.cy}`);
   const grid = townGridOf(town);
   const { streets, mask } = planSideStreets(grid, townStreets(town), random);
-  return { sideStreets: streets, ...planLots(grid, mask, random) };
+  return { sideStreets: streets, streetMask: mask, ...planLots(grid, mask, random) };
 }
 
 export function townPlanOf(town: Town): TownPlan {

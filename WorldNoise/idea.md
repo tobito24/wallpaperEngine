@@ -333,6 +333,7 @@ Built in this order, each step measured and looked at before the next:
 2. **Side streets, blocks and lots** as a pure plan with a debug overlay (streets, lots with their frontage; built 2026-11-18). The side streets are not painted into the road mask and the layout does not read the lots until step 3, because both belong to the assignment; measured: how many lots of
    which size a town of 2 x 2, 3 x 3, L and T has, no street leaves the plateau, no street touches a cliff, a chunk equals the whole map.
 3. **Assignment with conditions:** required and unique items, weights, empty lots; measured: share of lots filled, towns without Center.
+   **Built (2026-11-18), first version:** unique items on the best lots (through-street frontage, then near the centre), weighted houses on all other lots that fit, the side streets painted as paths, no conditions beyond size, `unique` and `minTownChunks` yet (the table has only seven items); measured: every lot filled, every town has Center and Mart; see docs/towns.md.
 4. **Entrances and paths:** door paths from the entrance tile, the house path network for the rest.
 5. **Props:** plazas, fountain, lamps, trees, hedges and fences, open edges.
 6. **Designed towns** use the same catalog (a template is a fixed set of placements) and come after step 5.
@@ -400,7 +401,7 @@ only (the layout, the lots, the town ground) reads the zone), `townGates.ts` (la
 ground of the margin in `Chunk`/`groundOf`, `cellGrid.ts` (node area), and the constants. The waypoint nodes lie in the node area of the
 cell, the 48 x 48 tiles in the middle, like the town block.
 
-Not decided and left for later: the number of towns per area (`TOWN_CELL_PROBABILITY`, the size weights, `TOWN_HOUSES_PER_CHUNK`; with a
+Not decided and left for later: the number of towns per area (`TOWN_CELL_PROBABILITY`, the size weights; with a
 cell of 49 instead of 25 chunks there are about half as many towns and nodes per area, and the roads between two nodes are 112 instead of
 80 tiles long), the padding of the road edges around a request (2 cells today; with the bigger cell 1 may do, to be measured), and all
 numbers in `docs/` that the world change makes outdated (they are measured again with the build).
