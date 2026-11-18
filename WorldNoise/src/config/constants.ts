@@ -1,10 +1,17 @@
 export const SEED = '12345678';
 
 export const TILE_SIZE_DEFAULT = 32;
-export const MIN_TILE_SIZE = 4;
+export const MIN_TILE_SIZE = 0.5;
 export const MAX_TILE_SIZE = 128;
 
 export const ZOOM_STEP_PX = 4;
+export const ZOOM_REFERENCE_TILE_SIZE_PX = 32;
+export const OVERVIEW_BELOW_TILE_SIZE_PX = 8;
+export const OVERVIEW_SAMPLE_MIN_SCREEN_PX = 4;
+export const OVERVIEW_BLOCK_SAMPLES = 32;
+export const OVERVIEW_CACHE_MAX_BLOCKS = 1500;
+export const OVERVIEW_BLOCK_BUDGET_MS = 10;
+export const OVERVIEW_ROAD_MIN_WIDTH_PX = 1.5;
 export const PAN_SPEED_TILES_PER_SEC = 6;
 export const PAN_SPRINT_MULTIPLIER = 2;
 

@@ -38,7 +38,7 @@ export class World {
     return chunk;
   }
 
-  private unloadStale(nowMs: number): void {
+  unloadStale(nowMs: number): void {
     for (const [key, chunk] of this.chunks) {
       if (nowMs - chunk.lastSeenAtMs > CHUNK_UNLOAD_DELAY_MS) {
         this.chunks.delete(key);
