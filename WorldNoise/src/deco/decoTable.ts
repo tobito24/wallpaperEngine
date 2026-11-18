@@ -2,7 +2,7 @@ import type { BiomeId } from '../biome/biome';
 import { DECO_FIELD_CELL_TILES } from '../config/constants';
 
 export type DecoLayer = 'flat' | 'object' | 'overhead';
-export type DecoPass = 'grove' | 'large' | 'strip' | 'medium' | 'small' | 'flat';
+export type DecoPass = 'grove' | 'large' | 'strip' | 'medium' | 'small' | 'flat' | 'road';
 export type DecoSurface = 'land' | 'water';
 
 export interface DecoSize {
@@ -41,6 +41,7 @@ export interface DecoItem {
   readonly clearance: number;
   readonly overlapsDeco: boolean;
   readonly overlapsCliff: boolean;
+  readonly onRoad: boolean;
   readonly blob: boolean;
   readonly strip?: DecoStrip;
   readonly area?: DecoArea;
@@ -53,9 +54,18 @@ export const DECO_CELL_SIZE_BY_PASS: Readonly<Record<DecoPass, number>> = {
   medium: 4,
   small: 2,
   flat: 1,
+  road: 4,
 };
 
-export const DECO_PASS_ORDER: readonly DecoPass[] = ['grove', 'large', 'strip', 'medium', 'small', 'flat'];
+export const DECO_PASS_ORDER: readonly DecoPass[] = [
+  'grove',
+  'large',
+  'strip',
+  'medium',
+  'small',
+  'flat',
+  'road',
+];
 
 export const DECO_PASS_DENSITY: Readonly<Record<DecoPass, number>> = {
   grove: 0.5,
@@ -64,6 +74,7 @@ export const DECO_PASS_DENSITY: Readonly<Record<DecoPass, number>> = {
   medium: 0.4,
   small: 0.5,
   flat: 0.35,
+  road: 0.7,
 };
 
 export const DECO_CLUSTER_STRENGTH: Readonly<Record<DecoPass, number>> = {
@@ -73,6 +84,7 @@ export const DECO_CLUSTER_STRENGTH: Readonly<Record<DecoPass, number>> = {
   medium: 0.5,
   small: 0.3,
   flat: 0.2,
+  road: 0.5,
 };
 
 export const DECO_CLUSTER_FREQUENCY_BY_PASS: Readonly<Record<DecoPass, number>> = {
@@ -82,6 +94,7 @@ export const DECO_CLUSTER_FREQUENCY_BY_PASS: Readonly<Record<DecoPass, number>> 
   medium: 0.03,
   small: 0.03,
   flat: 0.03,
+  road: 0.03,
 };
 
 export const DECO_DENSITY_BY_PASS_AND_BIOME: Readonly<
@@ -123,6 +136,8 @@ const ONE_BY_TWO: DecoSize = { width: 1, height: 2 };
 const TWO_BY_TWO: DecoSize = { width: 2, height: 2 };
 const FOUR_BY_THREE: DecoSize = { width: 4, height: 3 };
 
+const SNOW_ROAD_BIOMES = { snowField: 3, snowForest: 3, tundra: 2, snowPeak: 1 } as const;
+
 const DEFAULTS = {
   variants: 1,
   frames: 1,
@@ -131,6 +146,7 @@ const DEFAULTS = {
   clearance: 0,
   overlapsDeco: false,
   overlapsCliff: false,
+  onRoad: false,
   blob: false,
 } as const;
 
@@ -330,6 +346,14 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     sprite: TWO_BY_TWO,
     footprint: TWO_BY_ONE,
     biomes: { snowField: 1, tundra: 1, snowPeak: 1 },
+  }),
+  item({
+    name: 'boulder-sand',
+    pass: 'large',
+    layer: 'object',
+    sprite: TWO_BY_TWO,
+    footprint: TWO_BY_ONE,
+    biomes: { desert: 3, savanna: 0.5, steppe: 0.3 },
   }),
   item({
     name: 'boulder-water',
@@ -543,6 +567,38 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     biomes: { beach: 3 },
   }),
   item({
+    name: 'road-snow-tall',
+    fileStem: 'snow0',
+    pass: 'road',
+    layer: 'object',
+    sprite: ONE_BY_TWO,
+    footprint: ONE_BY_ONE,
+    onRoad: true,
+    overlapsCliff: true,
+    biomes: SNOW_ROAD_BIOMES,
+  }),
+  item({
+    name: 'road-snow-big',
+    fileStem: 'snow1',
+    pass: 'road',
+    layer: 'object',
+    sprite: TWO_BY_TWO,
+    footprint: TWO_BY_ONE,
+    onRoad: true,
+    overlapsCliff: true,
+    biomes: SNOW_ROAD_BIOMES,
+  }),
+  item({
+    name: 'road-snow-small',
+    fileStem: 'snow2',
+    pass: 'road',
+    layer: 'object',
+    sprite: ONE_BY_ONE,
+    footprint: ONE_BY_ONE,
+    onRoad: true,
+    biomes: SNOW_ROAD_BIOMES,
+  }),
+  item({
     name: 'lily',
     variants: 4,
     pass: 'flat',
@@ -640,6 +696,9 @@ export function validateDecoTable(items: readonly DecoItem[]): void {
       ) {
         throw new RangeError(`Deco item ${entry.name}: a strip is one row of its maximum length`);
       }
+    }
+    if (entry.onRoad !== (entry.pass === 'road') || (entry.onRoad && entry.surface !== 'land')) {
+      throw new RangeError(`Deco item ${entry.name}: onRoad and the pass road go together, on land`);
     }
     if (entry.variants < 1 || entry.frames < 1) {
       throw new RangeError(`Deco item ${entry.name} needs a variant and a frame`);

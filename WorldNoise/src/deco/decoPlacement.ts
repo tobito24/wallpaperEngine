@@ -270,9 +270,12 @@ function invalidReason(
   const isFlat = item.layer === 'flat';
 
   const footprintReason = (index: number): string | null => {
-    if (!(block.grounds[index] in item.biomes)) return 'ground';
+    const ground = item.onRoad ? block.biomes[index].id : block.grounds[index];
+    if (!(ground in item.biomes)) return 'ground';
     if (masks.town[index]) return 'town';
-    if (masks.road[index] || (!isFlat && masks.roadNear[index])) return 'road';
+    if (item.onRoad) {
+      if (!masks.road[index]) return 'offroad';
+    } else if (masks.road[index] || (!isFlat && masks.roadNear[index])) return 'road';
     if (masks.stairs[index] || (!isFlat && masks.stairsNear[index])) return 'stairs';
     if (block.levels[index] !== level || (level === WATER_LEVEL) !== (item.surface === 'water'))
       return 'level';
@@ -290,7 +293,7 @@ function invalidReason(
 
   const overhangClear = everyTile(block, sprite, (index, column, row) => {
     if (insideFootprint(footprint, column, row)) return true;
-    if (masks.town[index] || masks.road[index] || masks.stairs[index]) return false;
+    if (masks.town[index] || masks.stairs[index] || (!item.onRoad && masks.road[index])) return false;
     return item.overlapsCliff || !masks.cliffPiece[index];
   });
   return overhangClear ? null : 'overhang';
@@ -392,7 +395,7 @@ function candidateAt(
   const pointY = originY + Math.floor(decoHash(passIndex, cellX, cellY, 2) * cell);
   const pointIndex = indexOf(block, pointX, pointY);
   if (pointIndex < 0) return null;
-  const biome = block.grounds[pointIndex];
+  const biome = pass === 'road' ? block.biomes[pointIndex].id : block.grounds[pointIndex];
   const blobShare =
     blobs.length > 0 && DECO_BLOB_BIOMES.includes(biome as BiomeId) ? blobStrength(blobs, pointX, pointY) : 0;
   const blobDensity = DECO_BLOB_DENSITY[pass];
