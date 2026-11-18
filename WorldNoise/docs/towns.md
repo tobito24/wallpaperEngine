@@ -26,7 +26,7 @@ Paths and towns.
   is level 2 (a level 3 plateau needs two tiles of level 2 between it and water for the two cliff rings; before, a coastal town of
   level 3 touched water directly: 154 tiles in 64 x 64 chunks, now 0, and the natural terrain never has it), the node of the town is the centre of the chunk of the
   footprint nearest to its centroid (so it lies inside an L or T), and a hash makes `TOWN_DESIGNED_SHARE` (20 %) of the
-  towns designed. Measured on 14 400 cells: towns in 41 % (large 542, medium 3 286, small 2 084), designed 20.4 %,
+  towns designed. Measured on 14 400 cells with 5 x 5 chunk cells (before the 7 x 7 cell): towns in 41 % (large 542, medium 3 286, small 2 084), designed 20.4 %,
   plateau levels 1 / 2 / 3 in 799 / 1 336 / 3 777 towns with three levels (towns stand inland, where the land is high; with four levels
   and the clearance on 4 096 chunks: 7 / 46 / 10 / 6 of 69 towns), 0.56 ms per cell.
 - **`town/townTerrain.ts`** (new) — `townInfoAt(x, y)` (inside the footprint, or in the ring of `TOWN_RING_WIDTH_TILES` (8)
