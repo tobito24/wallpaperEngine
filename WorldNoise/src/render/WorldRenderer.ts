@@ -4,6 +4,7 @@ import type { World } from '../world/World';
 import { drawCrossingMarkers } from './crossingDebug';
 import { DecoRenderer } from './DecoRenderer';
 import { drawDecoFootprints } from './decoDebug';
+import { drawTownPlans } from './townPlanDebug';
 
 export class WorldRenderer {
   private readonly decoRenderer = new DecoRenderer();
@@ -39,6 +40,7 @@ export class WorldRenderer {
 
     drawCrossingMarkers(ctx, camera, viewportWidth, viewportHeight, size);
     drawDecoFootprints(ctx, camera, chunks, viewportWidth, viewportHeight, size);
+    drawTownPlans(ctx, camera, bounds, viewportWidth, viewportHeight, size);
 
     for (const chunk of chunks) {
       const origin = camera.worldToScreen(
