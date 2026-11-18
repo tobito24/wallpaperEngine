@@ -1,6 +1,5 @@
 import Alea from 'alea';
 import {
-  CHUNK_SIZE,
   SEED,
   TOWN_BUILDING_MARGIN_TILES,
   TOWN_BUILDING_STREET_MARGIN_TILES,
@@ -10,16 +9,13 @@ import {
   TOWN_HOUSES_PER_CHUNK,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
-import { crossingsOf } from '../road/crossingTerrain';
-import { footprintOf } from '../road/roadCrossing';
-import { roadEdgesIn } from '../road/roadEdge';
-import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
+import { ROAD_TILE_MARK } from '../road/roadMask';
 import { URBAN_ITEMS } from '../urban/urbanTable';
 import type { UrbanItem } from '../urban/urbanTable';
 import type { UrbanInstance } from '../urban/urbanInstance';
 import type { Town } from './townPlacement';
+import { townGridOf } from './townGrid';
 import { planPathNetwork } from './townPathNetwork';
-import { townInfoAt } from './townTerrain';
 
 interface TownLayout {
   readonly minX: number;
@@ -76,37 +72,8 @@ function shuffled<T>(items: T[], random: () => number): T[] {
 
 function computeLayout(town: Town): TownLayout {
   const random = Alea(`${SEED}:townLayout:${town.cx}:${town.cy}`);
-  const chunkXs = town.chunks.map(([chunkX]) => chunkX);
-  const chunkYs = town.chunks.map(([, chunkY]) => chunkY);
-  const minX = Math.min(...chunkXs) * CHUNK_SIZE;
-  const minY = Math.min(...chunkYs) * CHUNK_SIZE;
-  const width = (Math.max(...chunkXs) + 1) * CHUNK_SIZE - minX;
-  const height = (Math.max(...chunkYs) + 1) * CHUNK_SIZE - minY;
-
-  const roads = roadTilesIn(minX, minY, width, height);
-  const free = new Uint8Array(width * height);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const isInside = townInfoAt(minX + x, minY + y)?.inside === true;
-      free[y * width + x] = isInside && roads[y * width + x] !== ROAD_TILE_MARK ? 1 : 0;
-    }
-  }
-  for (const crossing of crossingsOf(roadEdgesIn(minX, minY, width, height))) {
-    const footprint = footprintOf(crossing);
-    for (
-      let y = Math.max(footprint.minY, minY);
-      y < Math.min(footprint.minY + footprint.height, minY + height);
-      y++
-    ) {
-      for (
-        let x = Math.max(footprint.minX, minX);
-        x < Math.min(footprint.minX + footprint.width, minX + width);
-        x++
-      ) {
-        free[(y - minY) * width + (x - minX)] = 0;
-      }
-    }
-  }
+  const { minX, minY, width, height, roads, usable } = townGridOf(town);
+  const free = usable.slice();
 
   const placeable = free.slice();
   const sidewalk = new Uint8Array(width * height);

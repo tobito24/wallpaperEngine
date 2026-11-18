@@ -330,7 +330,7 @@ Built in this order, each step measured and looked at before the next:
 
 1. **Catalog and renderer:** `urbanTable.ts`, the loader, the seven existing buildings cut into `assets/urban/` by a one-off script,
    drawn through the sprite pass; the layout still places them as today (no visible change, the proof that the catalog works).
-2. **Side streets, blocks and lots** with a debug overlay (streets, blocks, lots with their frontage); measured: how many lots of
+2. **Side streets, blocks and lots** as a pure plan with a debug overlay (streets, lots with their frontage; built 2026-11-18). The side streets are not painted into the road mask and the layout does not read the lots until step 3, because both belong to the assignment; measured: how many lots of
    which size a town of 2 x 2, 3 x 3, L and T has, no street leaves the plateau, no street touches a cliff, a chunk equals the whole map.
 3. **Assignment with conditions:** required and unique items, weights, empty lots; measured: share of lots filled, towns without Center.
 4. **Entrances and paths:** door paths from the entrance tile, the house path network for the rest.
