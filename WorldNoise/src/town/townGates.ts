@@ -1,5 +1,8 @@
 import {
   CHUNK_SIZE,
+  TOWN_GATE_STRAIGHT_EDGE_AFTER_TILES,
+  TOWN_GATE_STRAIGHT_EDGE_BEFORE_TILES,
+  TOWN_MARGIN_TILES,
   TOWN_CACHE_MAX_ENTRIES,
   TOWN_GATE_LEVEL_DEPTH_TILES,
   TOWN_GATE_LANDING_DEPTH_TILES,
@@ -66,12 +69,34 @@ function edgeLanes(town: Town, side: GateSide): EdgeLane[] {
   const laneLast = alongX ? bounds.maxX : bounds.maxY;
   const depthEdge = outward === 1 ? (alongX ? bounds.maxY : bounds.maxX) : alongX ? bounds.minY : bounds.minX;
   const lanes: EdgeLane[] = [];
+  const edgeTileAt = (lane: number): boolean =>
+    isFootprintTile(town, alongX ? lane : depthEdge, alongX ? depthEdge : lane);
+  const hasStraightEdgeAround = (lane: number): boolean => {
+    for (
+      let across = lane - TOWN_GATE_STRAIGHT_EDGE_BEFORE_TILES;
+      across <= lane + TOWN_GATE_STRAIGHT_EDGE_AFTER_TILES;
+      across++
+    ) {
+      if (!edgeTileAt(across)) return false;
+    }
+    return true;
+  };
+  const roomyLanes: EdgeLane[] = [];
   for (let lane = laneFirst; lane <= laneLast; lane++) {
+    if (!edgeTileAt(lane)) continue;
     const x = alongX ? lane : depthEdge;
     const y = alongX ? depthEdge : lane;
-    if (isFootprintTile(town, x, y)) lanes.push({ lane, point: { x: x + 0.5, y: y + 0.5 } });
+    const entry = {
+      lane,
+      point: {
+        x: x + 0.5 + (alongX ? 0 : outward * TOWN_MARGIN_TILES),
+        y: y + 0.5 + (alongX ? outward * TOWN_MARGIN_TILES : 0),
+      },
+    };
+    lanes.push(entry);
+    if (hasStraightEdgeAround(lane)) roomyLanes.push(entry);
   }
-  return lanes;
+  return roomyLanes.length > 0 ? roomyLanes : lanes;
 }
 
 function isFootprintTile(town: Town, tileX: number, tileY: number): boolean {

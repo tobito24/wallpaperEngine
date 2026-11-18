@@ -1,6 +1,7 @@
-import { CHUNK_SIZE, TOWN_CACHE_MAX_ENTRIES } from '../config/constants';
+import { TOWN_CACHE_MAX_ENTRIES } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import type { Point } from '../skeleton/cellGrid';
+import { isOnPlateauWithoutWobble } from './townCore';
 import { GATE_SIDES, gateDirection, gateSideGeometry, townGate } from './townGates';
 import { hasGate, padEndPoint, padsOf } from './townPads';
 import type { GateSide } from './townGates';
@@ -25,9 +26,7 @@ function gatesOf(town: Town): Gate[] {
 }
 
 function isFootprintPoint(town: Town, point: Point): boolean {
-  const chunkX = Math.floor(point.x / CHUNK_SIZE);
-  const chunkY = Math.floor(point.y / CHUNK_SIZE);
-  if (town.chunks.some(([x, y]) => x === chunkX && y === chunkY)) return true;
+  if (isOnPlateauWithoutWobble(town, point.x, point.y)) return true;
   const tileX = Math.floor(point.x);
   const tileY = Math.floor(point.y);
   return padsOf(town).some(

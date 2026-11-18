@@ -94,9 +94,9 @@ export function terrainBlockAt(minX: number, minY: number, size: number): Terrai
           : levelBlockElevations[blockIndex];
       const townInfo = levelBlockTownInfos[blockIndex];
       townInfos.push(townInfo);
-      insideTowns.push(townInfo?.inside ? townInfo.town : null);
+      insideTowns.push(townInfo?.zone === 'core' ? townInfo.town : null);
       biomes.push(
-        townInfo?.inside
+        townInfo?.zone === 'core'
           ? TOWN_BIOME
           : biomeAt(
               elevations[index],
@@ -112,9 +112,10 @@ export function terrainBlockAt(minX: number, minY: number, size: number): Terrai
     const worldX = minX + (index % size);
     const worldY = minY + Math.floor(index / size);
     const town = insideTowns[index];
+    const isRoad = roads[index] === ROAD_TILE_MARK || (town !== null && townPathAt(town, worldX, worldY));
     return groundOf(biome.id, {
-      isRoad: roads[index] === ROAD_TILE_MARK || (town !== null && townPathAt(town, worldX, worldY)),
-      isInsideTown: town !== null,
+      isRoad,
+      isInsideTown: town !== null || (townInfos[index]?.zone === 'margin' && isRoad),
       isStairs: stairs.has(tileKey(worldX, worldY)),
     });
   });
