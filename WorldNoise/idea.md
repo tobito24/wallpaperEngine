@@ -631,6 +631,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
   - [x] First buildings: Center, Mart and houses from the private `Outside` sheet placed along the existing roads (`townLayout.ts`)
   - [x] Town streets inside the plateau (through streets, side paths to the houses)
+  - [x] Zoom-out overview (2026-11-18): below 8 px per tile a coarse sampled view instead of chunks, see docs/world-and-render.md (`OverviewRenderer`), to see the whole ratio of towns, roads and nature
   - [ ] Town margin (steps 1 and 2 built, the lots read the core) and the 7 x 7 cell (plan in "Town margin and the 7 x 7 cell": cell and buffer, the margin, the plan reads the core); before the layout uses the lots
   - [ ] Town layout and urban catalog (plan in "Town layout and the urban catalog": catalog and renderer, side streets, blocks and lots, assignment with conditions, entrances, props)
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template

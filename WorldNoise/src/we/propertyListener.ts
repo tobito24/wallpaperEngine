@@ -1,4 +1,4 @@
-import { MIN_TILE_SIZE, MAX_TILE_SIZE } from '../config/constants';
+import { MIN_TILE_SIZE, MAX_TILE_SIZE, OVERVIEW_BELOW_TILE_SIZE_PX } from '../config/constants';
 import type { Camera } from '../core/Camera';
 import type { Ticker } from '../core/Ticker';
 
@@ -25,7 +25,8 @@ const TILE_SIZE_SLIDER_MAX = 100;
 
 function tileSizeFromSliderPosition(position: number): number {
   const t = (position - TILE_SIZE_SLIDER_MIN) / (TILE_SIZE_SLIDER_MAX - TILE_SIZE_SLIDER_MIN);
-  return Math.round(MIN_TILE_SIZE * (MAX_TILE_SIZE / MIN_TILE_SIZE) ** t);
+  const tileSize = MIN_TILE_SIZE * (MAX_TILE_SIZE / MIN_TILE_SIZE) ** t;
+  return tileSize < OVERVIEW_BELOW_TILE_SIZE_PX ? tileSize : Math.round(tileSize);
 }
 
 export function attachWallpaperPropertyListener(camera: Camera, ticker: Ticker): void {
