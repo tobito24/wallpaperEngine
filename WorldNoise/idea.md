@@ -41,7 +41,7 @@ why chunk borders never show seams.
 
 Reason for the shape: an endless world has no global view, so every decision must be computable from a small neighbourhood.
 
-- A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon: **5 x 5 chunks per cell** (80 tiles; a chunk is
+- A global **cell grid** of whole chunks, as the room grid of Mystery Dungeon (**changes to 7 x 7 chunks with a margin around the town, see "Town margin and the 7 x 7 cell"; the text below describes the state built so far**): **5 x 5 chunks per cell** (80 tiles; a chunk is
   16 tiles). Reason: a 3 x 3 chunk town in a 5 x 5 chunk cell always leaves a buffer of one chunk (16 tiles) on every side, so
   two towns of neighbouring cells are at least 32 tiles apart (more if they are smaller or sit off centre), the 8 tile terrace
   ring around a town stays inside its cell, and no two plateaus can touch. Longer roads between towns are wanted. Each cell
@@ -356,6 +356,67 @@ Decided with the user (2026-11-18):
   and a pinch of a block or lot under the minimum is merged into a neighbour or becomes park). Curves are the later layout; step 2
   starts with straight side streets, and the thin-spot rule is measured the same way for both.
 
+### Town margin and the 7 x 7 cell (plan of 2026-11-18, to be confirmed before the first line of code)
+
+Why: with the lots (see above) the buildings stand right on the edge of the plateau, which later looks unclean and leaves no room
+for a ring of trees, hedges or fences. A margin around the town is the room for that ring. The cell gets bigger so that the larger
+towns and the margin keep the distance between two towns.
+
+Decided with the user (2026-11-18):
+
+- **Cell 7 x 7 chunks (112 tiles), buffer 2 chunks** (`CELL_SIZE_CHUNKS` 7, `CELL_BUFFER_CHUNKS` 2). The block for the town is still
+  3 x 3 chunks in the middle of the cell, so the shapes of `townShapes.ts` stay as they are. Reason: the plateau grows by the margin
+  and the plateaus of two neighbouring towns must keep their distance. The step from 5 x 5 to 7 x 7 is enough for now.
+- **A town is a core plus a margin.** The **core** is the footprint of whole chunks as today (2 x 2 to 3 x 3 chunks, the shapes of
+  `townShapes.ts`). The **margin** is a strip of `TOWN_MARGIN_TILES` (8, a first guess that may be too much: judged by eye, 6 to 8) around the core:
+  the dilation of the core by that distance, so a convex corner is rounded with the radius of the margin, a concave corner stays sharp
+  and the margins of two arms of an L or T simply overlap. The plateau is core plus margin: a 2 x 2 chunk core (32 tiles) has a plateau
+  of 48 x 48 tiles, a 3 x 3 chunk core of 64 x 64.
+- **What lives where.** Lots, side streets and buildings are placed in the core only. The margin is the zone for the ring of trees,
+  hedges and fences (step 5 of the urban plan) and for nothing else; the through streets cross it from the core to the gate. The sprite of a
+  building may overhang the margin and the plateau edge: roofs and crowns reach into the margin, and a high-rise at the north of the town may
+  visually rise out of the edge of the town (its footprint stays in its lot). Decoration still keeps out of the whole plateau.
+- **The wobble acts on the margin only.** The outline is the edge of the margin eroded by the stepped noise of `TOWN_OUTLINE_WOBBLE_TILES`
+  (4), so the edge lies 4 to 8 tiles outside the core and never cuts into the core; the lots keep clean chunk edges. At a gate the wobble
+  tapers to 0 as today, so the edge is straight there and the margin is full.
+- **The ground of the margin is the ground of the biome** (not the town paving, not `cityGrass`: a ring of grass would look like a ring);
+  the core keeps `city` paving, the streets keep `cityStreet` also where they cross the margin.
+- **Water in the margin becomes land,** up to the 8 tiles of the margin, like water inside the footprint today. A town on a coast pushes the
+  coast out by up to 8 tiles, which is accepted: a town changes the land anyway, and the place may later get a harbour. The 97 % land rule
+  still checks the core only. The plateau level is the most common land level of the base ground in the core. Water in the margin counts
+  like water at the edge for the water clearance of the plateau level (`waterClearanceTiles`), so such a town is level 2 or lower.
+- **Gates and pads sit on the outer edge of the margin.** The gate is the outermost plateau tile of its lane, the pad, the landing and the
+  terrace ring follow outside, measured from the union of plateau, margin and pads as before. Ring, pad and landing stay within 16 tiles of
+  the plateau (`TOWN_RING_WIDTH_TILES` 8, pad 4 plus landing 6), so they lie inside the cell: the core is 32 tiles from the cell edge, the
+  plateau 24 and the ring and landing end 8 tiles before it; two plateaus are at least 48 tiles apart (32 before). The town does not shift
+  inside its cell for now (more variation would need a bigger cell, not wanted yet).
+- **A tile still finds its town through its own cell,** so the margin must lie inside the cell, which holds.
+
+What changes in the code (each point is a task of the steps below): `townShapes.ts` (the check of the 3 x 3 block stays), `townPlacement.ts`
+(core chunks, plateau level from the core, clearance around the plateau), `townTerrain.ts` (`townInfoAt` gets the zone `core`,
+`margin` or `ring`; `inside` stays true for core and margin, so the roads, pads and ring keep working, and the code that needs the core
+only (the layout, the lots, the town ground) reads the zone), `townGates.ts` (lanes from the outer edge of the margin), `townPads.ts`,
+`townStreets.ts` (a street may run in the margin: `isFootprintPoint`), `townGrid.ts` (the box gets the margin; `usable` is the core), the
+ground of the margin in `Chunk`/`groundOf`, `cellGrid.ts` (node area), and the constants. The waypoint nodes lie in the node area of the
+cell, the 48 x 48 tiles in the middle, like the town block.
+
+Not decided and left for later: the number of towns per area (`TOWN_CELL_PROBABILITY`, the size weights, `TOWN_HOUSES_PER_CHUNK`; with a
+cell of 49 instead of 25 chunks there are about half as many towns and nodes per area, and the roads between two nodes are 112 instead of
+80 tiles long), the padding of the road edges around a request (2 cells today; with the bigger cell 1 may do, to be measured), and all
+numbers in `docs/` that the world change makes outdated (they are measured again with the build).
+
+Built in this order, each step measured and looked at before the next:
+
+1. **The 7 x 7 cell with the buffer of 2 chunks**, no margin yet: constants, node area, shapes check; measured: towns, nodes and roads per
+   area, the time of a chunk (budget 3 ms for the roads) and of an edge, no plateau touches another.
+2. **The margin:** zone in `townInfoAt`, the rounded dilation with the wobble on the margin, water to land, the clearance, gates, pads, ring and
+   streets on the new edge, the ground of the margin; measured: no level jump of two around a town (as before), the plateaus at least 48 tiles
+   apart, every gate straight, a chunk equals the whole map, the time budget.
+3. **The plan reads the core:** `townGrid.ts` and the lots as described above; the old layout keeps working on the core.
+
+Good when: lots, streets and buildings never touch the outline of the plateau, the margin is at least 4 tiles wide everywhere (the wobble
+leaves 4 of the 8), roads and stairs work as before (no failed crossing more than before), and the world is still a pure function of the seed.
+
 ### Height levels and cliffs
 
 Discrete height levels belong to the Pokemon look, so they are part of the plan, not a later extra.
@@ -568,6 +629,7 @@ Each step is built and looked at before the next one starts. The plan is final b
 - [ ] Generated towns: rule-based layout in the footprint (road loop, lots, houses, Center and Mart, trees and fences)
   - [x] First buildings: Center, Mart and houses from the private `Outside` sheet placed along the existing roads (`townLayout.ts`)
   - [x] Town streets inside the plateau (through streets, side paths to the houses)
+  - [ ] Town margin and the 7 x 7 cell (plan in "Town margin and the 7 x 7 cell": cell and buffer, the margin, the plan reads the core); before the layout uses the lots
   - [ ] Town layout and urban catalog (plan in "Town layout and the urban catalog": catalog and renderer, side streets, blocks and lots, assignment with conditions, entrances, props)
 - [ ] Designed towns: template format, stamping with rotation, Marmoria City rebuilt as the first (dev) template
 - [x] Town plateau: height override inside the footprint, terrace ring (level limited to P - 1 .. P + 1)
