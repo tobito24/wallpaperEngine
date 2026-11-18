@@ -6,8 +6,6 @@ import {
   TOWN_GATE_LANDING_DEPTH_TILES,
   TOWN_CELL_PROBABILITY,
   TOWN_DESIGNED_SHARE,
-  TOWN_LARGE_WEIGHT,
-  TOWN_MEDIUM_WEIGHT,
   TOWN_MIN_LAND_SHARE,
   TOWN_MARGIN_TILES,
   TOWN_RING_WIDTH_TILES,
@@ -18,14 +16,15 @@ import { randomValue } from '../core/keyedRandom';
 import { elevationNoise } from '../elevation/elevationNoise';
 import { WATER_LEVEL, heightLevelAt, waterClearanceTiles } from '../elevation/heightLevel';
 import type { Point } from '../skeleton/cellGrid';
-import { TOWN_SHAPES } from './townShapes';
-import type { ChunkOffset, TownShape, TownSizeClass } from './townShapes';
+import { TOWN_SHAPES, TOWN_SHAPE_KIND_WEIGHTS } from './townShapes';
+import type { ChunkOffset, TownShape, TownShapeKind } from './townShapes';
 
 export interface Town {
   readonly cx: number;
   readonly cy: number;
   readonly shape: TownShape;
   readonly chunks: readonly ChunkOffset[];
+  readonly holes: readonly ChunkOffset[];
   readonly center: Point;
   readonly plateauLevel: number;
   readonly designed: boolean;
@@ -39,25 +38,20 @@ if (TOWN_MARGIN_TILES + TOWN_GATE_LANDING_DEPTH_TILES > CELL_BUFFER_CHUNKS * CHU
   throw new RangeError('The gate pad and landing of a town must stay inside the buffer of its cell');
 }
 
-const SIZE_CLASSES_FROM: Readonly<Record<TownSizeClass, readonly TownSizeClass[]>> = {
-  large: ['large', 'medium', 'small'],
-  medium: ['medium', 'small'],
-  small: ['small'],
-};
-
 const townCache = new Map<string, Town | null>();
 
-function sizeClassOf(cx: number, cy: number): TownSizeClass {
-  const roll = randomValue(`town:${cx}:${cy}:size`);
-  if (roll < TOWN_LARGE_WEIGHT) return 'large';
-  if (roll < TOWN_LARGE_WEIGHT + TOWN_MEDIUM_WEIGHT) return 'medium';
-  return 'small';
+const SHAPE_KINDS = Object.keys(TOWN_SHAPE_KIND_WEIGHTS) as TownShapeKind[];
+
+function kindsInOrder(cx: number, cy: number): TownShapeKind[] {
+  const keyOf = (kind: TownShapeKind): number =>
+    -Math.log(1 - randomValue(`town:${cx}:${cy}:kind:${kind}`)) / TOWN_SHAPE_KIND_WEIGHTS[kind];
+  return [...SHAPE_KINDS].sort((a, b) => keyOf(a) - keyOf(b));
 }
 
-function absoluteChunks(cx: number, cy: number, shape: TownShape): ChunkOffset[] {
+function absoluteChunks(cx: number, cy: number, chunks: readonly ChunkOffset[]): ChunkOffset[] {
   const originX = cx * CELL_SIZE_CHUNKS + CELL_BUFFER_CHUNKS;
   const originY = cy * CELL_SIZE_CHUNKS + CELL_BUFFER_CHUNKS;
-  return shape.chunks.map(([x, y]): ChunkOffset => [originX + x, originY + y]);
+  return chunks.map(([x, y]): ChunkOffset => [originX + x, originY + y]);
 }
 
 interface FootprintSample {
@@ -138,13 +132,13 @@ function anchorCenter(chunks: readonly ChunkOffset[]): Point {
 function findTown(cx: number, cy: number): Town | null {
   if (randomValue(`town:${cx}:${cy}:wants`) >= TOWN_CELL_PROBABILITY) return null;
 
-  for (const sizeClass of SIZE_CLASSES_FROM[sizeClassOf(cx, cy)]) {
-    const candidates = TOWN_SHAPES.filter((shape) => shape.sizeClass === sizeClass).sort(
+  for (const kind of kindsInOrder(cx, cy)) {
+    const candidates = TOWN_SHAPES.filter((shape) => shape.kind === kind).sort(
       (a, b) =>
         randomValue(`town:${cx}:${cy}:order:${a.name}`) - randomValue(`town:${cx}:${cy}:order:${b.name}`),
     );
     for (const shape of candidates) {
-      const chunks = absoluteChunks(cx, cy, shape);
+      const chunks = absoluteChunks(cx, cy, shape.chunks);
       const sample = sampleFootprint(chunks);
       if (sample.landShare < TOWN_MIN_LAND_SHARE) continue;
       const center = anchorCenter(chunks);
@@ -153,6 +147,7 @@ function findTown(cx: number, cy: number): Town | null {
         cy,
         shape,
         chunks,
+        holes: absoluteChunks(cx, cy, shape.holes),
         center,
         plateauLevel: sample.plateauLevel,
         designed: randomValue(`town:${cx}:${cy}:designed`) < TOWN_DESIGNED_SHARE,

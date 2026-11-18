@@ -1,4 +1,5 @@
 import {
+  CHUNK_SIZE,
   SEED,
   TOWN_MARGIN_TILES,
   TOWN_OUTLINE_NOISE_FREQUENCY,
@@ -18,7 +19,7 @@ import { townOfCell } from './townPlacement';
 import type { Town } from './townPlacement';
 import { distanceToCore } from './townCore';
 
-export type TownZone = 'core' | 'margin' | 'ring';
+export type TownZone = 'core' | 'margin' | 'hole' | 'ring';
 
 export interface TownTileInfo {
   readonly town: Town;
@@ -79,6 +80,11 @@ export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
 
   const x = tileX + 0.5;
   const y = tileY + 0.5;
+  const chunkX = Math.floor(tileX / CHUNK_SIZE);
+  const chunkY = Math.floor(tileY / CHUNK_SIZE);
+  if (town.holes.some(([holeX, holeY]) => holeX === chunkX && holeY === chunkY)) {
+    return { town, zone: 'hole', inside: true };
+  }
   const coreDistance = distanceToCore(town, x, y);
   if (coreDistance === 0) return { town, zone: 'core', inside: true };
   if (coreDistance <= TOWN_MARGIN_TILES) {

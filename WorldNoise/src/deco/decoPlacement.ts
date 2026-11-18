@@ -163,7 +163,8 @@ function masksOf(block: TerrainBlock): Masks {
   for (let index = 0; index < count; index++) {
     road[index] = block.roads[index] === ROAD_TILE_MARK ? 1 : 0;
     cliffPiece[index] = block.cliffLayout.cliffTypes[index] !== null ? 1 : 0;
-    town[index] = block.townInfos[index] !== null ? 1 : 0;
+    const townInfo = block.townInfos[index];
+    town[index] = townInfo !== null && townInfo.zone !== 'hole' ? 1 : 0;
   }
   for (const key of block.stairs.keys()) {
     const [x, y] = key.split(STAIRS_KEY_SEPARATOR).map(Number);

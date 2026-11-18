@@ -115,7 +115,9 @@ export function terrainBlockAt(minX: number, minY: number, size: number): Terrai
     const isRoad = roads[index] === ROAD_TILE_MARK || (town !== null && townPathAt(town, worldX, worldY));
     return groundOf(biome.id, {
       isRoad,
-      isInsideTown: town !== null || (townInfos[index]?.zone === 'margin' && isRoad),
+      isInsideTown:
+        town !== null ||
+        (isRoad && (townInfos[index]?.zone === 'margin' || townInfos[index]?.zone === 'hole')),
       isStairs: stairs.has(tileKey(worldX, worldY)),
     });
   });
