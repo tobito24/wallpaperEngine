@@ -353,7 +353,7 @@ export const DECO_ITEMS: readonly DecoItem[] = [
     layer: 'object',
     sprite: TWO_BY_TWO,
     footprint: TWO_BY_ONE,
-    biomes: { desert: 3, savanna: 0.5, steppe: 0.3 },
+    biomes: { desert: 1 },
   }),
   item({
     name: 'boulder-water',
