@@ -1,9 +1,7 @@
 import { CHUNK_SIZE } from '../config/constants';
 import { NO_INNER_RING } from '../elevation/cliffLayout';
 import { tileKey } from '../road/crossingStairs';
-import { townDecorationAt } from '../town/townLayout';
 import { NEIGHBOUR_OFFSETS, autotileIndexFor } from '../tileset/autotile';
-import type { SheetTile } from '../tileset/outsideSheet';
 import { groundOf, isRoadGround } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { lowerNeighbourGround } from '../tileset/cliffUnderlay';
@@ -54,7 +52,6 @@ export class Chunk {
         const innerRingIndex = cliffLayout.innerRingIndices[index];
 
         const town = insideTowns[index];
-        const decoration: SheetTile | null = town ? townDecorationAt(town, originX + lx, originY + ly) : null;
 
         let neighbourMask = 0;
         for (const { dx, dy, bit } of NEIGHBOUR_OFFSETS) {
@@ -112,7 +109,6 @@ export class Chunk {
             cliffUnderlays,
             innerRingIndex === NO_INNER_RING ? null : innerRingIndex,
             stairs.get(tileKey(originX + lx, originY + ly)) ?? null,
-            decoration,
             isRoadGround(ground)
               ? groundOf(biomes[index].id, { isRoad: false, isInsideTown: town !== null, isStairs: false })
               : null,

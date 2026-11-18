@@ -3,8 +3,6 @@ import { shadeForHeightLevel } from '../elevation/color';
 import type { CliffType } from '../elevation/heightLevel';
 import type { StairsTile } from '../road/crossingStairs';
 import { drawCliff, drawCliffTop, hasCliffSheet } from '../tileset/cliffTiles';
-import { drawOutsideTile } from '../tileset/outsideSheet';
-import type { SheetTile } from '../tileset/outsideSheet';
 import { fallbackColorOf } from '../tileset/ground';
 import type { Ground } from '../tileset/ground';
 import { drawGroundAutotile, drawGroundUnderlay } from '../tileset/groundSheets';
@@ -25,7 +23,6 @@ export class Tile {
   readonly cliffUnderlays: readonly (Ground | null)[] | null;
   readonly cliffTopAutotileIndex: number | null;
   readonly stairs: StairsTile | null;
-  readonly decoration: SheetTile | null;
   readonly groundUnderRoad: Ground | null;
 
   constructor(
@@ -41,7 +38,6 @@ export class Tile {
     cliffUnderlays: readonly (Ground | null)[] | null,
     cliffTopAutotileIndex: number | null,
     stairs: StairsTile | null,
-    decoration: SheetTile | null,
     groundUnderRoad: Ground | null,
   ) {
     this.worldX = worldX;
@@ -56,7 +52,6 @@ export class Tile {
     this.cliffUnderlays = cliffUnderlays;
     this.cliffTopAutotileIndex = cliffTopAutotileIndex;
     this.stairs = stairs;
-    this.decoration = decoration;
     this.groundUnderRoad = groundUnderRoad;
   }
 
@@ -125,8 +120,6 @@ export class Tile {
     if (this.groundUnderRoad) this.drawGroundWithRim(ctx, animationFrame, screenX, screenY, size);
 
     if (this.stairs && hasCliffSheet(this.heightLevel)) drawStairs(ctx, this.stairs, screenX, screenY, size);
-
-    if (this.decoration) drawOutsideTile(ctx, this.decoration, screenX, screenY, size);
 
     const shade = shadeForHeightLevel(this.heightLevel);
     if (shade) {
