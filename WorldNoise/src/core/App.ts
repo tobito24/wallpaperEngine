@@ -92,7 +92,7 @@ export class App {
 
     this.ctx.fillStyle = '#cfd3d8';
     this.ctx.font = '12px monospace';
-    this.ctx.fillText(`tile size: ${this.camera.tileSize.toFixed(2)}px (wheel / q,e to zoom)`, 8, 16);
+    this.ctx.fillText(`tile size: ${this.camera.tileSize}px (wheel / q,e to zoom)`, 8, 16);
     this.ctx.fillText(
       `camera: ${this.camera.x.toFixed(1)}, ${this.camera.y.toFixed(1)} (wasd to move)`,
       8,
