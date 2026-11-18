@@ -82,8 +82,7 @@ Same scripts as `TileGridBase`:
 - `npm run lint` / `npm run format` — ESLint / Prettier, same configs as `TileGridBase`.
 - Assets: `WorldNoise/assets/` is git-ignored on purpose, no asset is committed (rule in [code-conventions](../docs/code-conventions.md)).
   It holds `autotiles/` (the ground sheets, own art made with `/autotile-preview.html`, see [docs/tileset.md](docs/tileset.md); a
-  missing sheet is a flat color), `tilesets/` (the Essentials `Outside` sheet as `outside.png` for the town buildings, not cleared for publishing;
-  `infinitywalker.png` is no longer read) and `cliff-assets/` (the cliff
+  missing sheet is a flat color), `tilesets/` (the Essentials `Outside` sheet as `outside.png`, the source of `scripts/cut_outside_urban.py`, not cleared for publishing), `urban/` (one PNG per town building, cut by that script, see [docs/towns.md](docs/towns.md)) and `cliff-assets/` (the cliff
   pieces). The ground textures in `DesignCorner/private/tile-texture-32x32/` come from the InfinityWalker tileset too. A build made
   while the folder exists carries the assets in `dist/` (Vite inlines files under 4 KB into the JS bundle as data URIs, larger ones are
   copied), and `dist/` is what Wallpaper Engine loads: clear every asset before a publish, or build without the folder.

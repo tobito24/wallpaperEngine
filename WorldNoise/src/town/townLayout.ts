@@ -14,9 +14,9 @@ import { crossingsOf } from '../road/crossingTerrain';
 import { footprintOf } from '../road/roadCrossing';
 import { roadEdgesIn } from '../road/roadEdge';
 import { ROAD_TILE_MARK, roadTilesIn } from '../road/roadMask';
-import type { SheetTile } from '../tileset/outsideSheet';
-import { BUILDING_TYPES } from './townBuildings';
-import type { BuildingType } from './townBuildings';
+import { URBAN_ITEMS } from '../urban/urbanTable';
+import type { UrbanItem } from '../urban/urbanTable';
+import type { UrbanInstance } from '../urban/urbanInstance';
 import type { Town } from './townPlacement';
 import { planPathNetwork } from './townPathNetwork';
 import { townInfoAt } from './townTerrain';
@@ -26,17 +26,16 @@ interface TownLayout {
   readonly minY: number;
   readonly width: number;
   readonly height: number;
-  readonly pieces: ReadonlyMap<number, SheetTile>;
+  readonly buildings: readonly UrbanInstance[];
   readonly paths: ReadonlySet<number>;
 }
 
 interface Placement {
-  readonly type: BuildingType;
+  readonly type: UrbanItem;
   readonly x: number;
   readonly y: number;
 }
 
-const MIN_CHUNKS_FOR_MART = 2;
 const PATH_STEPS: readonly (readonly [number, number])[] = [
   [0, 1],
   [-1, 0],
@@ -46,16 +45,24 @@ const PATH_STEPS: readonly (readonly [number, number])[] = [
 
 const layoutCache = new Map<string, TownLayout>();
 
-function buildingsOf(town: Town, random: () => number): BuildingType[] {
-  const byKind = (kind: BuildingType['kind']): BuildingType[] =>
-    BUILDING_TYPES.filter((type) => type.kind === kind);
+function pickByWeight(items: readonly UrbanItem[], random: () => number): UrbanItem {
+  const total = items.reduce((sum, candidate) => sum + candidate.weight, 0);
+  let remaining = random() * total;
+  for (const candidate of items) {
+    remaining -= candidate.weight;
+    if (remaining < 0) return candidate;
+  }
+  return items[items.length - 1];
+}
 
-  const buildings = byKind('center');
-  if (town.chunks.length >= MIN_CHUNKS_FOR_MART) buildings.push(...byKind('mart'));
-
-  const houseTypes = byKind('house');
+function buildingsOf(town: Town, random: () => number): UrbanItem[] {
+  const eligible = URBAN_ITEMS.filter(
+    (candidate) => candidate.kind === 'building' && candidate.minTownChunks <= town.chunks.length,
+  );
+  const buildings = eligible.filter((candidate) => candidate.unique);
+  const pool = eligible.filter((candidate) => !candidate.unique);
   const houseCount = Math.floor(town.chunks.length * TOWN_HOUSES_PER_CHUNK);
-  for (let i = 0; i < houseCount; i++) buildings.push(houseTypes[Math.floor(random() * houseTypes.length)]);
+  for (let i = 0; i < houseCount; i++) buildings.push(pickByWeight(pool, random));
   return buildings;
 }
 
@@ -120,19 +127,19 @@ function computeLayout(town: Town): TownLayout {
   }
   for (let i = 0; i < free.length; i++) if (sidewalk[i]) free[i] = 0;
 
-  const isOnBuilding = (type: BuildingType, x: number, y: number, tileX: number, tileY: number): boolean =>
-    tileX >= x && tileX < x + type.width && tileY >= y && tileY < y + type.height;
+  const isOnBuilding = (type: UrbanItem, x: number, y: number, tileX: number, tileY: number): boolean =>
+    tileX >= x && tileX < x + type.sprite.width && tileY >= y && tileY < y + type.sprite.height;
 
   const stripMark = new Uint8Array(width * height);
   const isWalkable = (index: number): boolean =>
     free[index] === 1 || sidewalk[index] === 1 || stripMark[index] === 1;
 
-  const frontStripOf = (type: BuildingType, x: number, y: number): number[] | null => {
+  const frontStripOf = (type: UrbanItem, x: number, y: number): number[] | null => {
     const strip: number[] = [];
     for (let row = 0; row < TOWN_DOOR_PATH_WIDTH_TILES; row++) {
-      for (let column = 0; column < type.width; column++) {
+      for (let column = 0; column < type.sprite.width; column++) {
         const tileX = x + column;
-        const tileY = y + type.height + row;
+        const tileY = y + type.sprite.height + row;
         if (tileX >= width || tileY >= height) return null;
         const index = tileY * width + tileX;
         if (free[index] !== 1 && sidewalk[index] !== 1) return null;
@@ -142,7 +149,7 @@ function computeLayout(town: Town): TownLayout {
     return strip;
   };
 
-  const canConnect = (type: BuildingType, x: number, y: number, strip: readonly number[]): boolean => {
+  const canConnect = (type: UrbanItem, x: number, y: number, strip: readonly number[]): boolean => {
     const isTarget = (index: number): boolean => sidewalk[index] === 1 || stripMark[index] === 1;
     if (strip.some(isTarget)) return true;
     const seen = new Set<number>(strip);
@@ -168,9 +175,9 @@ function computeLayout(town: Town): TownLayout {
     return false;
   };
 
-  const fits = (type: BuildingType, x: number, y: number): boolean => {
-    for (let dy = 0; dy < type.height; dy++) {
-      for (let dx = 0; dx < type.width; dx++) {
+  const fits = (type: UrbanItem, x: number, y: number): boolean => {
+    for (let dy = 0; dy < type.sprite.height; dy++) {
+      for (let dx = 0; dx < type.sprite.width; dx++) {
         const nx = x + dx;
         const ny = y + dy;
         if (nx >= width || ny >= height || !free[ny * width + nx]) return false;
@@ -179,10 +186,10 @@ function computeLayout(town: Town): TownLayout {
     return true;
   };
 
-  const occupy = (type: BuildingType, x: number, y: number): void => {
+  const occupy = (type: UrbanItem, x: number, y: number): void => {
     const margin = TOWN_BUILDING_MARGIN_TILES;
-    for (let dy = -margin; dy < type.height + margin; dy++) {
-      for (let dx = -margin; dx < type.width + margin; dx++) {
+    for (let dy = -margin; dy < type.sprite.height + margin; dy++) {
+      for (let dx = -margin; dx < type.sprite.width + margin; dx++) {
         const nx = x + dx;
         const ny = y + dy;
         if (nx >= 0 && ny >= 0 && nx < width && ny < height) free[ny * width + nx] = 0;
@@ -205,8 +212,8 @@ function computeLayout(town: Town): TownLayout {
       placements.push({ type, x, y });
       strips.push(strip);
       occupy(type, x, y);
-      for (let dy = 0; dy < type.height; dy++) {
-        for (let dx = 0; dx < type.width; dx++) buildingMask[(y + dy) * width + x + dx] = 1;
+      for (let dy = 0; dy < type.sprite.height; dy++) {
+        for (let dx = 0; dx < type.sprite.width; dx++) buildingMask[(y + dy) * width + x + dx] = 1;
       }
       for (const stripIndex of strip) {
         stripMark[stripIndex] = 1;
@@ -229,16 +236,12 @@ function computeLayout(town: Town): TownLayout {
     maxLength: TOWN_DOOR_PATH_MAX_TILES,
   });
 
-  const pieces = new Map<number, SheetTile>();
+  const buildings: UrbanInstance[] = [];
   placements.forEach(({ type, x, y }, placementIndex) => {
     if (!network.connected[placementIndex]) return;
-    for (let dy = 0; dy < type.height; dy++) {
-      for (let dx = 0; dx < type.width; dx++) {
-        pieces.set((y + dy) * width + (x + dx), { column: type.column + dx, row: type.row + dy });
-      }
-    }
+    buildings.push({ item: type, x: minX + x, y: minY + y, level: town.plateauLevel });
   });
-  return { minX, minY, width, height, pieces, paths: network.tiles };
+  return { minX, minY, width, height, buildings, paths: network.tiles };
 }
 
 function layoutOf(town: Town): TownLayout {
@@ -260,8 +263,6 @@ export function townPathAt(town: Town, tileX: number, tileY: number): boolean {
   return layout.paths.has((tileY - layout.minY) * layout.width + (tileX - layout.minX));
 }
 
-export function townDecorationAt(town: Town, tileX: number, tileY: number): SheetTile | null {
-  const layout = layoutOf(town);
-  if (!isInLayout(layout, tileX, tileY)) return null;
-  return layout.pieces.get((tileY - layout.minY) * layout.width + (tileX - layout.minX)) ?? null;
+export function townBuildingsOf(town: Town): readonly UrbanInstance[] {
+  return layoutOf(town).buildings;
 }

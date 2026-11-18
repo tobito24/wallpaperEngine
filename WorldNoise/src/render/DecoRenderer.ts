@@ -1,4 +1,5 @@
 import {
+  CELL_SIZE_CHUNKS,
   CHUNK_SIZE,
   DECO_MIN_TILE_SIZE_PX,
   DECO_REGIONS_PER_FRAME,
@@ -12,6 +13,10 @@ import { DECO_VIEW_REACH_TILES } from '../deco/decoTable';
 import type { DecoLayer } from '../deco/decoTable';
 import { tintedSprite } from '../deco/decoTint';
 import { shadeForHeightLevel } from '../elevation/color';
+import { townBuildingsOf } from '../town/townLayout';
+import { townOfCell } from '../town/townPlacement';
+import type { UrbanInstance } from '../urban/urbanInstance';
+import { urbanImage } from '../urban/urbanSheets';
 
 const LAYER_ORDER: Readonly<Record<DecoLayer, number>> = { flat: 0, object: 1, overhead: 2 };
 
@@ -22,11 +27,18 @@ interface ChunkRange {
   readonly maxChunkY: number;
 }
 
-function footprintRows(instance: DecoInstance): number {
-  return instance.item.area ? instance.rows : instance.item.footprint.height;
+type Drawable = DecoInstance | UrbanInstance;
+
+function isUrban(drawable: Drawable): drawable is UrbanInstance {
+  return !('variant' in drawable);
 }
 
-function compareInstances(first: DecoInstance, second: DecoInstance): number {
+function footprintRows(drawable: Drawable): number {
+  if (isUrban(drawable)) return drawable.item.sprite.height;
+  return drawable.item.area ? drawable.rows : drawable.item.footprint.height;
+}
+
+function compareInstances(first: Drawable, second: Drawable): number {
   const layer = LAYER_ORDER[first.item.layer] - LAYER_ORDER[second.item.layer];
   if (layer !== 0) return layer;
   const row = first.y + footprintRows(first) - (second.y + footprintRows(second));
@@ -45,7 +57,7 @@ function chunkRangeOf(bounds: TileBounds): ChunkRange {
 }
 
 export class DecoRenderer {
-  private sorted: readonly DecoInstance[] = [];
+  private sorted: readonly Drawable[] = [];
   private sortedKey = '';
   private computedCount = 0;
 
@@ -94,8 +106,8 @@ export class DecoRenderer {
     }
   }
 
-  private collect(range: ChunkRange): DecoInstance[] {
-    const instances: DecoInstance[] = [];
+  private collect(range: ChunkRange): Drawable[] {
+    const instances: Drawable[] = [...this.collectBuildings(range)];
     for (let chunkY = range.minChunkY; chunkY <= range.maxChunkY; chunkY++) {
       for (let chunkX = range.minChunkX; chunkX <= range.maxChunkX; chunkX++) {
         const chunkInstances = peekDecoOfChunk(chunkX, chunkY);
@@ -103,6 +115,55 @@ export class DecoRenderer {
       }
     }
     return instances;
+  }
+
+  private collectBuildings(range: ChunkRange): readonly UrbanInstance[] {
+    const buildings: UrbanInstance[] = [];
+    for (
+      let cellY = Math.floor(range.minChunkY / CELL_SIZE_CHUNKS);
+      cellY <= Math.floor(range.maxChunkY / CELL_SIZE_CHUNKS);
+      cellY++
+    ) {
+      for (
+        let cellX = Math.floor(range.minChunkX / CELL_SIZE_CHUNKS);
+        cellX <= Math.floor(range.maxChunkX / CELL_SIZE_CHUNKS);
+        cellX++
+      ) {
+        const town = townOfCell(cellX, cellY);
+        if (town) buildings.push(...townBuildingsOf(town));
+      }
+    }
+    return buildings;
+  }
+
+  private drawBuilding(
+    ctx: CanvasRenderingContext2D,
+    camera: Camera,
+    bounds: TileBounds,
+    viewportWidth: number,
+    viewportHeight: number,
+    size: number,
+    { item, x, y, level }: UrbanInstance,
+  ): void {
+    if (
+      x > bounds.maxX ||
+      x + item.sprite.width <= bounds.minX ||
+      y > bounds.maxY ||
+      y + item.sprite.height <= bounds.minY
+    ) {
+      return;
+    }
+    const image = urbanImage(item);
+    if (!image) return;
+    const shade = shadeForHeightLevel(level);
+    const origin = camera.worldToScreen(x, y, viewportWidth, viewportHeight);
+    ctx.drawImage(
+      shade ? tintedSprite(image, shade) : image,
+      origin.x,
+      origin.y,
+      item.sprite.width * size,
+      item.sprite.height * size,
+    );
   }
 
   private drawInstance(
@@ -113,8 +174,12 @@ export class DecoRenderer {
     viewportHeight: number,
     size: number,
     animationFrame: number,
-    instance: DecoInstance,
+    instance: Drawable,
   ): void {
+    if (isUrban(instance)) {
+      this.drawBuilding(ctx, camera, bounds, viewportWidth, viewportHeight, size, instance);
+      return;
+    }
     const { item, variant, x, y, length, rows, level } = instance;
     const sprite = decoSpriteOf(item, x, y, length, rows);
     if (
