@@ -4,7 +4,6 @@ import {
   CHUNK_SIZE,
   TOWN_CACHE_MAX_ENTRIES,
   TOWN_GATE_LANDING_DEPTH_TILES,
-  TOWN_GATE_PAD_DEPTH_TILES,
   TOWN_CELL_PROBABILITY,
   TOWN_DESIGNED_SHARE,
   TOWN_LARGE_WEIGHT,
@@ -36,10 +35,7 @@ if (TOWN_MARGIN_TILES + TOWN_RING_WIDTH_TILES > CELL_BUFFER_CHUNKS * CHUNK_SIZE)
   throw new RangeError('The terrace ring of a town must stay inside the buffer of its cell');
 }
 
-if (
-  TOWN_MARGIN_TILES + TOWN_GATE_PAD_DEPTH_TILES + TOWN_GATE_LANDING_DEPTH_TILES >
-  CELL_BUFFER_CHUNKS * CHUNK_SIZE
-) {
+if (TOWN_MARGIN_TILES + TOWN_GATE_LANDING_DEPTH_TILES > CELL_BUFFER_CHUNKS * CHUNK_SIZE) {
   throw new RangeError('The gate pad and landing of a town must stay inside the buffer of its cell');
 }
 

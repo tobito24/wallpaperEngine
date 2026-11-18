@@ -243,7 +243,7 @@ planner as a pure function of the town and its gates (a list of straight segment
 say, no street leaves the footprint or touches a cliff, a chunk takes at most the 3 ms budget of the road planning, and a chunk
 equals the whole map.
 
-### Gate pads, landings and the house path network (decided 2026-11-17, built)
+### Gate pads, landings and the house path network (decided 2026-11-17, built; the pad was removed again on 2026-11-18, see docs/towns.md: the margin takes its place and the landing starts behind the gate)
 
 Why: 17 of 239 gates (measured on 97 towns) still have a road crossing a cliff without stairs close to the gate. A gate often
 lies right behind a cliff, so the road planner has to find a place for stairs in an uncontrolled spot and sometimes bends
