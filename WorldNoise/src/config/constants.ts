@@ -56,7 +56,7 @@ export const TOWN_CACHE_MAX_ENTRIES = 2000;
 
 export const TOWN_CELL_PROBABILITY = 0.7;
 export const TOWN_DESIGNED_SHARE = 0.2;
-export const TOWN_MIN_LAND_SHARE = 0.97;
+export const TOWN_MIN_LAND_SHARE = 0.7;
 export const TOWN_RING_WIDTH_TILES = 8;
 export const TOWN_RING_TERRACE_STEP_TILES = 4;
 export const TOWN_MARGIN_TILES = 8;

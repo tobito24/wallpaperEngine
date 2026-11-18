@@ -382,7 +382,7 @@ Decided with the user (2026-11-18):
 - **The ground of the margin is the ground of the biome** (not the town paving, not `cityGrass`: a ring of grass would look like a ring);
   the core keeps `city` paving, the streets keep `cityStreet` also where they cross the margin.
 - **Water in the margin becomes land,** up to the 8 tiles of the margin, like water inside the footprint today. A town on a coast pushes the
-  coast out by up to 8 tiles, which is accepted: a town changes the land anyway, and the place may later get a harbour. The 97 % land rule
+  coast out by up to 8 tiles, which is accepted: a town changes the land anyway, and the place may later get a harbour. The land rule (97 %, lowered to 70 % on 2026-11-18, see docs/towns.md)
   still checks the core only. The plateau level is the most common land level of the base ground in the core. Water in the margin counts
   like water at the edge for the water clearance of the plateau level (`waterClearanceTiles`), so such a town is level 2 or lower.
 - **Gates and pads sit on the outer edge of the margin.** The gate is the outermost plateau tile of its lane, the pad, the landing and the
