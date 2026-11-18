@@ -3,9 +3,8 @@ import {
   TOWN_GATE_LANDING_AREA_VOTE_WEIGHT,
   TOWN_GATE_LANDING_DEPTH_TILES,
   TOWN_GATE_LANDING_SAMPLE_DEPTH_TILES,
-  TOWN_GATE_PAD_DEPTH_TILES,
-  TOWN_GATE_PAD_TILES_BEFORE_LANE,
-  TOWN_GATE_PAD_WIDTH_TILES,
+  TOWN_GATE_LANDING_TILES_BEFORE_LANE,
+  TOWN_GATE_LANDING_WIDTH_TILES,
 } from '../config/constants';
 import { remember } from '../core/boundedCache';
 import { elevationNoise } from '../elevation/elevationNoise';
@@ -16,7 +15,7 @@ import { GATE_SIDES, gateDirection, townGate } from './townGates';
 import type { GateSide } from './townGates';
 import type { Town } from './townPlacement';
 
-export interface Pad {
+export interface Rectangle {
   readonly side: GateSide;
   readonly minX: number;
   readonly minY: number;
@@ -24,19 +23,17 @@ export interface Pad {
   readonly maxY: number;
 }
 
-const padCache = new Map<string, readonly Pad[]>();
-
-function padAt(side: GateSide, gate: Point): Pad {
+function rectangleBeyond(side: GateSide, gate: Point): Rectangle {
   const [outwardX, outwardY] = gateDirection(side);
   const gateX = Math.floor(gate.x);
   const gateY = Math.floor(gate.y);
-  const lateralMinX = gateX - TOWN_GATE_PAD_TILES_BEFORE_LANE;
-  const lateralMaxX = lateralMinX + TOWN_GATE_PAD_WIDTH_TILES - 1;
-  const lateralMinY = gateY - TOWN_GATE_PAD_TILES_BEFORE_LANE;
-  const lateralMaxY = lateralMinY + TOWN_GATE_PAD_WIDTH_TILES - 1;
+  const lateralMinX = gateX - TOWN_GATE_LANDING_TILES_BEFORE_LANE;
+  const lateralMaxX = lateralMinX + TOWN_GATE_LANDING_WIDTH_TILES - 1;
+  const lateralMinY = gateY - TOWN_GATE_LANDING_TILES_BEFORE_LANE;
+  const lateralMaxY = lateralMinY + TOWN_GATE_LANDING_WIDTH_TILES - 1;
   if (outwardX !== 0) {
     const nearX = gateX + outwardX;
-    const farX = gateX + outwardX * TOWN_GATE_PAD_DEPTH_TILES;
+    const farX = gateX + outwardX * TOWN_GATE_LANDING_DEPTH_TILES;
     return {
       side,
       minX: Math.min(nearX, farX),
@@ -46,7 +43,7 @@ function padAt(side: GateSide, gate: Point): Pad {
     };
   }
   const nearY = gateY + outwardY;
-  const farY = gateY + outwardY * TOWN_GATE_PAD_DEPTH_TILES;
+  const farY = gateY + outwardY * TOWN_GATE_LANDING_DEPTH_TILES;
   return {
     side,
     minX: lateralMinX,
@@ -56,13 +53,13 @@ function padAt(side: GateSide, gate: Point): Pad {
   };
 }
 
-export interface Landing extends Pad {
+export interface Landing extends Rectangle {
   readonly level: number;
 }
 
 const landingCache = new Map<string, readonly Landing[]>();
 
-function landingLevelOf(town: Town, landing: Pad): number {
+function landingLevelOf(town: Town, landing: Rectangle): number {
   const [outwardX, outwardY] = gateDirection(landing.side);
   const lowestLevel = Math.max(town.plateauLevel - 1, WATER_LEVEL + 1);
   const highestLevel = town.plateauLevel + 1;
@@ -76,7 +73,7 @@ function landingLevelOf(town: Town, landing: Pad): number {
   for (let y = landing.minY; y <= landing.maxY; y++) {
     for (let x = landing.minX; x <= landing.maxX; x++) vote(x, y, TOWN_GATE_LANDING_AREA_VOTE_WEIGHT);
   }
-  for (let lateral = 0; lateral < TOWN_GATE_PAD_WIDTH_TILES; lateral++) {
+  for (let lateral = 0; lateral < TOWN_GATE_LANDING_WIDTH_TILES; lateral++) {
     for (let depth = 1; depth <= TOWN_GATE_LANDING_SAMPLE_DEPTH_TILES; depth++) {
       const x =
         outwardX !== 0
@@ -101,30 +98,14 @@ function landingLevelOf(town: Town, landing: Pad): number {
   return best;
 }
 
-function landingAt(town: Town, pad: Pad): Landing {
-  const [outwardX, outwardY] = gateDirection(pad.side);
-  const rectangle: Pad =
-    outwardX !== 0
-      ? {
-          side: pad.side,
-          minX: outwardX > 0 ? pad.maxX + 1 : pad.minX - TOWN_GATE_LANDING_DEPTH_TILES,
-          maxX: outwardX > 0 ? pad.maxX + TOWN_GATE_LANDING_DEPTH_TILES : pad.minX - 1,
-          minY: pad.minY,
-          maxY: pad.maxY,
-        }
-      : {
-          side: pad.side,
-          minX: pad.minX,
-          maxX: pad.maxX,
-          minY: outwardY > 0 ? pad.maxY + 1 : pad.minY - TOWN_GATE_LANDING_DEPTH_TILES,
-          maxY: outwardY > 0 ? pad.maxY + TOWN_GATE_LANDING_DEPTH_TILES : pad.minY - 1,
-        };
+function landingAt(town: Town, side: GateSide): Landing {
+  const rectangle = rectangleBeyond(side, townGate(town, side));
   return { ...rectangle, level: landingLevelOf(town, rectangle) };
 }
 
 export function landingsOf(town: Town): readonly Landing[] {
   return remember(landingCache, TOWN_CACHE_MAX_ENTRIES, `${town.cx},${town.cy}`, () =>
-    padsOf(town).map((pad) => landingAt(town, pad)),
+    GATE_SIDES.filter((side) => hasGate(town, side)).map((side) => landingAt(town, side)),
   );
 }
 
@@ -133,26 +114,12 @@ export function hasGate(town: Town, side: GateSide): boolean {
   return edgeExists(town.cx, town.cy, town.cx + stepX, town.cy + stepY);
 }
 
-export function padsOf(town: Town): readonly Pad[] {
-  return remember(padCache, TOWN_CACHE_MAX_ENTRIES, `${town.cx},${town.cy}`, () =>
-    GATE_SIDES.filter((side) => hasGate(town, side)).map((side) => padAt(side, townGate(town, side))),
-  );
-}
-
-export function padEndPoint(gate: Point, side: GateSide): Point {
-  const [outwardX, outwardY] = gateDirection(side);
-  return {
-    x: gate.x + outwardX * TOWN_GATE_PAD_DEPTH_TILES,
-    y: gate.y + outwardY * TOWN_GATE_PAD_DEPTH_TILES,
-  };
-}
-
 export interface LevelSource {
   readonly distance: number;
   readonly level: number;
 }
 
-function distanceToRectangle(pad: Pad, x: number, y: number): number {
+function distanceToRectangle(pad: Rectangle, x: number, y: number): number {
   const dx = Math.max(pad.minX - x, 0, x - (pad.maxX + 1));
   const dy = Math.max(pad.minY - y, 0, y - (pad.maxY + 1));
   return Math.hypot(dx, dy);
@@ -160,7 +127,6 @@ function distanceToRectangle(pad: Pad, x: number, y: number): number {
 
 export function levelSourcesAt(town: Town, x: number, y: number): LevelSource[] {
   return [
-    ...padsOf(town).map((pad) => ({ distance: distanceToRectangle(pad, x, y), level: town.plateauLevel })),
     ...landingsOf(town).map((landing) => ({
       distance: distanceToRectangle(landing, x, y),
       level: landing.level,
@@ -168,10 +134,10 @@ export function levelSourcesAt(town: Town, x: number, y: number): LevelSource[] 
   ];
 }
 
-export function distanceToPads(town: Town, x: number, y: number): number {
+export function distanceToLandings(town: Town, x: number, y: number): number {
   let nearest = Infinity;
-  for (const pad of [...padsOf(town), ...landingsOf(town)]) {
-    nearest = Math.min(nearest, distanceToRectangle(pad, x, y));
+  for (const landing of landingsOf(town)) {
+    nearest = Math.min(nearest, distanceToRectangle(landing, x, y));
   }
   return nearest;
 }

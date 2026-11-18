@@ -13,7 +13,7 @@ import { createFractalNoise2D } from '../core/noise';
 import { WATER_LEVEL } from '../elevation/heightLevel';
 import { cellIndexOf } from '../skeleton/cellGrid';
 import { GATE_SIDES, gateSideGeometry, townGate } from './townGates';
-import { distanceToPads, landingsOf, levelSourcesAt } from './townPads';
+import { distanceToLandings, landingsOf, levelSourcesAt } from './townPads';
 import { townOfCell } from './townPlacement';
 import type { Town } from './townPlacement';
 import { distanceToCore } from './townCore';
@@ -88,8 +88,8 @@ export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
       depthFromEdge > gateTaperedWobble(tileX, tileY, town, outlineWobbleAt(x, y));
     return inside ? { town, zone: 'margin', inside } : ringBandAt(town, x, y, 0);
   }
-  const padDistance = distanceToPads(town, x, y);
-  if (padDistance === 0) {
+  const landingDistance = distanceToLandings(town, x, y);
+  if (landingDistance === 0) {
     const landing = landingsOf(town).find(
       (candidate) =>
         tileX >= candidate.minX &&
@@ -98,10 +98,9 @@ export function townInfoAt(tileX: number, tileY: number): TownTileInfo | null {
         tileY <= candidate.maxY,
     );
     if (landing) return { town, zone: 'ring', inside: false, fixedLevel: landing.level };
-    return { town, zone: 'margin', inside: true };
   }
   const plateauDistance = coreDistance - TOWN_MARGIN_TILES;
-  const ringDistance = Math.min(plateauDistance, padDistance);
+  const ringDistance = Math.min(plateauDistance, landingDistance);
   if (ringDistance > TOWN_RING_WIDTH_TILES || coreDistance > TOWN_CELL_BUFFER_TILES) return null;
   return ringBandAt(town, x, y, plateauDistance);
 }

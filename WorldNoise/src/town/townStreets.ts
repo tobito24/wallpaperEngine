@@ -3,7 +3,7 @@ import { remember } from '../core/boundedCache';
 import type { Point } from '../skeleton/cellGrid';
 import { isOnPlateauWithoutWobble } from './townCore';
 import { GATE_SIDES, gateDirection, gateSideGeometry, townGate } from './townGates';
-import { hasGate, padEndPoint, padsOf } from './townPads';
+import { hasGate } from './townPads';
 import type { GateSide } from './townGates';
 import type { Town } from './townPlacement';
 
@@ -12,7 +12,6 @@ export type Street = readonly Point[];
 interface Gate {
   readonly side: GateSide;
   readonly point: Point;
-  readonly edgePoint: Point;
 }
 
 const streetCache = new Map<string, readonly Street[]>();
@@ -20,18 +19,12 @@ const streetCache = new Map<string, readonly Street[]>();
 function gatesOf(town: Town): Gate[] {
   return GATE_SIDES.filter((side) => hasGate(town, side)).map((side) => ({
     side,
-    point: padEndPoint(townGate(town, side), side),
-    edgePoint: townGate(town, side),
+    point: townGate(town, side),
   }));
 }
 
 function isFootprintPoint(town: Town, point: Point): boolean {
-  if (isOnPlateauWithoutWobble(town, point.x, point.y)) return true;
-  const tileX = Math.floor(point.x);
-  const tileY = Math.floor(point.y);
-  return padsOf(town).some(
-    (pad) => tileX >= pad.minX && tileX <= pad.maxX && tileY >= pad.minY && tileY <= pad.maxY,
-  );
+  return isOnPlateauWithoutWobble(town, point.x, point.y);
 }
 
 function middleOf(low: number, high: number): number {
@@ -113,13 +106,7 @@ function cornerStreet(town: Town, gates: readonly Gate[]): Street {
     northOrSouth.point,
   ];
   if (isStreetInside(town, viaInnerCorner)) return viaInnerCorner;
-  return [
-    eastOrWest.point,
-    eastOrWest.edgePoint,
-    { x: eastOrWest.edgePoint.x, y: northOrSouth.edgePoint.y },
-    northOrSouth.edgePoint,
-    northOrSouth.point,
-  ];
+  return [eastOrWest.point, { x: eastOrWest.point.x, y: northOrSouth.point.y }, northOrSouth.point];
 }
 
 function deadEndStreet(town: Town, gate: Gate): Street {
